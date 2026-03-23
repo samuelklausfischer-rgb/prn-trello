@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from 'react'
 
-type Role = 'ADMIN' | 'EMPLOYEE'
+export type Role = 'ADMIN' | 'EMPLOYEE'
 
 export type User = {
   id: string
@@ -10,37 +10,26 @@ export type User = {
   avatar?: string
   points: number
   level: number
+  password?: string
 }
 
 type AuthContextType = {
   user: User | null
-  login: (email: string) => void
+  login: (user: User) => void
   logout: () => void
   addPoints: (points: number) => void
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
-const MOCK_USER: User = {
-  id: 'u1',
-  email: 'admin@prn.com',
-  name: 'João Silva',
-  role: 'ADMIN',
-  avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=1',
-  points: 1250,
-  level: 3,
-}
-
+// Initialize with null to force login screen by default, as per requirements
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(MOCK_USER)
+  const [user, setUser] = useState<User | null>(null)
 
-  const login = (email: string) => {
-    setUser({
-      ...MOCK_USER,
-      email,
-      name: email.split('@')[0],
-      role: email.includes('admin') ? 'ADMIN' : 'EMPLOYEE',
-    })
+  const login = (userData: User) => {
+    // Remove password from state for security
+    const { password, ...safeUser } = userData
+    setUser(safeUser)
   }
 
   const logout = () => setUser(null)

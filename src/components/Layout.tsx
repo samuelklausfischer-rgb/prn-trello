@@ -1,18 +1,15 @@
-import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import useAuthStore from '@/stores/useAuthStore'
+import { Outlet } from 'react-router-dom'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import AppSidebar from './AppSidebar'
 import Header from './Header'
+import { useAuth } from '@/hooks/useAuthHooks'
 
 export default function Layout() {
-  const { user } = useAuthStore()
-  const location = useLocation()
+  const { isAuthenticated } = useAuth()
 
-  if (!user && location.pathname !== '/auth') {
-    return <Navigate to="/auth" replace />
-  }
-
-  if (!user) {
+  // Avoid rendering layout elements if not authenticated
+  // (though ProtectedRoute should prevent reaching here)
+  if (!isAuthenticated) {
     return <Outlet />
   }
 

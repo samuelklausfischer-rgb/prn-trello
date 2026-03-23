@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocation, Link, useNavigate } from 'react-router-dom'
-import { Trophy, LogOut, User as UserIcon } from 'lucide-react'
+import { Trophy, LogOut, User as UserIcon, ShieldCheck } from 'lucide-react'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import {
   Breadcrumb,
@@ -18,10 +18,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Progress } from '@/components/ui/progress'
-import useAuthStore from '@/stores/useAuthStore'
+import { Badge } from '@/components/ui/badge'
+import { useAuth } from '@/hooks/useAuthHooks'
 
 export default function Header() {
-  const { user, logout } = useAuthStore()
+  const { user, logout, role } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [animProgress, setAnimProgress] = useState(0)
@@ -56,6 +57,8 @@ export default function Header() {
     navigate('/auth')
   }
 
+  const isAdmin = role === 'ADMIN'
+
   return (
     <header className="h-16 border-b bg-card flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20 shadow-subtle">
       <div className="flex items-center gap-4">
@@ -85,34 +88,63 @@ export default function Header() {
           <Progress value={animProgress} className="h-1.5 w-28 mt-1.5 bg-primary/10" />
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 outline-none rounded-full ring-offset-background focus-visible:ring-2 focus-visible:ring-ring transition-transform hover:scale-105 active:scale-95">
-              <Avatar className="h-9 w-9 border-2 border-primary/20 shadow-sm">
-                <AvatarImage src={user.avatar} />
-                <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                  {user.name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 font-sans">
-            <DropdownMenuItem className="flex flex-col items-start gap-1 py-3 sm:hidden border-b mb-1">
-              <span className="font-semibold text-sm">Nível {user.level}</span>
-              <span className="text-xs text-muted-foreground">{user.points} pts totais</span>
-              <Progress value={animProgress} className="h-1.5 w-full mt-1.5" />
-            </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer py-2">
-              <UserIcon className="w-4 h-4 mr-2 text-muted-foreground" /> Meu Perfil
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={handleLogout}
-              className="text-destructive focus:text-destructive cursor-pointer py-2"
+        <div className="flex items-center gap-3">
+          {isAdmin && (
+            <Badge
+              variant="default"
+              className="hidden sm:flex bg-amber-500 hover:bg-amber-600 text-white gap-1 px-2.5 shadow-sm"
             >
-              <LogOut className="w-4 h-4 mr-2" /> Sair do Sistema
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <ShieldCheck className="w-3 h-3" /> ADMIN
+            </Badge>
+          )}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 outline-none rounded-full ring-offset-background focus-visible:ring-2 focus-visible:ring-ring transition-transform hover:scale-105 active:scale-95">
+                <Avatar
+                  className={`h-9 w-9 shadow-sm ${
+                    isAdmin
+                      ? 'border-2 border-amber-500 ring-2 ring-amber-500/20'
+                      : 'border-2 border-primary/20'
+                  }`}
+                >
+                  <AvatarImage src={user.avatar} />
+                  <AvatarFallback
+                    className={`${isAdmin ? 'bg-amber-100 text-amber-700' : 'bg-primary/10 text-primary'} font-bold`}
+                  >
+                    {user.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 font-sans">
+              <div className="px-2 py-2.5 border-b mb-1">
+                <p className="font-bold text-sm truncate">{user.name}</p>
+                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                {isAdmin && (
+                  <Badge className="mt-2 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 border-0 px-1.5 py-0">
+                    Admin Privileges
+                  </Badge>
+                )}
+              </div>
+
+              <DropdownMenuItem className="flex flex-col items-start gap-1 py-3 sm:hidden border-b mb-1">
+                <span className="font-semibold text-sm">Nível {user.level}</span>
+                <span className="text-xs text-muted-foreground">{user.points} pts totais</span>
+                <Progress value={animProgress} className="h-1.5 w-full mt-1.5" />
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer py-2">
+                <UserIcon className="w-4 h-4 mr-2 text-muted-foreground" /> Meu Perfil
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="text-destructive focus:text-destructive cursor-pointer py-2"
+              >
+                <LogOut className="w-4 h-4 mr-2" /> Sair do Sistema
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </header>
   )

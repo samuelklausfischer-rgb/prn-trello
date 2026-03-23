@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, CheckSquare, Trophy, Settings, Flag } from 'lucide-react'
+import { LayoutDashboard, CheckSquare, Trophy, ShieldCheck, Flag } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -10,13 +10,11 @@ import {
   SidebarGroup,
   SidebarGroupContent,
 } from '@/components/ui/sidebar'
-import useAuthStore from '@/stores/useAuthStore'
+import { useAuth } from '@/hooks/useAuthHooks'
 
 export default function AppSidebar() {
-  const { user } = useAuthStore()
+  const { role } = useAuth()
   const location = useLocation()
-
-  if (!user) return null
 
   const navItems = [
     { title: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -24,8 +22,9 @@ export default function AppSidebar() {
     { title: 'Equipe & Ranking', path: '/team', icon: Trophy },
   ]
 
-  if (user.role === 'ADMIN') {
-    navItems.push({ title: 'Painel Admin', path: '/admin', icon: Settings })
+  // Conditional rendering based on role for the navigation menu
+  if (role === 'ADMIN') {
+    navItems.push({ title: 'Painel Admin', path: '/admin', icon: ShieldCheck })
   }
 
   return (
@@ -52,13 +51,13 @@ export default function AppSidebar() {
                       asChild
                       isActive={isActive}
                       tooltip={item.title}
-                      className={`h-10 transition-all ${isActive ? 'bg-primary/10 text-primary hover:bg-primary/15' : 'hover:bg-secondary/20'}`}
+                      className={`h-10 transition-all ${isActive ? 'bg-primary/10 text-primary hover:bg-primary/15 font-semibold' : 'hover:bg-secondary/50 text-muted-foreground'}`}
                     >
                       <Link to={item.path} className="flex items-center gap-3">
                         <item.icon
                           className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`}
                         />
-                        <span className="font-medium">{item.title}</span>
+                        <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
