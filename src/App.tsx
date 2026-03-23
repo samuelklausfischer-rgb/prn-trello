@@ -2,13 +2,14 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import Index from './pages/Index'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import Auth from './pages/Auth'
 import Tasks from './pages/Tasks'
 import Team from './pages/Team'
 import Admin from './pages/Admin'
+import Dashboard from './pages/Dashboard'
+import AdminDashboard from './pages/AdminDashboard'
 import { AppProviders } from './stores/providers'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -25,13 +26,15 @@ const App = () => (
           {/* Protected Routes Wrapper */}
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
-              <Route path="/" element={<Index />} />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/tasks" element={<Tasks />} />
               <Route path="/team" element={<Team />} />
 
               {/* Admin Only Routes */}
               <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
                 <Route path="/admin" element={<Admin />} />
+                <Route path="/admin/dashboard" element={<AdminDashboard />} />
               </Route>
             </Route>
           </Route>

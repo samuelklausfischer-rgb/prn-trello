@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, CheckSquare, Trophy, ShieldCheck, Flag } from 'lucide-react'
+import { LayoutDashboard, CheckSquare, Trophy, ShieldCheck, Flag, Activity } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -17,13 +17,14 @@ export default function AppSidebar() {
   const location = useLocation()
 
   const navItems = [
-    { title: 'Dashboard', path: '/', icon: LayoutDashboard },
+    { title: 'Dashboard Pessoal', path: '/dashboard', icon: LayoutDashboard },
     { title: 'Tarefas', path: '/tasks', icon: CheckSquare },
     { title: 'Equipe & Ranking', path: '/team', icon: Trophy },
   ]
 
   // Conditional rendering based on role for the navigation menu
   if (role === 'ADMIN') {
+    navItems.push({ title: 'Dashboard Analítico', path: '/admin/dashboard', icon: Activity })
     navItems.push({ title: 'Painel Admin', path: '/admin', icon: ShieldCheck })
   }
 
