@@ -15,6 +15,29 @@ export type User = {
   streak_days?: number
 }
 
+export const SYSTEM_USERS: User[] = [
+  {
+    id: 'admin-1',
+    email: 'paulonovack@gmail.com',
+    name: 'Paulo Novack',
+    role: 'ADMIN',
+    points: 0,
+    level: 1,
+    streak_days: 0,
+    xp: 0,
+  },
+  {
+    id: 'emp-1',
+    email: 'joao@prn.com',
+    name: 'João Silva',
+    role: 'EMPLOYEE',
+    points: 420,
+    level: 1,
+    streak_days: 3,
+    xp: 100,
+  },
+]
+
 type AuthContextType = {
   user: User | null
   login: (user: User) => void

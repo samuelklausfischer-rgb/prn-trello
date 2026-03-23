@@ -19,7 +19,7 @@ migrate(
     // Seed Demo Employee for testing
     const employee = new Record(users)
     employee.setEmail('joao@prn.com')
-    employee.setPassword('func123')
+    employee.setPassword('securepassword123')
     employee.setVerified(true)
     employee.set('name', 'João Silva')
     employee.set('role', 'employee')

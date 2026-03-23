@@ -79,7 +79,7 @@ export default function Auth() {
       setPassword('securepassword123')
     } else {
       setEmail('joao@prn.com')
-      setPassword('func123')
+      setPassword('securepassword123')
     }
   }
 
