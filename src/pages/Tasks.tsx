@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
-import useTaskStore, { TaskStatus } from '@/stores/useTaskStore'
+import useTaskStore, { Priority, TaskStatus } from '@/stores/useTaskStore'
+import useAuthStore, { SYSTEM_USERS } from '@/stores/useAuthStore'
+import { Permissions } from '@/lib/permissions'
+import PermissionGuard from '@/components/PermissionGuard'
 import TaskCard from '@/components/TaskCard'
 import TaskModal from '@/components/TaskModal'
 import BoardSkeleton from '@/components/BoardSkeleton'
@@ -7,6 +10,7 @@ import PageTransition from '@/components/PageTransition'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
   DialogContent,
@@ -37,7 +41,9 @@ import { cn } from '@/lib/utils'
 import { isToday, isThisWeek, isPast, parseISO } from 'date-fns'
 
 export default function Tasks() {
-  const { tasks, updateTaskStatus } = useTaskStore()
+  const { tasks, updateTaskStatus, addTask } = useTaskStore()
+  const { user } = useAuthStore()
+
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterPriority, setFilterPriority] = useState<string>('ALL')
@@ -48,6 +54,16 @@ export default function Tasks() {
 
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null)
   const [dragOverCol, setDragOverCol] = useState<TaskStatus | null>(null)
+
+  // Create Task State
+  const [isNewTaskOpen, setIsNewTaskOpen] = useState(false)
+  const [newTask, setNewTask] = useState({
+    title: '',
+    description: '',
+    priority: 'LOW' as Priority,
+    dueDate: '',
+    assigneeId: user?.id,
+  })
 
   // Onboarding States
   const [showWelcome, setShowWelcome] = useState(false)
@@ -61,6 +77,12 @@ export default function Tasks() {
     }, 600)
     return () => clearTimeout(timer)
   }, [])
+
+  useEffect(() => {
+    if (user && isNewTaskOpen) {
+      setNewTask((prev) => ({ ...prev, assigneeId: user.id }))
+    }
+  }, [user, isNewTaskOpen])
 
   const startTour = () => {
     setShowWelcome(false)
@@ -79,12 +101,20 @@ export default function Tasks() {
     { id: 'DONE', label: 'Concluído', color: 'bg-green-500' },
   ]
 
-  const assignees = Array.from(
-    new Set(tasks.map((t) => t.assignee?.name).filter(Boolean)),
-  ) as string[]
-  const delegators = Array.from(new Set(tasks.map((t) => t.delegator).filter(Boolean))) as string[]
+  // Middleware / Data Isolation: Only show tasks visible to this user
+  const visibleTasks = tasks.filter((t) => {
+    if (Permissions.canViewOthersTasks(user?.role)) return true
+    return t.assignee?.id === user?.id || t.delegatorId === user?.id
+  })
 
-  const filteredTasks = tasks.filter((t) => {
+  const assignees = Array.from(
+    new Set(visibleTasks.map((t) => t.assignee?.name).filter(Boolean)),
+  ) as string[]
+  const delegators = Array.from(
+    new Set(visibleTasks.map((t) => t.delegator).filter(Boolean)),
+  ) as string[]
+
+  const filteredTasks = visibleTasks.filter((t) => {
     const matchSearch =
       t.title.toLowerCase().includes(search.toLowerCase()) ||
       (t.description?.toLowerCase() || '').includes(search.toLowerCase())
@@ -131,6 +161,33 @@ export default function Tasks() {
     setDraggedTaskId(null)
   }
 
+  const handleCreateTask = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newTask.title || !user) return
+
+    const selectedAssignee = SYSTEM_USERS.find((u) => u.id === newTask.assigneeId)
+
+    addTask({
+      title: newTask.title,
+      description: newTask.description,
+      priority: newTask.priority,
+      status: 'TODO',
+      dueDate: newTask.dueDate ? new Date(newTask.dueDate).toISOString() : null,
+      delegator: user.name,
+      delegatorId: user.id,
+      assignee: selectedAssignee
+        ? {
+            id: selectedAssignee.id,
+            name: selectedAssignee.name,
+            avatar: selectedAssignee.avatar || '',
+          }
+        : null,
+    })
+
+    setIsNewTaskOpen(false)
+    setNewTask({ title: '', description: '', priority: 'LOW', dueDate: '', assigneeId: user.id })
+  }
+
   if (loading) return <BoardSkeleton />
 
   return (
@@ -149,7 +206,7 @@ export default function Tasks() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -169,9 +226,9 @@ export default function Tasks() {
                   aria-label="Filtrar tarefas"
                 >
                   <Filter className="w-4 h-4" />
-                  Filtros
+                  <span className="hidden sm:inline">Filtros</span>
                   {hasActiveFilters && (
-                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-background text-primary text-[10px] font-bold ml-1">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-background text-primary text-[10px] font-bold sm:ml-1">
                       {
                         [filterAssignee, filterPriority, filterDeadline, filterDelegator].filter(
                           (f) => f !== 'ALL',
@@ -190,24 +247,26 @@ export default function Tasks() {
                     <Filter className="w-4 h-4 text-primary" /> Filtros Avançados
                   </h4>
 
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Responsável
-                    </Label>
-                    <Select value={filterAssignee} onValueChange={setFilterAssignee}>
-                      <SelectTrigger aria-label="Filtrar por responsável" className="h-9">
-                        <SelectValue placeholder="Todos" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ALL">Todos os Responsáveis</SelectItem>
-                        {assignees.map((a) => (
-                          <SelectItem key={a} value={a}>
-                            {a}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <PermissionGuard check={Permissions.canViewOthersTasks}>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Responsável
+                      </Label>
+                      <Select value={filterAssignee} onValueChange={setFilterAssignee}>
+                        <SelectTrigger aria-label="Filtrar por responsável" className="h-9">
+                          <SelectValue placeholder="Todos" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ALL">Todos os Responsáveis</SelectItem>
+                          {assignees.map((a) => (
+                            <SelectItem key={a} value={a}>
+                              {a}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </PermissionGuard>
 
                   <div className="space-y-1.5">
                     <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -245,6 +304,10 @@ export default function Tasks() {
                 </div>
               </PopoverContent>
             </Popover>
+
+            <Button onClick={() => setIsNewTaskOpen(true)} className="gap-2 shadow-sm">
+              <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Nova Tarefa</span>
+            </Button>
           </div>
         </div>
 
@@ -279,6 +342,7 @@ export default function Tasks() {
                     variant="ghost"
                     size="icon"
                     aria-label={`Adicionar tarefa em ${col.label}`}
+                    onClick={() => setIsNewTaskOpen(true)}
                     className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full transition-colors"
                   >
                     <Plus className="w-4 h-4" />
@@ -308,6 +372,7 @@ export default function Tasks() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => setIsNewTaskOpen(true)}
                           className="h-8 mt-3 text-xs shadow-sm hover:scale-105 transition-transform"
                         >
                           Criar primeira tarefa
@@ -326,6 +391,101 @@ export default function Tasks() {
           open={!!selectedTask}
           onOpenChange={(op) => !op && setSelectedTask(null)}
         />
+
+        {/* Dialog Nova Tarefa */}
+        <Dialog open={isNewTaskOpen} onOpenChange={setIsNewTaskOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Criar Nova Tarefa</DialogTitle>
+              <DialogDescription>Adicione detalhes para a nova atividade.</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleCreateTask} className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Título</Label>
+                <Input
+                  id="title"
+                  value={newTask.title}
+                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                  placeholder="Nome da tarefa"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="desc">Descrição</Label>
+                <Textarea
+                  id="desc"
+                  value={newTask.description}
+                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                  placeholder="Detalhes opcionais..."
+                  className="resize-none h-20"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Prioridade</Label>
+                  <Select
+                    value={newTask.priority}
+                    onValueChange={(v: Priority) => setNewTask({ ...newTask, priority: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="LOW">Baixa</SelectItem>
+                      <SelectItem value="MEDIUM">Média</SelectItem>
+                      <SelectItem value="HIGH">Alta</SelectItem>
+                      <SelectItem value="URGENT">Urgente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dueDate">Prazo Final</Label>
+                  <Input
+                    id="dueDate"
+                    type="date"
+                    value={newTask.dueDate}
+                    onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <PermissionGuard check={Permissions.canDelegateTasks}>
+                <div className="space-y-2">
+                  <Label>Atribuir a (Opcional)</Label>
+                  <Select
+                    value={newTask.assigneeId || 'unassigned'}
+                    onValueChange={(v) =>
+                      setNewTask({ ...newTask, assigneeId: v === 'unassigned' ? undefined : v })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">Sem responsável</SelectItem>
+                      {SYSTEM_USERS.map((u) => (
+                        <SelectItem key={u.id} value={u.id}>
+                          {u.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </PermissionGuard>
+
+              <DialogFooter className="pt-4">
+                <Button variant="outline" type="button" onClick={() => setIsNewTaskOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={!newTask.title}>
+                  Salvar Tarefa
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
 
         {/* Onboarding Highlights */}
         <Dialog

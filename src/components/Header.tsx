@@ -1,6 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useLocation, Link, useNavigate } from 'react-router-dom'
-import { Trophy, LogOut, User as UserIcon, ShieldCheck, Moon, Sun } from 'lucide-react'
+import {
+  Trophy,
+  LogOut,
+  User as UserIcon,
+  ShieldCheck,
+  Moon,
+  Sun,
+  Bell,
+  CheckCircle2,
+  Activity,
+  Info,
+  AlertTriangle,
+} from 'lucide-react'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import {
   Breadcrumb,
@@ -21,10 +33,15 @@ import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/useAuthHooks'
+import useAlertStore from '@/stores/useAlertStore'
 import { useTheme } from './ThemeProvider'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { formatDistanceToNow, parseISO } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 
 export default function Header() {
   const { user, logout, role } = useAuth()
+  const { alerts, markAsRead } = useAlertStore()
   const { theme, setTheme } = useTheme()
   const location = useLocation()
   const navigate = useNavigate()
@@ -65,6 +82,26 @@ export default function Header() {
 
   const isAdmin = role === 'ADMIN'
 
+  // Alerts logic
+  const myAlerts = alerts
+    .filter((a) => !a.targetUserId || a.targetUserId === user.id)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+  const unreadAlerts = myAlerts.filter((a) => !a.readBy.includes(user.id))
+
+  const getAlertIcon = (type: string) => {
+    switch (type) {
+      case 'TASK_DEADLINE':
+        return <AlertTriangle className="w-4 h-4 text-orange-500" />
+      case 'ACHIEVEMENT':
+        return <Trophy className="w-4 h-4 text-accent" />
+      case 'PERFORMANCE':
+        return <Activity className="w-4 h-4 text-blue-500" />
+      default:
+        return <Info className="w-4 h-4 text-primary" />
+    }
+  }
+
   return (
     <header className="h-16 border-b bg-card flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20 shadow-subtle transition-colors">
       <div className="flex items-center gap-4">
@@ -99,6 +136,70 @@ export default function Header() {
         </div>
 
         <div className="flex items-center gap-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative rounded-full">
+                <Bell className="w-5 h-5 text-muted-foreground" />
+                {unreadAlerts.length > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full border-2 border-background animate-pulse" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80 p-0 overflow-hidden">
+              <div className="bg-muted/50 p-3 border-b border-border/50 flex items-center justify-between">
+                <h4 className="font-bold text-sm">Notificações</h4>
+                <Badge variant="secondary" className="text-[10px]">
+                  {unreadAlerts.length} não lidas
+                </Badge>
+              </div>
+              <ScrollArea className="max-h-[300px]">
+                {myAlerts.length === 0 ? (
+                  <div className="p-6 text-center text-sm text-muted-foreground">
+                    Nenhuma notificação no momento.
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border/50">
+                    {myAlerts.map((alert) => {
+                      const isUnread = !alert.readBy.includes(user.id)
+                      return (
+                        <div
+                          key={alert.id}
+                          className={`p-3 transition-colors hover:bg-muted/30 cursor-pointer flex gap-3 ${isUnread ? 'bg-primary/5' : ''}`}
+                          onClick={() => {
+                            if (isUnread) markAsRead(alert.id, user.id)
+                          }}
+                        >
+                          <div className="mt-0.5">{getAlertIcon(alert.type)}</div>
+                          <div className="flex-1 space-y-1">
+                            <div className="flex justify-between items-start gap-2">
+                              <p
+                                className={`text-sm ${isUnread ? 'font-semibold text-foreground' : 'font-medium text-foreground/80'}`}
+                              >
+                                {alert.title}
+                              </p>
+                              {isUnread && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-1.5"></span>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground line-clamp-2">
+                              {alert.message}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground/80 font-medium">
+                              {formatDistanceToNow(parseISO(alert.createdAt), {
+                                addSuffix: true,
+                                locale: ptBR,
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </ScrollArea>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Button
             variant="outline"
             size="icon"

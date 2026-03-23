@@ -13,6 +13,59 @@ export type User = {
   password?: string
 }
 
+export const SYSTEM_USERS: User[] = [
+  {
+    id: 'u1',
+    email: 'admin@prn.com',
+    password: 'admin123',
+    name: 'Admin Geral',
+    role: 'ADMIN',
+    points: 1250,
+    level: 3,
+    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=1',
+  },
+  {
+    id: 'u2',
+    email: 'joao@prn.com',
+    password: 'func123',
+    name: 'João Silva',
+    role: 'EMPLOYEE',
+    points: 420,
+    level: 1,
+    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=2',
+  },
+  {
+    id: 'u3',
+    email: 'maria@prn.com',
+    password: 'func123',
+    name: 'Maria Oliveira',
+    role: 'EMPLOYEE',
+    points: 980,
+    level: 2,
+    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=female&seed=3',
+  },
+  {
+    id: 'u4',
+    email: 'pedro@prn.com',
+    password: 'func123',
+    name: 'Pedro Souza',
+    role: 'EMPLOYEE',
+    points: 650,
+    level: 2,
+    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=4',
+  },
+  {
+    id: 'u5',
+    email: 'ana@prn.com',
+    password: 'func123',
+    name: 'Ana Costa',
+    role: 'EMPLOYEE',
+    points: 210,
+    level: 1,
+    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=female&seed=5',
+  },
+]
+
 type AuthContextType = {
   user: User | null
   login: (user: User) => void
@@ -22,14 +75,12 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
-// Initialize with null to force login screen by default, as per requirements
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
 
   const login = (userData: User) => {
-    // Remove password from state for security
     const { password, ...safeUser } = userData
-    setUser(safeUser)
+    setUser(safeUser as User)
   }
 
   const logout = () => setUser(null)

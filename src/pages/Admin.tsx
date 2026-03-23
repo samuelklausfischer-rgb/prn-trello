@@ -1,4 +1,7 @@
+import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuthHooks'
+import { SYSTEM_USERS } from '@/stores/useAuthStore'
+import useAlertStore, { AlertType } from '@/stores/useAlertStore'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import {
   Table,
@@ -8,35 +11,47 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Activity, ShieldCheck, Search } from 'lucide-react'
+import { Activity, ShieldCheck, Search, BellRing } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { toast } from '@/components/ui/use-toast'
 import PageTransition from '@/components/PageTransition'
 
 export default function Admin() {
-  useAuth()
+  const { user } = useAuth()
+  const { addAlert } = useAlertStore()
 
-  const mockUsers = [
-    { id: '1', name: 'Admin Geral', email: 'admin@prn.com', role: 'ADMIN', level: 3, points: 1250 },
-    { id: '2', name: 'João Silva', email: 'joao@prn.com', role: 'EMPLOYEE', level: 1, points: 420 },
-    {
-      id: '3',
-      name: 'Maria Oliveira',
-      email: 'maria@prn.com',
-      role: 'EMPLOYEE',
-      level: 2,
-      points: 980,
-    },
-    {
-      id: '4',
-      name: 'Pedro Souza',
-      email: 'pedro@prn.com',
-      role: 'EMPLOYEE',
-      level: 2,
-      points: 650,
-    },
-    { id: '5', name: 'Ana Costa', email: 'ana@prn.com', role: 'EMPLOYEE', level: 1, points: 210 },
-  ]
+  const [alertTitle, setAlertTitle] = useState('')
+  const [alertMessage, setAlertMessage] = useState('')
+  const [alertType, setAlertType] = useState<AlertType>('SYSTEM')
+  const [targetUser, setTargetUser] = useState('ALL')
+
+  const handleCreateAlert = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!alertTitle || !alertMessage || !user) return
+
+    addAlert({
+      title: alertTitle,
+      message: alertMessage,
+      type: alertType,
+      targetUserId: targetUser === 'ALL' ? undefined : targetUser,
+      createdBy: user.id,
+    })
+
+    toast({ title: 'Alerta enviado com sucesso!' })
+    setAlertTitle('')
+    setAlertMessage('')
+  }
 
   const mockLogs = [
     {
@@ -69,7 +84,7 @@ export default function Admin() {
                 Painel Administrativo
               </h1>
               <p className="text-muted-foreground font-medium">
-                Gerencie usuários e monitore o acesso do sistema.
+                Gerencie usuários, permissões e comunicações do sistema.
               </p>
             </div>
           </div>
@@ -104,7 +119,7 @@ export default function Admin() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockUsers.map((u) => (
+                  {SYSTEM_USERS.map((u) => (
                     <TableRow key={u.id} className="hover:bg-muted/30 transition-colors">
                       <TableCell className="py-4">
                         <p className="font-bold text-foreground">{u.name}</p>
@@ -129,34 +144,102 @@ export default function Admin() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-subtle border-border/60">
-            <CardHeader className="bg-muted/30 border-b pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Activity className="w-5 h-5 text-accent" />
-                Auditoria de Acesso
-              </CardTitle>
-              <CardDescription>Atividades recentes no sistema.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-5">
-              <div className="space-y-6">
-                {mockLogs.map((log) => (
-                  <div
-                    key={log.id}
-                    className="relative pl-6 before:absolute before:left-[11px] before:top-2 before:bottom-[-24px] before:w-px before:bg-border last:before:hidden"
-                  >
-                    <div className="absolute left-1.5 top-1.5 w-2 h-2 rounded-full bg-primary ring-4 ring-background z-10"></div>
-                    <p className="font-semibold text-sm text-foreground mb-1 leading-none">
-                      {log.event}
-                    </p>
-                    <div className="flex justify-between items-center text-xs text-muted-foreground font-medium">
-                      <span>{log.user}</span>
-                      <span>{log.date}</span>
-                    </div>
+          <div className="space-y-6">
+            <Card className="shadow-subtle border-border/60">
+              <CardHeader className="bg-muted/30 border-b pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <BellRing className="w-5 h-5 text-accent" />
+                  Enviar Alerta
+                </CardTitle>
+                <CardDescription>Comunique-se com a equipe ou indivíduos.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-5">
+                <form onSubmit={handleCreateAlert} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="target">Destinatário</Label>
+                    <Select value={targetUser} onValueChange={setTargetUser}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ALL">Todos os Usuários</SelectItem>
+                        {SYSTEM_USERS.filter((u) => u.role !== 'ADMIN').map((u) => (
+                          <SelectItem key={u.id} value={u.id}>
+                            {u.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  <div className="space-y-2">
+                    <Label htmlFor="type">Tipo de Alerta</Label>
+                    <Select value={alertType} onValueChange={(v: AlertType) => setAlertType(v)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="SYSTEM">Sistema</SelectItem>
+                        <SelectItem value="TASK_DEADLINE">Prazo de Tarefa</SelectItem>
+                        <SelectItem value="ACHIEVEMENT">Conquista</SelectItem>
+                        <SelectItem value="PERFORMANCE">Desempenho</SelectItem>
+                        <SelectItem value="CUSTOM">Outro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Título</Label>
+                    <Input
+                      id="title"
+                      value={alertTitle}
+                      onChange={(e) => setAlertTitle(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="message">Mensagem</Label>
+                    <Textarea
+                      id="message"
+                      value={alertMessage}
+                      onChange={(e) => setAlertMessage(e.target.value)}
+                      className="resize-none"
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full">
+                    Disparar Alerta
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-subtle border-border/60">
+              <CardHeader className="bg-muted/30 border-b pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Activity className="w-5 h-5 text-muted-foreground" />
+                  Auditoria de Acesso
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-5">
+                <div className="space-y-6">
+                  {mockLogs.map((log) => (
+                    <div
+                      key={log.id}
+                      className="relative pl-6 before:absolute before:left-[11px] before:top-2 before:bottom-[-24px] before:w-px before:bg-border last:before:hidden"
+                    >
+                      <div className="absolute left-1.5 top-1.5 w-2 h-2 rounded-full bg-primary ring-4 ring-background z-10"></div>
+                      <p className="font-semibold text-sm text-foreground mb-1 leading-none">
+                        {log.event}
+                      </p>
+                      <div className="flex justify-between items-center text-xs text-muted-foreground font-medium">
+                        <span>{log.user}</span>
+                        <span>{log.date}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </PageTransition>

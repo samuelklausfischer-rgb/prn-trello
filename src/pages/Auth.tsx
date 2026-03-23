@@ -6,60 +6,7 @@ import { Label } from '@/components/ui/label'
 import { useAuth } from '@/hooks/useAuthHooks'
 import { Trophy, Loader2, Target, Users, LayoutDashboard } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
-import { User } from '@/stores/useAuthStore'
-
-const PRECONFIGURED_USERS: User[] = [
-  {
-    id: 'u1',
-    email: 'admin@prn.com',
-    password: 'admin123',
-    name: 'Admin Geral',
-    role: 'ADMIN',
-    points: 1250,
-    level: 3,
-    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=1',
-  },
-  {
-    id: 'u2',
-    email: 'joao@prn.com',
-    password: 'func123',
-    name: 'João Silva',
-    role: 'EMPLOYEE',
-    points: 420,
-    level: 1,
-    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=2',
-  },
-  {
-    id: 'u3',
-    email: 'maria@prn.com',
-    password: 'func123',
-    name: 'Maria Oliveira',
-    role: 'EMPLOYEE',
-    points: 980,
-    level: 2,
-    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=female&seed=3',
-  },
-  {
-    id: 'u4',
-    email: 'pedro@prn.com',
-    password: 'func123',
-    name: 'Pedro Souza',
-    role: 'EMPLOYEE',
-    points: 650,
-    level: 2,
-    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=4',
-  },
-  {
-    id: 'u5',
-    email: 'ana@prn.com',
-    password: 'func123',
-    name: 'Ana Costa',
-    role: 'EMPLOYEE',
-    points: 210,
-    level: 1,
-    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=female&seed=5',
-  },
-]
+import { SYSTEM_USERS } from '@/stores/useAuthStore'
 
 export default function Auth() {
   const [email, setEmail] = useState('')
@@ -93,7 +40,7 @@ export default function Auth() {
     // Simulate network delay for smooth animation
     await new Promise((resolve) => setTimeout(resolve, 800))
 
-    const foundUser = PRECONFIGURED_USERS.find((u) => u.email === email && u.password === password)
+    const foundUser = SYSTEM_USERS.find((u) => u.email === email && u.password === password)
 
     if (foundUser) {
       login(foundUser)

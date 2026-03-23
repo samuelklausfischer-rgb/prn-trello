@@ -1,39 +1,14 @@
+import { SYSTEM_USERS } from '@/stores/useAuthStore'
 import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Trophy, Medal, Star } from 'lucide-react'
 import PageTransition from '@/components/PageTransition'
 
 export default function Team() {
-  const mockTeam = [
-    {
-      id: '1',
-      name: 'João Silva',
-      points: 1250,
-      level: 3,
-      avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=1',
-    },
-    {
-      id: '2',
-      name: 'Maria Oliveira',
-      points: 980,
-      level: 2,
-      avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=female&seed=2',
-    },
-    {
-      id: '3',
-      name: 'Carlos Souza',
-      points: 840,
-      level: 2,
-      avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=3',
-    },
-    {
-      id: '4',
-      name: 'Ana Costa',
-      points: 420,
-      level: 1,
-      avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=female&seed=4',
-    },
-  ]
+  // Score Ranking logic based on actual mock data, sorted by points
+  const sortedTeam = [...SYSTEM_USERS]
+    .filter((u) => u.role !== 'ADMIN') // Typically admins might not be in the competitive ranking
+    .sort((a, b) => b.points - a.points)
 
   return (
     <PageTransition>
@@ -51,7 +26,7 @@ export default function Team() {
         </div>
 
         <div className="grid gap-5 pb-8">
-          {mockTeam.map((user, index) => (
+          {sortedTeam.map((user, index) => (
             <Card
               key={user.id}
               className={`transform transition-all duration-300 hover:shadow-md hover:scale-[1.02] ${

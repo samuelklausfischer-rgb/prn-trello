@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { TaskStatus, HistoryAction } from '@/stores/useTaskStore'
 import useTaskStore from '@/stores/useTaskStore'
+import useAuthStore from '@/stores/useAuthStore'
+import { Permissions } from '@/lib/permissions'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   Select,
@@ -44,6 +46,7 @@ export default function TaskModal({
   open: boolean
   onOpenChange: (o: boolean) => void
 }) {
+  const { user } = useAuthStore()
   const { tasks, updateTaskStatus, toggleChecklist, updateTaskDescription, addChecklistItem } =
     useTaskStore()
   const task = tasks.find((t) => t.id === taskId)
@@ -57,6 +60,11 @@ export default function TaskModal({
 
   if (!task) return null
 
+  const isAssignee = task.assignee?.id === user?.id
+  const isDelegator = task.delegatorId === user?.id
+  const isAdmin = Permissions.canEditOthersTasks(user?.role)
+  const canEdit = isAssignee || isDelegator || isAdmin
+
   const totalChecklists = task.checklists.length
   const completedChecklists = task.checklists.filter((c) => c.completed).length
   const progressPercentage =
@@ -64,7 +72,7 @@ export default function TaskModal({
 
   const handleAddChecklist = (e: React.FormEvent) => {
     e.preventDefault()
-    if (newChecklistTitle.trim() && task) {
+    if (newChecklistTitle.trim() && task && canEdit) {
       addChecklistItem(task.id, newChecklistTitle.trim())
       setNewChecklistTitle('')
     }
@@ -140,6 +148,7 @@ export default function TaskModal({
             <Select
               value={task.status}
               onValueChange={(v: TaskStatus) => updateTaskStatus(task.id, v)}
+              disabled={!canEdit}
             >
               <SelectTrigger
                 aria-label="Mudar status"
@@ -189,6 +198,7 @@ export default function TaskModal({
                 value={desc}
                 onChange={(e) => setDesc(e.target.value)}
                 onBlur={() => updateTaskDescription(task.id, desc)}
+                disabled={!canEdit}
                 className="flex-1 min-h-[250px] resize-none border-border/60 focus-visible:ring-primary shadow-sm text-sm p-4 bg-background"
                 placeholder="Adicione uma descrição mais detalhada..."
               />
@@ -231,6 +241,7 @@ export default function TaskModal({
                           id={chk.id}
                           checked={chk.completed}
                           onCheckedChange={() => toggleChecklist(task.id, chk.id)}
+                          disabled={!canEdit}
                           aria-label={`Concluir item: ${chk.title}`}
                           className="mt-0.5 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600 h-5 w-5"
                         />
@@ -238,10 +249,11 @@ export default function TaskModal({
                           <label
                             htmlFor={chk.id}
                             className={cn(
-                              'text-sm font-medium cursor-pointer block transition-all',
+                              'text-sm font-medium block transition-all',
                               chk.completed
                                 ? 'line-through text-muted-foreground'
                                 : 'text-foreground',
+                              canEdit ? 'cursor-pointer' : 'cursor-default',
                             )}
                           >
                             {chk.title}
@@ -264,40 +276,44 @@ export default function TaskModal({
                       <p className="text-xs text-muted-foreground mb-4">
                         Adicione itens para quebrar sua tarefa em passos menores.
                       </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => document.getElementById('new-chk')?.focus()}
-                        className="shadow-sm hover:scale-105 transition-transform"
-                      >
-                        <Plus className="w-4 h-4 mr-2" /> Adicionar checklist
-                      </Button>
+                      {canEdit && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => document.getElementById('new-chk')?.focus()}
+                          className="shadow-sm hover:scale-105 transition-transform"
+                        >
+                          <Plus className="w-4 h-4 mr-2" /> Adicionar checklist
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
               </ScrollArea>
 
-              <form
-                onSubmit={handleAddChecklist}
-                className="flex gap-2 mt-auto pt-2 border-t border-border/50"
-              >
-                <Input
-                  id="new-chk"
-                  aria-label="Título do novo checklist"
-                  value={newChecklistTitle}
-                  onChange={(e) => setNewChecklistTitle(e.target.value)}
-                  placeholder="Adicionar novo item..."
-                  className="flex-1 focus-visible:ring-primary"
-                />
-                <Button
-                  type="submit"
-                  size="icon"
-                  aria-label="Adicionar item"
-                  disabled={!newChecklistTitle.trim()}
+              {canEdit && (
+                <form
+                  onSubmit={handleAddChecklist}
+                  className="flex gap-2 mt-auto pt-2 border-t border-border/50"
                 >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </form>
+                  <Input
+                    id="new-chk"
+                    aria-label="Título do novo checklist"
+                    value={newChecklistTitle}
+                    onChange={(e) => setNewChecklistTitle(e.target.value)}
+                    placeholder="Adicionar novo item..."
+                    className="flex-1 focus-visible:ring-primary"
+                  />
+                  <Button
+                    type="submit"
+                    size="icon"
+                    aria-label="Adicionar item"
+                    disabled={!newChecklistTitle.trim()}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </form>
+              )}
             </TabsContent>
 
             <TabsContent value="historico" className="m-0 h-full flex flex-col p-6 animate-fade-in">
