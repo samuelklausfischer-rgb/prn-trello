@@ -1,76 +1,109 @@
 import { Task } from '@/stores/useTaskStore'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { format } from 'date-fns'
+import { format, isPast, isToday, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { CheckSquare, Clock } from 'lucide-react'
+import { CheckSquare, Clock, ArrowRight } from 'lucide-react'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 
-export default function TaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
-  const priorityColors = {
-    LOW: 'bg-secondary text-secondary-foreground',
-    MEDIUM: 'bg-success/15 text-success border-success/30',
-    HIGH: 'bg-warning/15 text-yellow-700 border-warning/30',
-    URGENT: 'bg-destructive/15 text-destructive border-destructive/30',
+export default function TaskCard({
+  task,
+  onClick,
+  onDragStart,
+  onDragEnd,
+  isDragging,
+}: {
+  task: Task
+  onClick: () => void
+  onDragStart: (e: React.DragEvent) => void
+  onDragEnd: (e: React.DragEvent) => void
+  isDragging?: boolean
+}) {
+  const priorityConfig = {
+    LOW: { label: 'BAIXA', color: 'bg-green-100 text-green-700 border-green-200' },
+    MEDIUM: { label: 'MÉDIA', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
+    HIGH: { label: 'ALTA', color: 'bg-orange-100 text-orange-700 border-orange-200' },
+    URGENT: { label: 'URGENTE', color: 'bg-red-100 text-red-700 border-red-200' },
   }
 
   const completedChecks = task.checklists.filter((c) => c.completed).length
   const totalChecks = task.checklists.length
 
+  const isTaskOverdue = task.dueDate
+    ? isPast(parseISO(task.dueDate)) && !isToday(parseISO(task.dueDate))
+    : false
+
   return (
     <Card
-      className="cursor-pointer hover:shadow-elevation transition-all active:scale-[0.98] border-border/60 animate-fade-in-up"
+      draggable
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
       onClick={onClick}
+      className={cn(
+        'cursor-grab active:cursor-grabbing hover:shadow-md transition-all border-border/60',
+        isDragging && 'opacity-50 scale-[0.98] shadow-sm',
+      )}
     >
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="p-4 flex flex-col gap-3">
         <div className="flex justify-between items-start gap-2">
-          <h4 className="font-semibold text-[15px] leading-tight text-foreground line-clamp-2">
-            {task.title}
-          </h4>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground font-medium">
           <Badge
             variant="outline"
-            className={cn('text-[10px] px-1.5 py-0 border', priorityColors[task.priority])}
+            className={cn('text-[10px] px-1.5 py-0 border', priorityConfig[task.priority].color)}
           >
-            {task.priority === 'LOW'
-              ? 'BAIXA'
-              : task.priority === 'MEDIUM'
-                ? 'MÉDIA'
-                : task.priority === 'HIGH'
-                  ? 'ALTA'
-                  : 'URGENTE'}
+            {priorityConfig[task.priority].label}
           </Badge>
+        </div>
 
+        <h4 className="font-semibold text-sm leading-tight text-foreground line-clamp-2">
+          {task.title}
+        </h4>
+
+        <div className="flex flex-wrap items-center gap-2 mt-1">
           {task.dueDate && (
-            <div className="flex items-center gap-1 bg-muted/50 px-1.5 py-0.5 rounded-md">
+            <div
+              className={cn(
+                'flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium border',
+                isTaskOverdue
+                  ? 'bg-red-50 text-red-600 border-red-200'
+                  : 'bg-muted text-muted-foreground border-border',
+              )}
+            >
               <Clock className="w-3 h-3" />
-              {format(new Date(task.dueDate), 'dd/MM', { locale: ptBR })}
+              {format(parseISO(task.dueDate), 'dd MMM', { locale: ptBR })}
             </div>
           )}
-
           {totalChecks > 0 && (
             <div
               className={cn(
-                'flex items-center gap-1 ml-auto',
-                completedChecks === totalChecks ? 'text-success' : '',
+                'flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-md border',
+                completedChecks === totalChecks
+                  ? 'bg-green-50 text-green-600 border-green-200'
+                  : 'bg-muted text-muted-foreground border-border',
               )}
             >
-              <CheckSquare className="w-3.5 h-3.5" />
+              <CheckSquare className="w-3 h-3" />
               {completedChecks}/{totalChecks}
             </div>
           )}
         </div>
 
-        {task.delegatedTo && (
-          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50 text-xs text-muted-foreground">
-            <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shadow-sm">
-              {task.delegatedTo.charAt(0)}
+        <div className="flex items-center justify-between mt-1 pt-3 border-t border-border/50">
+          {task.delegator && (
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium">
+              <ArrowRight className="w-3.5 h-3.5 text-primary/60" />
+              <span className="truncate max-w-[120px]">{task.delegator}</span>
             </div>
-            <span className="truncate">{task.delegatedTo}</span>
-          </div>
-        )}
+          )}
+          {task.assignee && (
+            <Avatar className="h-6 w-6 border border-border ml-auto shadow-sm">
+              <AvatarImage src={task.assignee.avatar} />
+              <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-bold">
+                {task.assignee.name.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+          )}
+        </div>
       </CardContent>
     </Card>
   )
