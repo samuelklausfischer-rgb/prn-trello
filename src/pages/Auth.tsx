@@ -69,10 +69,11 @@ export default function Auth() {
 
       if (
         mode === 'register' &&
+        err?.status === 400 &&
         (rawData.email?.code === 'validation_not_unique' ||
           (errors.email && errors.email.match(/already in use/i)))
       ) {
-        errors.email = 'Este email já está registrado. Por favor, use outro ou faça login.'
+        errors.email = 'Este e-mail já está cadastrado'
       }
 
       setFieldErrors(errors)
