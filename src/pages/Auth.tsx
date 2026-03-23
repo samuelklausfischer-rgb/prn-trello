@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuthHooks'
 import { Trophy, Loader2, Target, Users, LayoutDashboard } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 import pb from '@/lib/pocketbase/client'
+import { extractFieldErrors } from '@/lib/pocketbase/errors'
 
 export default function Auth() {
   const [email, setEmail] = useState('')
@@ -15,6 +16,7 @@ export default function Auth() {
   const [name, setName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [mode, setMode] = useState<'login' | 'register'>('login')
 
   const { isAuthenticated } = useAuth()
@@ -32,6 +34,7 @@ export default function Auth() {
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg('')
+    setFieldErrors({})
 
     if (!email || !password) {
       setErrorMsg('Por favor, preencha todos os campos obrigatórios.')
@@ -61,11 +64,27 @@ export default function Auth() {
         })
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Erro na autenticação. Verifique os dados fornecidos.')
+      const errors = extractFieldErrors(err)
+      const rawData = err?.response?.data || {}
+
+      if (
+        mode === 'register' &&
+        (rawData.email?.code === 'validation_not_unique' ||
+          (errors.email && errors.email.match(/already in use/i)))
+      ) {
+        errors.email = 'Este email já está registrado. Por favor, use outro ou faça login.'
+      }
+
+      setFieldErrors(errors)
+
+      if (Object.keys(errors).length === 0) {
+        setErrorMsg(err.message || 'Erro na autenticação. Verifique os dados fornecidos.')
+      }
+
       toast({
         variant: 'destructive',
         title: 'Erro de autenticação',
-        description: 'Não foi possível concluir a operação.',
+        description: 'Não foi possível concluir a operação. Verifique os dados e tente novamente.',
       })
     } finally {
       setIsLoading(false)
@@ -74,6 +93,8 @@ export default function Auth() {
 
   const handleDemoFill = (type: 'admin' | 'employee') => {
     setMode('login')
+    setFieldErrors({})
+    setErrorMsg('')
     if (type === 'admin') {
       setEmail('paulonovack@gmail.com')
       setPassword('securepassword123')
@@ -85,7 +106,6 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen w-full flex flex-col md:flex-row bg-background">
-      {/* Left Column - Branding & Info */}
       <div className="hidden md:flex flex-col flex-1 bg-primary text-white p-12 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-accent/40 via-primary to-primary -z-10"></div>
 
@@ -93,7 +113,7 @@ export default function Auth() {
           <div className="bg-white/10 p-2.5 rounded-xl backdrop-blur-sm border border-white/20 shadow-lg">
             <Trophy className="w-8 h-8 text-accent" />
           </div>
-          <span className="text-3xl font-extrabold tracking-tight tracking-tighter">PRN CRM</span>
+          <span className="text-3xl font-extrabold tracking-tight">PRN CRM</span>
         </div>
 
         <div
@@ -129,7 +149,6 @@ export default function Auth() {
         </div>
       </div>
 
-      {/* Right Column - Login / Register Form */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12 relative">
         <div className="absolute top-6 left-6 md:hidden flex items-center gap-2">
           <Trophy className="w-6 h-6 text-primary" />
@@ -156,6 +175,7 @@ export default function Auth() {
             onValueChange={(v) => {
               setMode(v as 'login' | 'register')
               setErrorMsg('')
+              setFieldErrors({})
             }}
             className="w-full"
           >
@@ -178,9 +198,16 @@ export default function Auth() {
                     onChange={(e) => {
                       setName(e.target.value)
                       setErrorMsg('')
+                      setFieldErrors((prev) => ({ ...prev, name: '' }))
                     }}
-                    className="h-12"
+                    className={`h-12 ${fieldErrors.name ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                    aria-invalid={!!fieldErrors.name}
                   />
+                  {fieldErrors.name && (
+                    <p className="text-sm font-medium text-destructive animate-in fade-in slide-in-from-top-1">
+                      {fieldErrors.name}
+                    </p>
+                  )}
                 </div>
               )}
               <div className="space-y-2.5">
@@ -193,9 +220,16 @@ export default function Auth() {
                   onChange={(e) => {
                     setEmail(e.target.value)
                     setErrorMsg('')
+                    setFieldErrors((prev) => ({ ...prev, email: '' }))
                   }}
-                  className={`h-12 ${errorMsg ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                  className={`h-12 ${errorMsg || fieldErrors.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                  aria-invalid={!!fieldErrors.email}
                 />
+                {fieldErrors.email && (
+                  <p className="text-sm font-medium text-destructive animate-in fade-in slide-in-from-top-1">
+                    {fieldErrors.email}
+                  </p>
+                )}
               </div>
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
@@ -218,14 +252,21 @@ export default function Auth() {
                   onChange={(e) => {
                     setPassword(e.target.value)
                     setErrorMsg('')
+                    setFieldErrors((prev) => ({ ...prev, password: '' }))
                   }}
-                  className={`h-12 ${errorMsg ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                  className={`h-12 ${errorMsg || fieldErrors.password ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                  aria-invalid={!!fieldErrors.password}
                 />
+                {fieldErrors.password && (
+                  <p className="text-sm font-medium text-destructive animate-in fade-in slide-in-from-top-1">
+                    {fieldErrors.password}
+                  </p>
+                )}
               </div>
             </div>
 
             {errorMsg && (
-              <div className="text-sm font-semibold text-destructive animate-in fade-in slide-in-from-top-1">
+              <div className="text-sm font-semibold text-destructive animate-in fade-in slide-in-from-top-1 bg-destructive/10 p-3 rounded-md border border-destructive/20">
                 {errorMsg}
               </div>
             )}
@@ -251,7 +292,6 @@ export default function Auth() {
             </Button>
           </form>
 
-          {/* Quick Login Links for Demo Purposes */}
           <div className="pt-6 border-t border-border space-y-4">
             <p className="text-xs font-semibold text-muted-foreground text-center uppercase tracking-wider">
               Acesso Rápido (Demonstração)
