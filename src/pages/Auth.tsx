@@ -3,18 +3,21 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/hooks/useAuthHooks'
 import { Trophy, Loader2, Target, Users, LayoutDashboard } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
-import { SYSTEM_USERS } from '@/stores/useAuthStore'
+import pb from '@/lib/pocketbase/client'
 
 export default function Auth() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [name, setName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+  const [mode, setMode] = useState<'login' | 'register'>('login')
 
-  const { login, isAuthenticated } = useAuth()
+  const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -26,47 +29,56 @@ export default function Auth() {
     }
   }, [isAuthenticated, navigate, from])
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg('')
 
     if (!email || !password) {
-      setErrorMsg('Por favor, preencha todos os campos.')
+      setErrorMsg('Por favor, preencha todos os campos obrigatórios.')
       return
     }
 
     setIsLoading(true)
 
-    // Simulate network delay for smooth animation
-    await new Promise((resolve) => setTimeout(resolve, 800))
-
-    const foundUser = SYSTEM_USERS.find((u) => u.email === email && u.password === password)
-
-    if (foundUser) {
-      login(foundUser)
-      toast({
-        title: 'Login bem-sucedido!',
-        description: `Bem-vindo(a) de volta, ${foundUser.name}.`,
-      })
-      navigate(from, { replace: true })
-    } else {
-      setErrorMsg('Credenciais inválidas. Verifique seu email e senha.')
+    try {
+      if (mode === 'register') {
+        await pb.collection('users').create({
+          email,
+          password,
+          passwordConfirm: password,
+          name,
+        })
+        await pb.collection('users').authWithPassword(email, password)
+        toast({
+          title: 'Conta criada com sucesso!',
+          description: 'Bem-vindo(a) ao PRN CRM.',
+        })
+      } else {
+        await pb.collection('users').authWithPassword(email, password)
+        toast({
+          title: 'Login bem-sucedido!',
+          description: 'Bem-vindo(a) de volta ao sistema.',
+        })
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Erro na autenticação. Verifique os dados fornecidos.')
       toast({
         variant: 'destructive',
         title: 'Erro de autenticação',
-        description: 'Credenciais inválidas. Tente novamente.',
+        description: 'Não foi possível concluir a operação.',
       })
+    } finally {
+      setIsLoading(false)
     }
-
-    setIsLoading(false)
   }
 
   const handleDemoFill = (type: 'admin' | 'employee') => {
+    setMode('login')
     if (type === 'admin') {
-      setEmail('admin@prn.com')
-      setPassword('admin123')
+      setEmail('paulonovack@gmail.com')
+      setPassword('securepassword123')
     } else {
-      setEmail('maria@prn.com')
+      setEmail('joao@prn.com')
       setPassword('func123')
     }
   }
@@ -117,7 +129,7 @@ export default function Auth() {
         </div>
       </div>
 
-      {/* Right Column - Login Form */}
+      {/* Right Column - Login / Register Form */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12 relative">
         <div className="absolute top-6 left-6 md:hidden flex items-center gap-2">
           <Trophy className="w-6 h-6 text-primary" />
@@ -129,14 +141,48 @@ export default function Auth() {
           style={{ animationDelay: '150ms' }}
         >
           <div className="space-y-2">
-            <h2 className="text-3xl font-bold text-foreground tracking-tight">Acesse sua conta</h2>
+            <h2 className="text-3xl font-bold text-foreground tracking-tight">
+              {mode === 'login' ? 'Acesse sua conta' : 'Crie sua conta'}
+            </h2>
             <p className="text-muted-foreground font-medium">
-              Insira suas credenciais para continuar no sistema.
+              {mode === 'login'
+                ? 'Insira suas credenciais para continuar.'
+                : 'Preencha os dados para se registrar.'}
             </p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-6">
+          <Tabs
+            value={mode}
+            onValueChange={(v) => {
+              setMode(v as 'login' | 'register')
+              setErrorMsg('')
+            }}
+            className="w-full"
+          >
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="login">Entrar</TabsTrigger>
+              <TabsTrigger value="register">Cadastrar</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <form onSubmit={handleAuth} className="space-y-6">
             <div className="space-y-4">
+              {mode === 'register' && (
+                <div className="space-y-2.5">
+                  <Label htmlFor="name">Nome Completo (Opcional)</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="João Silva"
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value)
+                      setErrorMsg('')
+                    }}
+                    className="h-12"
+                  />
+                </div>
+              )}
               <div className="space-y-2.5">
                 <Label htmlFor="email">Email Corporativo</Label>
                 <Input
@@ -154,13 +200,15 @@ export default function Auth() {
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Senha</Label>
-                  <a
-                    href="#"
-                    className="text-xs font-semibold text-primary hover:underline"
-                    onClick={(e) => e.preventDefault()}
-                  >
-                    Esqueceu a senha?
-                  </a>
+                  {mode === 'login' && (
+                    <a
+                      href="#"
+                      className="text-xs font-semibold text-primary hover:underline"
+                      onClick={(e) => e.preventDefault()}
+                    >
+                      Esqueceu a senha?
+                    </a>
+                  )}
                 </div>
                 <Input
                   id="password"
@@ -190,11 +238,13 @@ export default function Auth() {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Autenticando...
+                  {mode === 'login' ? 'Autenticando...' : 'Registrando...'}
                 </>
               ) : (
                 <>
-                  <span className="relative z-10">Entrar no Sistema</span>
+                  <span className="relative z-10">
+                    {mode === 'login' ? 'Entrar no Sistema' : 'Criar Conta'}
+                  </span>
                   <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
                 </>
               )}
@@ -209,19 +259,21 @@ export default function Auth() {
             <div className="grid grid-cols-2 gap-3">
               <Button
                 variant="outline"
+                type="button"
                 className="h-auto py-3 px-4 flex flex-col items-start gap-1"
                 onClick={() => handleDemoFill('admin')}
               >
                 <span className="text-xs font-bold text-amber-600">Admin</span>
-                <span className="text-[10px] text-muted-foreground">admin@prn.com</span>
+                <span className="text-[10px] text-muted-foreground">paulonovack...</span>
               </Button>
               <Button
                 variant="outline"
+                type="button"
                 className="h-auto py-3 px-4 flex flex-col items-start gap-1"
                 onClick={() => handleDemoFill('employee')}
               >
                 <span className="text-xs font-bold text-primary">Funcionário</span>
-                <span className="text-[10px] text-muted-foreground">maria@prn.com</span>
+                <span className="text-[10px] text-muted-foreground">joao@prn.com</span>
               </Button>
             </div>
           </div>

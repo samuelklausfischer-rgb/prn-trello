@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useState, useEffect } from 'react'
+import pb from '@/lib/pocketbase/client'
 
 export type Role = 'ADMIN' | 'EMPLOYEE'
 
@@ -10,61 +11,9 @@ export type User = {
   avatar?: string
   points: number
   level: number
-  password?: string
+  xp?: number
+  streak_days?: number
 }
-
-export const SYSTEM_USERS: User[] = [
-  {
-    id: 'u1',
-    email: 'admin@prn.com',
-    password: 'admin123',
-    name: 'Admin Geral',
-    role: 'ADMIN',
-    points: 1250,
-    level: 3,
-    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=1',
-  },
-  {
-    id: 'u2',
-    email: 'joao@prn.com',
-    password: 'func123',
-    name: 'João Silva',
-    role: 'EMPLOYEE',
-    points: 420,
-    level: 1,
-    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=2',
-  },
-  {
-    id: 'u3',
-    email: 'maria@prn.com',
-    password: 'func123',
-    name: 'Maria Oliveira',
-    role: 'EMPLOYEE',
-    points: 980,
-    level: 2,
-    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=female&seed=3',
-  },
-  {
-    id: 'u4',
-    email: 'pedro@prn.com',
-    password: 'func123',
-    name: 'Pedro Souza',
-    role: 'EMPLOYEE',
-    points: 650,
-    level: 2,
-    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=4',
-  },
-  {
-    id: 'u5',
-    email: 'ana@prn.com',
-    password: 'func123',
-    name: 'Ana Costa',
-    role: 'EMPLOYEE',
-    points: 210,
-    level: 1,
-    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=female&seed=5',
-  },
-]
 
 type AuthContextType = {
   user: User | null
@@ -75,23 +24,53 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
+const mapRecordToUser = (record: any): User | null => {
+  if (!record) return null
+  return {
+    id: record.id,
+    email: record.email,
+    name: record.name || record.email.split('@')[0],
+    role: (record.role?.toUpperCase() || 'EMPLOYEE') as Role,
+    avatar: record.avatar ? pb.files.getURL(record, record.avatar) : undefined,
+    points: record.points || 0,
+    level: record.level || 1,
+    xp: record.xp || 0,
+    streak_days: record.streak_days || 0,
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<User | null>(mapRecordToUser(pb.authStore.record))
+
+  useEffect(() => {
+    const unsubscribe = pb.authStore.onChange((token, record) => {
+      setUser(mapRecordToUser(record))
+    })
+    return () => {
+      unsubscribe()
+    }
+  }, [])
 
   const login = (userData: User) => {
-    const { password, ...safeUser } = userData
-    setUser(safeUser as User)
+    // Handled by pb.authStore.onChange listener when auth is performed
   }
 
-  const logout = () => setUser(null)
+  const logout = () => {
+    pb.authStore.clear()
+  }
 
-  const addPoints = (points: number) => {
-    setUser((prev) => {
-      if (!prev) return prev
-      const newPoints = prev.points + points
-      const newLevel = Math.floor(newPoints / 500) + 1
-      return { ...prev, points: newPoints, level: newLevel }
-    })
+  const addPoints = async (points: number) => {
+    if (!user) return
+    const newPoints = user.points + points
+    const newLevel = Math.floor(newPoints / 500) + 1
+
+    setUser((prev) => (prev ? { ...prev, points: newPoints, level: newLevel } : null))
+
+    try {
+      await pb.collection('users').update(user.id, { points: newPoints, level: newLevel })
+    } catch (e) {
+      console.error('Failed to update points:', e)
+    }
   }
 
   return React.createElement(
