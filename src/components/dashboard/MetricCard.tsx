@@ -12,7 +12,7 @@ interface MetricCardProps {
 
 export function MetricCard({ title, value, icon: Icon, colorClass, subtitle }: MetricCardProps) {
   return (
-    <Card className="shadow-sm hover:shadow-md transition-shadow">
+    <Card className="shadow-sm hover:shadow-md transition-all duration-300 dark:hover:brightness-110">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
           {title}

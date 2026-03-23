@@ -39,13 +39,13 @@ export default function Dashboard() {
   return (
     <PageTransition>
       <div className="space-y-8 pb-8">
-        <div className="bg-primary p-8 rounded-2xl text-primary-foreground shadow-elevation relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between">
+        <div className="bg-primary dark:bg-card border dark:border-border p-8 rounded-2xl text-primary-foreground dark:text-foreground shadow-elevation relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between transition-colors duration-300">
           <div className="absolute right-0 top-0 w-64 h-full bg-gradient-to-l from-accent/20 to-transparent pointer-events-none"></div>
           <div className="relative z-10 space-y-2">
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
               Bem-vindo(a) de volta, {user.name.split(' ')[0]}!
             </h1>
-            <p className="text-primary-foreground/90 text-lg font-medium">
+            <p className="text-primary-foreground/90 dark:text-muted-foreground text-lg font-medium">
               Aqui está o resumo do seu desempenho e tarefas pendentes.
             </p>
           </div>
@@ -59,7 +59,7 @@ export default function Dashboard() {
             title="Minhas Tarefas"
             value={data.kpis.totalTasks}
             icon={Target}
-            colorClass="text-primary"
+            colorClass="text-primary dark:text-primary"
           />
           <MetricCard
             title="Concluídas"

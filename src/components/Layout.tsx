@@ -12,14 +12,13 @@ export default function Layout() {
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
-  // Handle responsive sidebar collapsing
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth
       if (width >= 768 && width <= 1024) {
-        setSidebarOpen(false) // Tablet: collapse by default
+        setSidebarOpen(false)
       } else if (width > 1024) {
-        setSidebarOpen(true) // Desktop: open by default
+        setSidebarOpen(true)
       }
     }
 
@@ -43,7 +42,7 @@ export default function Layout() {
 
       <AppSidebar />
 
-      <SidebarInset className="bg-background flex flex-col min-h-screen pb-16 md:pb-0 transition-colors">
+      <SidebarInset className="bg-background flex flex-col min-h-screen pb-16 md:pb-0 transition-colors duration-300">
         <Header />
 
         <main
@@ -56,8 +55,7 @@ export default function Layout() {
           </div>
         </main>
 
-        {/* Mobile Bottom Navigation Bar */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t flex items-center justify-around z-50 px-2 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t border-border flex items-center justify-around z-50 px-2 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)] transition-colors duration-300">
           <Link
             to="/dashboard"
             aria-label="Ir para Dashboard"

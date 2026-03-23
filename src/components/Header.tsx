@@ -82,7 +82,6 @@ export default function Header() {
 
   const isAdmin = role === 'ADMIN'
 
-  // Alerts logic
   const myAlerts = alerts
     .filter((a) => !a.targetUserId || a.targetUserId === user.id)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -103,19 +102,24 @@ export default function Header() {
   }
 
   return (
-    <header className="h-16 border-b bg-card flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20 shadow-subtle transition-colors">
+    <header className="h-16 border-b bg-card flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20 shadow-subtle transition-colors duration-300">
       <div className="flex items-center gap-4">
         <SidebarTrigger aria-label="Alternar Menu Lateral" />
         <Breadcrumb className="hidden sm:block">
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink asChild className="text-muted-foreground hover:text-primary">
+              <BreadcrumbLink
+                asChild
+                className="text-muted-foreground hover:text-primary transition-colors"
+              >
                 <Link to="/">PRN</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage className="font-medium">{getBreadcrumb()}</BreadcrumbPage>
+              <BreadcrumbPage className="font-medium text-foreground">
+                {getBreadcrumb()}
+              </BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -123,7 +127,7 @@ export default function Header() {
 
       <div className="flex items-center gap-5">
         <div className="hidden sm:flex flex-col items-end justify-center">
-          <p className="text-xs font-bold text-primary flex items-center gap-1.5">
+          <p className="text-xs font-bold text-primary dark:text-primary flex items-center gap-1.5">
             <Trophy className="w-3.5 h-3.5 text-accent" />
             Nível {user.level}{' '}
             <span className="font-normal text-muted-foreground ml-1">({user.points} pts)</span>
@@ -147,7 +151,7 @@ export default function Header() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80 p-0 overflow-hidden">
               <div className="bg-muted/50 p-3 border-b border-border/50 flex items-center justify-between">
-                <h4 className="font-bold text-sm">Notificações</h4>
+                <h4 className="font-bold text-sm text-foreground">Notificações</h4>
                 <Badge variant="secondary" className="text-[10px]">
                   {unreadAlerts.length} não lidas
                 </Badge>
@@ -217,7 +221,7 @@ export default function Header() {
           {isAdmin && (
             <Badge
               variant="default"
-              className="hidden sm:flex bg-amber-500 hover:bg-amber-600 text-white gap-1 px-2.5 shadow-sm"
+              className="hidden sm:flex bg-amber-500 hover:bg-amber-600 text-white gap-1 px-2.5 shadow-sm border-transparent"
             >
               <ShieldCheck className="w-3 h-3" /> ADMIN
             </Badge>
@@ -238,7 +242,7 @@ export default function Header() {
                 >
                   <AvatarImage src={user.avatar} />
                   <AvatarFallback
-                    className={`${isAdmin ? 'bg-amber-100 text-amber-700' : 'bg-primary/10 text-primary'} font-bold`}
+                    className={`${isAdmin ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' : 'bg-primary/10 text-primary'} font-bold`}
                   >
                     {user.name.charAt(0)}
                   </AvatarFallback>
@@ -247,37 +251,37 @@ export default function Header() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 font-sans">
               <div className="px-2 py-2.5 border-b mb-1">
-                <p className="font-bold text-sm truncate">{user.name}</p>
+                <p className="font-bold text-sm text-foreground truncate">{user.name}</p>
                 <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                 {isAdmin && (
-                  <Badge className="mt-2 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 border-0 px-1.5 py-0">
+                  <Badge className="mt-2 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 dark:bg-amber-500/20 dark:text-amber-400 border-0 px-1.5 py-0">
                     Admin Privileges
                   </Badge>
                 )}
               </div>
 
               <DropdownMenuItem className="flex sm:hidden flex-col items-start gap-1 py-3 border-b mb-1">
-                <span className="font-semibold text-sm">Nível {user.level}</span>
+                <span className="font-semibold text-sm text-foreground">Nível {user.level}</span>
                 <span className="text-xs text-muted-foreground">{user.points} pts totais</span>
                 <Progress value={animProgress} className="h-1.5 w-full mt-1.5" />
               </DropdownMenuItem>
 
               <DropdownMenuItem
-                className="cursor-pointer py-2 sm:hidden"
+                className="cursor-pointer py-2 sm:hidden text-foreground"
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               >
                 {theme === 'dark' ? (
                   <>
-                    <Sun className="w-4 h-4 mr-2" /> Modo Claro
+                    <Sun className="w-4 h-4 mr-2 text-amber-500" /> Modo Claro
                   </>
                 ) : (
                   <>
-                    <Moon className="w-4 h-4 mr-2" /> Modo Escuro
+                    <Moon className="w-4 h-4 mr-2 text-primary" /> Modo Escuro
                   </>
                 )}
               </DropdownMenuItem>
 
-              <DropdownMenuItem className="cursor-pointer py-2">
+              <DropdownMenuItem className="cursor-pointer py-2 text-foreground">
                 <UserIcon className="w-4 h-4 mr-2 text-muted-foreground" /> Meu Perfil
               </DropdownMenuItem>
               <DropdownMenuItem

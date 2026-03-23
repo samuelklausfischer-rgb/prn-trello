@@ -55,7 +55,6 @@ export default function Tasks() {
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null)
   const [dragOverCol, setDragOverCol] = useState<TaskStatus | null>(null)
 
-  // Create Task State
   const [isNewTaskOpen, setIsNewTaskOpen] = useState(false)
   const [newTask, setNewTask] = useState({
     title: '',
@@ -65,7 +64,6 @@ export default function Tasks() {
     assigneeId: user?.id,
   })
 
-  // Onboarding States
   const [showWelcome, setShowWelcome] = useState(false)
   const [tourStep, setTourStep] = useState(0)
 
@@ -95,13 +93,12 @@ export default function Tasks() {
   }
 
   const statuses: { id: TaskStatus; label: string; color: string }[] = [
-    { id: 'TODO', label: 'A Fazer', color: 'bg-slate-400' },
-    { id: 'IN_PROGRESS', label: 'Em Progresso', color: 'bg-blue-500' },
-    { id: 'REVIEW', label: 'Em Revisão', color: 'bg-purple-500' },
-    { id: 'DONE', label: 'Concluído', color: 'bg-green-500' },
+    { id: 'TODO', label: 'A Fazer', color: 'bg-slate-400 dark:bg-slate-500' },
+    { id: 'IN_PROGRESS', label: 'Em Progresso', color: 'bg-blue-500 dark:bg-blue-600' },
+    { id: 'REVIEW', label: 'Em Revisão', color: 'bg-purple-500 dark:bg-purple-600' },
+    { id: 'DONE', label: 'Concluído', color: 'bg-green-500 dark:bg-green-600' },
   ]
 
-  // Middleware / Data Isolation: Only show tasks visible to this user
   const visibleTasks = tasks.filter((t) => {
     if (Permissions.canViewOthersTasks(user?.role)) return true
     return t.assignee?.id === user?.id || t.delegatorId === user?.id
@@ -193,7 +190,7 @@ export default function Tasks() {
   return (
     <PageTransition>
       <div className="h-full flex flex-col pb-4 relative">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 bg-card p-5 rounded-2xl shadow-subtle border border-border/50 gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 bg-card p-5 rounded-2xl shadow-subtle border border-border/50 gap-4 transition-colors duration-300">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-primary/10 rounded-xl hidden md:flex">
               <LayoutDashboard className="w-6 h-6 text-primary" />
@@ -318,9 +315,9 @@ export default function Tasks() {
               <div
                 key={col.id}
                 className={cn(
-                  'flex flex-col bg-muted/40 rounded-2xl p-4 w-full md:min-w-[320px] md:w-[320px] border max-h-full transition-all duration-200 shadow-sm shrink-0',
+                  'flex flex-col bg-muted/40 dark:bg-muted/10 rounded-2xl p-4 w-full md:min-w-[320px] md:w-[320px] border max-h-full transition-all duration-200 shadow-sm shrink-0',
                   dragOverCol === col.id
-                    ? 'bg-primary/5 border-primary/40 ring-2 ring-primary/20'
+                    ? 'bg-primary/5 border-primary/40 ring-2 ring-primary/20 dark:bg-primary/10'
                     : 'border-border/50',
                 )}
                 onDragOver={(e) => handleDragOver(e, col.id)}
@@ -392,7 +389,6 @@ export default function Tasks() {
           onOpenChange={(op) => !op && setSelectedTask(null)}
         />
 
-        {/* Dialog Nova Tarefa */}
         <Dialog open={isNewTaskOpen} onOpenChange={setIsNewTaskOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
@@ -487,7 +483,6 @@ export default function Tasks() {
           </DialogContent>
         </Dialog>
 
-        {/* Onboarding Highlights */}
         <Dialog
           open={showWelcome}
           onOpenChange={(op) => {

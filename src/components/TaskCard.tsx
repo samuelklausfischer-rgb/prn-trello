@@ -64,7 +64,7 @@ export default function TaskCard({
       tabIndex={0}
       aria-label={`Tarefa: ${task.title}`}
       className={cn(
-        'cursor-grab active:cursor-grabbing hover:scale-[1.02] hover:shadow-lg focus-visible:ring-2 focus-visible:outline-none transition-all duration-200 border-border/60 relative overflow-hidden bg-card',
+        'cursor-grab active:cursor-grabbing hover:scale-[1.02] hover:shadow-lg dark:hover:brightness-110 focus-visible:ring-2 focus-visible:outline-none transition-all duration-200 border-border/60 relative overflow-hidden bg-card',
         isDragging && 'opacity-50 scale-[0.98] shadow-sm',
       )}
     >
@@ -96,7 +96,7 @@ export default function TaskCard({
                 'flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium border',
                 isTaskOverdue
                   ? 'bg-red-50 text-red-600 border-red-200 dark:bg-red-950/50 dark:text-red-400 dark:border-red-900/50'
-                  : 'bg-muted text-muted-foreground border-border',
+                  : 'bg-muted text-muted-foreground border-border dark:bg-muted/50',
               )}
             >
               <Clock className="w-3 h-3" />
@@ -111,7 +111,7 @@ export default function TaskCard({
                   ? 'bg-green-50 text-green-600 border-green-200 dark:bg-green-950/50 dark:text-green-400 dark:border-green-900/50'
                   : showChecklistAlert
                     ? 'bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950/50 dark:text-orange-400 dark:border-orange-900/50'
-                    : 'bg-muted text-muted-foreground border-border',
+                    : 'bg-muted text-muted-foreground border-border dark:bg-muted/50',
               )}
             >
               <CheckSquare className="w-3 h-3" />
@@ -123,7 +123,7 @@ export default function TaskCard({
         <div className="flex items-center justify-between mt-1 pt-3 border-t border-border/50">
           {task.delegator && (
             <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium">
-              <ArrowRight className="w-3.5 h-3.5 text-primary/60" />
+              <ArrowRight className="w-3.5 h-3.5 text-primary/60 dark:text-primary" />
               <span className="truncate max-w-[120px]">{task.delegator}</span>
             </div>
           )}

@@ -5,20 +5,21 @@ import { Trophy, Medal, Star } from 'lucide-react'
 import PageTransition from '@/components/PageTransition'
 
 export default function Team() {
-  // Score Ranking logic based on actual mock data, sorted by points
   const sortedTeam = [...SYSTEM_USERS]
-    .filter((u) => u.role !== 'ADMIN') // Typically admins might not be in the competitive ranking
+    .filter((u) => u.role !== 'ADMIN')
     .sort((a, b) => b.points - a.points)
 
   return (
     <PageTransition>
       <div className="max-w-4xl mx-auto space-y-8 py-4">
-        <div className="flex items-center gap-4 mb-8 bg-card p-6 rounded-2xl shadow-subtle border border-border/50">
+        <div className="flex items-center gap-4 mb-8 bg-card p-6 rounded-2xl shadow-subtle border border-border/50 transition-colors duration-300">
           <div className="bg-accent/10 p-4 rounded-2xl">
             <Trophy className="w-10 h-10 text-accent" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-primary tracking-tight">Ranking da Equipe</h1>
+            <h1 className="text-3xl font-bold text-primary dark:text-foreground tracking-tight">
+              Ranking da Equipe
+            </h1>
             <p className="text-muted-foreground text-lg">
               Acompanhe quem está liderando a produtividade da empresa!
             </p>
@@ -29,7 +30,7 @@ export default function Team() {
           {sortedTeam.map((user, index) => (
             <Card
               key={user.id}
-              className={`transform transition-all duration-300 hover:shadow-md hover:scale-[1.02] ${
+              className={`transform transition-all duration-300 hover:shadow-md hover:scale-[1.02] dark:hover:brightness-110 ${
                 index === 0
                   ? 'border-2 border-accent shadow-lg bg-accent/[0.02]'
                   : 'border border-border/60'
@@ -67,7 +68,9 @@ export default function Team() {
 
                 <div className="text-right bg-background px-4 py-2 rounded-xl shadow-sm border border-border/50">
                   <span
-                    className={`text-2xl sm:text-3xl font-bold ${index === 0 ? 'text-accent' : 'text-primary'}`}
+                    className={`text-2xl sm:text-3xl font-bold ${
+                      index === 0 ? 'text-accent' : 'text-primary dark:text-foreground'
+                    }`}
                   >
                     {user.points}
                   </span>

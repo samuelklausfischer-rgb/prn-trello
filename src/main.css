@@ -53,33 +53,47 @@
     --card-foreground: 210 40% 98%;
     --popover: 215.3 32.1% 17.5%;
     --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
+    --muted: 215.3 32.1% 25%;
     --muted-foreground: 215 20.2% 65.1%;
     --accent: 16 100% 60%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 50.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --border: 215.3 32.1% 30%;
+    --input: 215.3 32.1% 30%;
+    --ring: 217.2 91.2% 59.8%;
+
+    --success: 160 84% 45%;
+    --warning: 38 92% 55%;
+
     --sidebar-background: 222.2 47.4% 11.2%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 210 40% 98%;
-    --sidebar-primary-foreground: 222.2 47.4% 11.2%;
-    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-primary: 217.2 91.2% 59.8%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215.3 32.1% 17.5%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 17.5%;
-    --sidebar-ring: 217.2 32.6% 17.5%;
+    --sidebar-border: 215.3 32.1% 30%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
 
-    --chart-1: 270 100% 44%;
-    --chart-2: 164 100% 38%;
-    --chart-3: 43 100% 32%;
-    --chart-4: 340 100% 50%;
-    --chart-5: 10 100% 50%;
+    --chart-1: 270 100% 54%;
+    --chart-2: 164 100% 48%;
+    --chart-3: 43 100% 42%;
+    --chart-4: 340 100% 60%;
+    --chart-5: 10 100% 60%;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    @apply antialiased transition-colors duration-300;
   }
 
   section[aria-label='Notifications alt+T'] {
@@ -89,7 +103,6 @@
 }
 
 @layer utilities {
-  /* Legacy animations kept for components that still reference them if not updated */
   @keyframes fade-in-down {
     from {
       transform: translateY(-10px);
@@ -118,7 +131,6 @@
     animation: fade-in-down 0.6s ease-out backwards;
   }
 
-  /* Custom scrollbar to keep it clean */
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
     height: 6px;
