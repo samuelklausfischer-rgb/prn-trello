@@ -31,6 +31,7 @@ import {
   Calendar,
   Archive,
   CheckSquare,
+  ListTodo,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -98,16 +99,23 @@ export default function TaskModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden gap-0">
+      <DialogContent
+        aria-describedby={undefined}
+        className="sm:max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden gap-0"
+      >
         <DialogHeader className="p-6 pb-4 border-b space-y-3 bg-muted/20">
           <div className="flex items-center gap-2">
             <span
               className={cn(
                 'px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider',
-                task.priority === 'URGENT' && 'bg-red-100 text-red-700',
-                task.priority === 'HIGH' && 'bg-orange-100 text-orange-700',
-                task.priority === 'MEDIUM' && 'bg-yellow-100 text-yellow-700',
-                task.priority === 'LOW' && 'bg-green-100 text-green-700',
+                task.priority === 'URGENT' &&
+                  'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400',
+                task.priority === 'HIGH' &&
+                  'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400',
+                task.priority === 'MEDIUM' &&
+                  'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400',
+                task.priority === 'LOW' &&
+                  'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400',
               )}
             >
               {task.priority === 'URGENT'
@@ -133,7 +141,10 @@ export default function TaskModal({
               value={task.status}
               onValueChange={(v: TaskStatus) => updateTaskStatus(task.id, v)}
             >
-              <SelectTrigger className="w-[160px] h-8 text-xs bg-background">
+              <SelectTrigger
+                aria-label="Mudar status"
+                className="w-[160px] h-8 text-xs bg-background focus:ring-primary"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -169,20 +180,24 @@ export default function TaskModal({
           </div>
 
           <div className="flex-1 overflow-y-auto bg-background">
-            <TabsContent value="detalhes" className="m-0 h-full flex flex-col p-6">
+            <TabsContent value="detalhes" className="m-0 h-full flex flex-col p-6 animate-fade-in">
               <h4 className="text-sm font-semibold text-foreground mb-3 uppercase tracking-wide">
                 Descrição da Tarefa
               </h4>
               <Textarea
+                aria-label="Descrição da tarefa"
                 value={desc}
                 onChange={(e) => setDesc(e.target.value)}
                 onBlur={() => updateTaskDescription(task.id, desc)}
-                className="flex-1 min-h-[250px] resize-none border-border/60 focus-visible:ring-1 shadow-sm text-sm p-4"
+                className="flex-1 min-h-[250px] resize-none border-border/60 focus-visible:ring-primary shadow-sm text-sm p-4 bg-background"
                 placeholder="Adicione uma descrição mais detalhada..."
               />
             </TabsContent>
 
-            <TabsContent value="checklists" className="m-0 p-6 flex flex-col h-full gap-6">
+            <TabsContent
+              value="checklists"
+              className="m-0 p-6 flex flex-col h-full gap-6 animate-fade-in"
+            >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">
@@ -192,7 +207,11 @@ export default function TaskModal({
                     {completedChecklists}/{totalChecklists} ({progressPercentage}%)
                   </span>
                 </div>
-                <Progress value={progressPercentage} className="h-2" />
+                <Progress
+                  aria-label="Progresso dos checklists"
+                  value={progressPercentage}
+                  className="h-2"
+                />
               </div>
 
               <ScrollArea className="flex-1 -mx-2 px-2">
@@ -201,9 +220,9 @@ export default function TaskModal({
                     <div
                       key={chk.id}
                       className={cn(
-                        'flex flex-col p-3 rounded-lg transition-colors border shadow-sm',
+                        'flex flex-col p-3 rounded-lg transition-all border shadow-sm',
                         chk.completed
-                          ? 'bg-muted/10 border-border/40'
+                          ? 'bg-muted/30 border-border/40'
                           : 'bg-background border-border hover:border-primary/50',
                       )}
                     >
@@ -212,6 +231,7 @@ export default function TaskModal({
                           id={chk.id}
                           checked={chk.completed}
                           onCheckedChange={() => toggleChecklist(task.id, chk.id)}
+                          aria-label={`Concluir item: ${chk.title}`}
                           className="mt-0.5 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600 h-5 w-5"
                         />
                         <div className="flex-1 space-y-1">
@@ -236,28 +256,51 @@ export default function TaskModal({
                       </div>
                     </div>
                   ))}
+
                   {task.checklists.length === 0 && (
-                    <div className="text-sm text-muted-foreground text-center py-8 border-2 border-dashed rounded-lg border-border/60">
-                      Nenhum checklist para esta tarefa. Adicione um abaixo.
+                    <div className="flex flex-col items-center justify-center py-8 border-2 border-dashed rounded-xl border-border/60 bg-muted/10 transition-colors hover:bg-muted/30">
+                      <ListTodo className="w-10 h-10 text-muted-foreground/40 mb-3" />
+                      <p className="text-sm font-medium text-foreground mb-1">Sem checklists</p>
+                      <p className="text-xs text-muted-foreground mb-4">
+                        Adicione itens para quebrar sua tarefa em passos menores.
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => document.getElementById('new-chk')?.focus()}
+                        className="shadow-sm hover:scale-105 transition-transform"
+                      >
+                        <Plus className="w-4 h-4 mr-2" /> Adicionar checklist
+                      </Button>
                     </div>
                   )}
                 </div>
               </ScrollArea>
 
-              <form onSubmit={handleAddChecklist} className="flex gap-2 mt-auto pt-2">
+              <form
+                onSubmit={handleAddChecklist}
+                className="flex gap-2 mt-auto pt-2 border-t border-border/50"
+              >
                 <Input
+                  id="new-chk"
+                  aria-label="Título do novo checklist"
                   value={newChecklistTitle}
                   onChange={(e) => setNewChecklistTitle(e.target.value)}
                   placeholder="Adicionar novo item..."
-                  className="flex-1"
+                  className="flex-1 focus-visible:ring-primary"
                 />
-                <Button type="submit" size="icon" disabled={!newChecklistTitle.trim()}>
+                <Button
+                  type="submit"
+                  size="icon"
+                  aria-label="Adicionar item"
+                  disabled={!newChecklistTitle.trim()}
+                >
                   <Plus className="h-4 w-4" />
                 </Button>
               </form>
             </TabsContent>
 
-            <TabsContent value="historico" className="m-0 h-full flex flex-col p-6">
+            <TabsContent value="historico" className="m-0 h-full flex flex-col p-6 animate-fade-in">
               <h4 className="text-sm font-semibold text-foreground mb-5 uppercase tracking-wide">
                 Linha do Tempo
               </h4>

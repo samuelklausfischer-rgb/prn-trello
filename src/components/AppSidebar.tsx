@@ -29,7 +29,7 @@ export default function AppSidebar() {
   }
 
   return (
-    <Sidebar collapsible="icon" className="border-r shadow-sm">
+    <Sidebar collapsible="icon" className="border-r shadow-sm hidden md:flex">
       <SidebarHeader className="h-16 flex items-center border-b">
         <div className="flex items-center gap-3 px-3 w-full overflow-hidden">
           <div className="bg-primary rounded-lg p-1.5 shrink-0 flex items-center justify-center">
@@ -45,16 +45,25 @@ export default function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu className="gap-2 mt-4 px-2">
               {navItems.map((item) => {
-                const isActive = location.pathname === item.path
+                const isActive =
+                  location.pathname === item.path || location.pathname.startsWith(item.path + '/')
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton
                       asChild
                       isActive={isActive}
                       tooltip={item.title}
-                      className={`h-10 transition-all ${isActive ? 'bg-primary/10 text-primary hover:bg-primary/15 font-semibold' : 'hover:bg-secondary/50 text-muted-foreground'}`}
+                      className={`h-10 transition-all ${
+                        isActive
+                          ? 'bg-primary/10 text-primary hover:bg-primary/15 font-semibold'
+                          : 'hover:bg-secondary/50 text-muted-foreground'
+                      }`}
                     >
-                      <Link to={item.path} className="flex items-center gap-3">
+                      <Link
+                        to={item.path}
+                        aria-label={item.title}
+                        className="flex items-center gap-3"
+                      >
                         <item.icon
                           className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`}
                         />

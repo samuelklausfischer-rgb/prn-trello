@@ -21,10 +21,26 @@ export default function TaskCard({
   isDragging?: boolean
 }) {
   const priorityConfig = {
-    LOW: { label: 'BAIXA', color: 'bg-green-100 text-green-700 border-green-200' },
-    MEDIUM: { label: 'MÉDIA', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-    HIGH: { label: 'ALTA', color: 'bg-orange-100 text-orange-700 border-orange-200' },
-    URGENT: { label: 'URGENTE', color: 'bg-red-100 text-red-700 border-red-200' },
+    LOW: {
+      label: 'BAIXA',
+      color:
+        'bg-green-100 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-400 dark:border-green-800',
+    },
+    MEDIUM: {
+      label: 'MÉDIA',
+      color:
+        'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-400 dark:border-yellow-800',
+    },
+    HIGH: {
+      label: 'ALTA',
+      color:
+        'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-400 dark:border-orange-800',
+    },
+    URGENT: {
+      label: 'URGENTE',
+      color:
+        'bg-red-100 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800',
+    },
   }
 
   const completedChecks = task.checklists.filter((c) => c.completed).length
@@ -44,8 +60,11 @@ export default function TaskCard({
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      aria-label={`Tarefa: ${task.title}`}
       className={cn(
-        'cursor-grab active:cursor-grabbing hover:shadow-md transition-all border-border/60 relative overflow-hidden',
+        'cursor-grab active:cursor-grabbing hover:scale-[1.02] hover:shadow-lg focus-visible:ring-2 focus-visible:outline-none transition-all duration-200 border-border/60 relative overflow-hidden bg-card',
         isDragging && 'opacity-50 scale-[0.98] shadow-sm',
       )}
     >
@@ -76,7 +95,7 @@ export default function TaskCard({
               className={cn(
                 'flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium border',
                 isTaskOverdue
-                  ? 'bg-red-50 text-red-600 border-red-200'
+                  ? 'bg-red-50 text-red-600 border-red-200 dark:bg-red-950/50 dark:text-red-400 dark:border-red-900/50'
                   : 'bg-muted text-muted-foreground border-border',
               )}
             >
@@ -89,9 +108,9 @@ export default function TaskCard({
               className={cn(
                 'flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-md border',
                 completedChecks === totalChecks
-                  ? 'bg-green-50 text-green-600 border-green-200'
+                  ? 'bg-green-50 text-green-600 border-green-200 dark:bg-green-950/50 dark:text-green-400 dark:border-green-900/50'
                   : showChecklistAlert
-                    ? 'bg-orange-50 text-orange-600 border-orange-200'
+                    ? 'bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950/50 dark:text-orange-400 dark:border-orange-900/50'
                     : 'bg-muted text-muted-foreground border-border',
               )}
             >
@@ -110,7 +129,7 @@ export default function TaskCard({
           )}
           {task.assignee && (
             <Avatar className="h-6 w-6 border border-border ml-auto shadow-sm">
-              <AvatarImage src={task.assignee.avatar} />
+              <AvatarImage src={task.assignee.avatar} alt={task.assignee.name} />
               <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-bold">
                 {task.assignee.name.charAt(0)}
               </AvatarFallback>

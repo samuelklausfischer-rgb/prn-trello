@@ -5,7 +5,9 @@ import { MetricCard } from '@/components/dashboard/MetricCard'
 import { ExportButtons } from '@/components/dashboard/ExportButtons'
 import { EmployeeCharts } from '@/components/dashboard/EmployeeCharts'
 import { EmployeeFeeds } from '@/components/dashboard/EmployeeFeeds'
-import { Target, CheckCircle, Trophy, BarChart3, Loader2 } from 'lucide-react'
+import DashboardSkeleton from '@/components/DashboardSkeleton'
+import PageTransition from '@/components/PageTransition'
+import { Target, CheckCircle, Trophy, BarChart3 } from 'lucide-react'
 
 export default function Dashboard() {
   const { user } = useAuthStore()
@@ -31,65 +33,63 @@ export default function Dashboard() {
   if (!user) return null
 
   if (loading || !data) {
-    return (
-      <div className="flex-1 flex items-center justify-center h-[60vh]">
-        <Loader2 className="w-10 h-10 animate-spin text-primary" />
-      </div>
-    )
+    return <DashboardSkeleton />
   }
 
   return (
-    <div className="space-y-8 animate-fade-in pb-8">
-      <div className="bg-primary p-8 rounded-2xl text-white shadow-elevation relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between">
-        <div className="absolute right-0 top-0 w-64 h-full bg-gradient-to-l from-accent/20 to-transparent pointer-events-none"></div>
-        <div className="relative z-10 space-y-2">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-            Bem-vindo(a) de volta, {user.name.split(' ')[0]}!
-          </h1>
-          <p className="text-primary-foreground/90 text-lg font-medium">
-            Aqui está o resumo do seu desempenho e tarefas pendentes.
-          </p>
+    <PageTransition>
+      <div className="space-y-8 pb-8">
+        <div className="bg-primary p-8 rounded-2xl text-primary-foreground shadow-elevation relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between">
+          <div className="absolute right-0 top-0 w-64 h-full bg-gradient-to-l from-accent/20 to-transparent pointer-events-none"></div>
+          <div className="relative z-10 space-y-2">
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+              Bem-vindo(a) de volta, {user.name.split(' ')[0]}!
+            </h1>
+            <p className="text-primary-foreground/90 text-lg font-medium">
+              Aqui está o resumo do seu desempenho e tarefas pendentes.
+            </p>
+          </div>
+          <div className="relative z-10 mt-6 md:mt-0">
+            <ExportButtons />
+          </div>
         </div>
-        <div className="relative z-10 mt-6 md:mt-0">
-          <ExportButtons />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <MetricCard
+            title="Minhas Tarefas"
+            value={data.kpis.totalTasks}
+            icon={Target}
+            colorClass="text-primary"
+          />
+          <MetricCard
+            title="Concluídas"
+            value={data.kpis.completed}
+            icon={CheckCircle}
+            colorClass="text-success"
+          />
+          <MetricCard
+            title="Taxa de Conclusão"
+            value={`${data.kpis.completionRate}%`}
+            icon={BarChart3}
+            colorClass="text-blue-500"
+          />
+          <MetricCard
+            title="Meus Pontos"
+            value={data.kpis.points}
+            icon={Trophy}
+            colorClass="text-accent"
+            subtitle={`Nível ${user.level}`}
+          />
         </div>
+
+        <EmployeeCharts
+          productivityData={data.productivityData}
+          progressData={data.progressData}
+          teamComparison={data.teamComparison}
+        />
+
+        <EmployeeFeeds recentTasks={data.recentTasks} upcomingDeadlines={data.upcomingDeadlines} />
       </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard
-          title="Minhas Tarefas"
-          value={data.kpis.totalTasks}
-          icon={Target}
-          colorClass="text-primary"
-        />
-        <MetricCard
-          title="Concluídas"
-          value={data.kpis.completed}
-          icon={CheckCircle}
-          colorClass="text-success"
-        />
-        <MetricCard
-          title="Taxa de Conclusão"
-          value={`${data.kpis.completionRate}%`}
-          icon={BarChart3}
-          colorClass="text-blue-500"
-        />
-        <MetricCard
-          title="Meus Pontos"
-          value={data.kpis.points}
-          icon={Trophy}
-          colorClass="text-accent"
-          subtitle={`Nível ${user.level}`}
-        />
-      </div>
-
-      <EmployeeCharts
-        productivityData={data.productivityData}
-        progressData={data.progressData}
-        teamComparison={data.teamComparison}
-      />
-
-      <EmployeeFeeds recentTasks={data.recentTasks} upcomingDeadlines={data.upcomingDeadlines} />
-    </div>
+    </PageTransition>
   )
 }

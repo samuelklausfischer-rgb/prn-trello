@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocation, Link, useNavigate } from 'react-router-dom'
-import { Trophy, LogOut, User as UserIcon, ShieldCheck } from 'lucide-react'
+import { Trophy, LogOut, User as UserIcon, ShieldCheck, Moon, Sun } from 'lucide-react'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import {
   Breadcrumb,
@@ -19,10 +19,13 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/useAuthHooks'
+import { useTheme } from './ThemeProvider'
 
 export default function Header() {
   const { user, logout, role } = useAuth()
+  const { theme, setTheme } = useTheme()
   const location = useLocation()
   const navigate = useNavigate()
   const [animProgress, setAnimProgress] = useState(0)
@@ -40,6 +43,7 @@ export default function Header() {
   const getBreadcrumb = () => {
     switch (location.pathname) {
       case '/':
+      case '/dashboard':
         return 'Dashboard'
       case '/tasks':
         return 'Gestão de Tarefas'
@@ -47,6 +51,8 @@ export default function Header() {
         return 'Equipe & Ranking'
       case '/admin':
         return 'Painel Admin'
+      case '/admin/dashboard':
+        return 'Dashboard Analítico'
       default:
         return 'Página'
     }
@@ -60,9 +66,9 @@ export default function Header() {
   const isAdmin = role === 'ADMIN'
 
   return (
-    <header className="h-16 border-b bg-card flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20 shadow-subtle">
+    <header className="h-16 border-b bg-card flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20 shadow-subtle transition-colors">
       <div className="flex items-center gap-4">
-        <SidebarTrigger />
+        <SidebarTrigger aria-label="Alternar Menu Lateral" />
         <Breadcrumb className="hidden sm:block">
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -85,10 +91,28 @@ export default function Header() {
             Nível {user.level}{' '}
             <span className="font-normal text-muted-foreground ml-1">({user.points} pts)</span>
           </p>
-          <Progress value={animProgress} className="h-1.5 w-28 mt-1.5 bg-primary/10" />
+          <Progress
+            aria-label="Progresso de nível"
+            value={animProgress}
+            className="h-1.5 w-28 mt-1.5 bg-primary/10"
+          />
         </div>
 
         <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Alternar modo escuro"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="rounded-full shadow-sm bg-background hidden sm:flex"
+          >
+            {theme === 'dark' ? (
+              <Sun className="w-4 h-4 text-amber-500" />
+            ) : (
+              <Moon className="w-4 h-4 text-primary" />
+            )}
+          </Button>
+
           {isAdmin && (
             <Badge
               variant="default"
@@ -100,7 +124,10 @@ export default function Header() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2 outline-none rounded-full ring-offset-background focus-visible:ring-2 focus-visible:ring-ring transition-transform hover:scale-105 active:scale-95">
+              <button
+                aria-label="Menu de usuário"
+                className="flex items-center gap-2 outline-none rounded-full ring-offset-background focus-visible:ring-2 focus-visible:ring-ring transition-transform hover:scale-105 active:scale-95"
+              >
                 <Avatar
                   className={`h-9 w-9 shadow-sm ${
                     isAdmin
@@ -128,11 +155,27 @@ export default function Header() {
                 )}
               </div>
 
-              <DropdownMenuItem className="flex flex-col items-start gap-1 py-3 sm:hidden border-b mb-1">
+              <DropdownMenuItem className="flex sm:hidden flex-col items-start gap-1 py-3 border-b mb-1">
                 <span className="font-semibold text-sm">Nível {user.level}</span>
                 <span className="text-xs text-muted-foreground">{user.points} pts totais</span>
                 <Progress value={animProgress} className="h-1.5 w-full mt-1.5" />
               </DropdownMenuItem>
+
+              <DropdownMenuItem
+                className="cursor-pointer py-2 sm:hidden"
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              >
+                {theme === 'dark' ? (
+                  <>
+                    <Sun className="w-4 h-4 mr-2" /> Modo Claro
+                  </>
+                ) : (
+                  <>
+                    <Moon className="w-4 h-4 mr-2" /> Modo Escuro
+                  </>
+                )}
+              </DropdownMenuItem>
+
               <DropdownMenuItem className="cursor-pointer py-2">
                 <UserIcon className="w-4 h-4 mr-2 text-muted-foreground" /> Meu Perfil
               </DropdownMenuItem>

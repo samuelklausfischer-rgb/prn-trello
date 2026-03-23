@@ -90,6 +90,36 @@ export default {
         subtle: '0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03)',
         elevation: '0 4px 20px rgba(0, 0, 0, 0.05)',
       },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        slideUp: {
+          '0%': { opacity: '0', transform: 'translateY(20px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        bounceIn: {
+          '0%': { opacity: '0', transform: 'scale(0.8)' },
+          '50%': { opacity: '1', transform: 'scale(1.05)' },
+          '100%': { transform: 'scale(1)' },
+        },
+        'accordion-down': {
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
+        },
+        'accordion-up': {
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
+        },
+      },
+      animations: {
+        'fade-in': 'fadeIn 0.3s ease-in-out forwards',
+        'slide-up': 'slideUp 0.3s ease-out forwards',
+        'bounce-in': 'bounceIn 0.5s ease-out forwards',
+        'accordion-down': 'accordion-down 0.2s ease-out',
+        'accordion-up': 'accordion-up 0.2s ease-out',
+      },
     },
   },
   plugins: [animatePlugin, typographyPlugin, aspectRatioPlugin],
