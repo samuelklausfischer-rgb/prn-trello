@@ -9,6 +9,7 @@ import { Trophy, Loader2, Target, Users, LayoutDashboard } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 import pb from '@/lib/pocketbase/client'
 import { extractFieldErrors } from '@/lib/pocketbase/errors'
+import { ClientResponseError } from 'pocketbase'
 
 export default function Auth() {
   const [email, setEmail] = useState('')
@@ -63,23 +64,32 @@ export default function Auth() {
           description: 'Bem-vindo(a) de volta ao sistema.',
         })
       }
-    } catch (err: any) {
-      const errors = extractFieldErrors(err)
-      const rawData = err?.response?.data || {}
+    } catch (err: unknown) {
+      let errors: Record<string, string> = {}
+      let defaultMessage = 'Erro na autenticação. Verifique os dados fornecidos.'
 
-      if (
-        mode === 'register' &&
-        err?.status === 400 &&
-        (rawData.email?.code === 'validation_not_unique' ||
-          (errors.email && errors.email.match(/already in use/i)))
-      ) {
-        errors.email = 'Este e-mail já está cadastrado'
+      if (err instanceof ClientResponseError) {
+        errors = extractFieldErrors(err)
+        const emailError = err.response?.data?.email
+
+        if (mode === 'register' && err.status === 400) {
+          if (
+            emailError?.code === 'validation_not_unique' ||
+            emailError?.code === 'validation_invalid_email' ||
+            (errors.email && errors.email.match(/already in use/i))
+          ) {
+            errors.email = 'Este e-mail já está cadastrado'
+          }
+        }
+        defaultMessage = err.message || defaultMessage
+      } else if (err instanceof Error) {
+        defaultMessage = err.message
       }
 
       setFieldErrors(errors)
 
       if (Object.keys(errors).length === 0) {
-        setErrorMsg(err.message || 'Erro na autenticação. Verifique os dados fornecidos.')
+        setErrorMsg(defaultMessage)
       }
 
       toast({
