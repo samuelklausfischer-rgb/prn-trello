@@ -5,16 +5,33 @@ import { toast } from '@/components/ui/use-toast'
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE'
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
 
+export type HistoryAction =
+  | 'TASK_CREATED'
+  | 'TASK_UPDATED'
+  | 'STATUS_CHANGED'
+  | 'PRIORITY_CHANGED'
+  | 'DELEGATED'
+  | 'DUE_DATE_CHANGED'
+  | 'CHECKLIST_ADDED'
+  | 'CHECKLIST_COMPLETED'
+  | 'CHECKLIST_UNCOMPLETED'
+  | 'TASK_ARCHIVED'
+
 export type ChecklistItem = {
   id: string
   title: string
   completed: boolean
+  completedAt?: string
+  completedBy?: string
+  createdAt?: string
 }
 
 export type TaskHistory = {
   id: string
-  action: string
+  action: HistoryAction
   description: string
+  oldValue?: string
+  newValue?: string
   performedBy: string
   performedAt: string
 }
@@ -38,6 +55,7 @@ type TaskContextType = {
   updateTaskStatus: (taskId: string, status: TaskStatus) => void
   toggleChecklist: (taskId: string, checklistId: string) => void
   updateTaskDescription: (taskId: string, description: string) => void
+  addChecklistItem: (taskId: string, title: string) => void
 }
 
 const TaskContext = createContext<TaskContextType | null>(null)
@@ -62,13 +80,34 @@ const A_AC = {
 const now = Date.now()
 const day = 86400000
 
-const createHistory = (by: string, desc: string, offset: number): TaskHistory => ({
+const createHistory = (
+  by: string,
+  action: HistoryAction,
+  desc: string,
+  offset: number,
+): TaskHistory => ({
   id: Math.random().toString(),
-  action: 'CREATED',
+  action,
   description: desc,
   performedBy: by,
   performedAt: new Date(now - offset).toISOString(),
 })
+
+const generateChecklists = (count: number, completedCount: number): ChecklistItem[] => {
+  return Array.from({ length: count }).map((_, i) => {
+    const isCompleted = i < completedCount
+    return {
+      id: `chk_${Math.random().toString(36).substr(2, 9)}`,
+      title: `Item de verificação essencial ${i + 1}`,
+      completed: isCompleted,
+      createdAt: new Date(now - day * 2).toISOString(),
+      ...(isCompleted && {
+        completedAt: new Date(now - day).toISOString(),
+        completedBy: 'Sistema',
+      }),
+    }
+  })
+}
 
 const MOCK_TASKS: Task[] = [
   {
@@ -80,11 +119,8 @@ const MOCK_TASKS: Task[] = [
     dueDate: new Date(now + day).toISOString(),
     delegator: 'Admin Geral',
     assignee: A_MO,
-    checklists: [
-      { id: 'c1', title: 'Baixar relatórios', completed: true },
-      { id: 'c2', title: 'Conferir valores', completed: false },
-    ],
-    history: [createHistory('Admin Geral', 'Tarefa criada', day)],
+    checklists: generateChecklists(4, 1),
+    history: [createHistory('Admin Geral', 'TASK_CREATED', 'Tarefa criada no sistema', day)],
     createdAt: new Date(now - day).toISOString(),
   },
   {
@@ -96,11 +132,8 @@ const MOCK_TASKS: Task[] = [
     dueDate: new Date(now - day).toISOString(),
     delegator: 'Admin Geral',
     assignee: A_CS,
-    checklists: [
-      { id: 'c1', title: 'Reunião com TI', completed: true },
-      { id: 'c2', title: 'Atualizar docs', completed: false },
-    ],
-    history: [createHistory('Admin Geral', 'Tarefa criada', day * 2)],
+    checklists: generateChecklists(5, 2),
+    history: [createHistory('Admin Geral', 'TASK_CREATED', 'Tarefa criada', day * 2)],
     createdAt: new Date(now - day * 2).toISOString(),
   },
   {
@@ -112,8 +145,8 @@ const MOCK_TASKS: Task[] = [
     dueDate: new Date(now).toISOString(),
     delegator: 'Mariana Rios',
     assignee: A_AC,
-    checklists: [],
-    history: [createHistory('Mariana Rios', 'Tarefa criada', day)],
+    checklists: generateChecklists(3, 3),
+    history: [createHistory('Mariana Rios', 'TASK_CREATED', 'Tarefa criada', day)],
     createdAt: new Date(now - day).toISOString(),
   },
   {
@@ -125,11 +158,8 @@ const MOCK_TASKS: Task[] = [
     dueDate: new Date(now - day * 7).toISOString(),
     delegator: 'Pedro Souza',
     assignee: A_JS,
-    checklists: [
-      { id: 'c1', title: 'Comprar materiais', completed: true },
-      { id: 'c2', title: 'Configurar e-mails', completed: true },
-    ],
-    history: [createHistory('Pedro Souza', 'Tarefa criada', day * 8)],
+    checklists: generateChecklists(4, 4),
+    history: [createHistory('Pedro Souza', 'TASK_CREATED', 'Tarefa criada', day * 8)],
     createdAt: new Date(now - day * 8).toISOString(),
   },
   {
@@ -141,8 +171,8 @@ const MOCK_TASKS: Task[] = [
     dueDate: new Date(now + day * 3).toISOString(),
     delegator: 'Pedro Souza',
     assignee: A_MO,
-    checklists: [],
-    history: [createHistory('Pedro Souza', 'Tarefa criada', day)],
+    checklists: generateChecklists(3, 0),
+    history: [createHistory('Pedro Souza', 'TASK_CREATED', 'Tarefa criada', day)],
     createdAt: new Date(now - day).toISOString(),
   },
   {
@@ -154,11 +184,8 @@ const MOCK_TASKS: Task[] = [
     dueDate: new Date(now).toISOString(),
     delegator: 'Admin Geral',
     assignee: A_JS,
-    checklists: [
-      { id: 'c1', title: 'Validar ponto', completed: true },
-      { id: 'c2', title: 'Aprovar bônus', completed: false },
-    ],
-    history: [createHistory('Admin Geral', 'Tarefa criada', day * 2)],
+    checklists: generateChecklists(5, 3),
+    history: [createHistory('Admin Geral', 'TASK_CREATED', 'Tarefa criada', day * 2)],
     createdAt: new Date(now - day * 2).toISOString(),
   },
   {
@@ -170,174 +197,29 @@ const MOCK_TASKS: Task[] = [
     dueDate: new Date(now + day * 7).toISOString(),
     delegator: 'Mariana Rios',
     assignee: A_CS,
-    checklists: [],
-    history: [createHistory('Mariana Rios', 'Tarefa criada', day)],
+    checklists: generateChecklists(3, 0),
+    history: [createHistory('Mariana Rios', 'TASK_CREATED', 'Tarefa criada', day)],
     createdAt: new Date(now - day).toISOString(),
-  },
-  {
-    id: 't8',
-    title: 'Reunião de alinhamento com marketing',
-    description: 'Definir budget para o próximo trimestre.',
-    status: 'DONE',
-    priority: 'MEDIUM',
-    dueDate: new Date(now - day * 3).toISOString(),
-    delegator: 'Admin Geral',
-    assignee: A_AC,
-    checklists: [],
-    history: [createHistory('Admin Geral', 'Tarefa criada', day * 5)],
-    createdAt: new Date(now - day * 5).toISOString(),
-  },
-  {
-    id: 't9',
-    title: 'Comprar passagens para o evento',
-    description: 'Cotar voos e hotéis para a conferência anual.',
-    status: 'REVIEW',
-    priority: 'URGENT',
-    dueDate: new Date(now + day).toISOString(),
-    delegator: 'Mariana Rios',
-    assignee: A_MO,
-    checklists: [],
-    history: [createHistory('Mariana Rios', 'Tarefa criada', day)],
-    createdAt: new Date(now - day).toISOString(),
-  },
-  {
-    id: 't10',
-    title: 'Atualizar cadastro de clientes',
-    description: 'Limpar base de dados no CRM.',
-    status: 'TODO',
-    priority: 'LOW',
-    dueDate: new Date(now + day * 2).toISOString(),
-    delegator: 'Pedro Souza',
-    assignee: A_JS,
-    checklists: [
-      { id: 'c1', title: 'Exportar lista', completed: false },
-      { id: 'c2', title: 'Remover duplicados', completed: false },
-      { id: 'c3', title: 'Importar lista limpa', completed: false },
-    ],
-    history: [createHistory('Pedro Souza', 'Tarefa criada', day)],
-    createdAt: new Date(now - day).toISOString(),
-  },
-  {
-    id: 't11',
-    title: 'Organizar confraternização',
-    description: 'Reservar local e definir cardápio.',
-    status: 'IN_PROGRESS',
-    priority: 'LOW',
-    dueDate: new Date(now + day * 6).toISOString(),
-    delegator: 'Admin Geral',
-    assignee: A_AC,
-    checklists: [],
-    history: [createHistory('Admin Geral', 'Tarefa criada', day * 2)],
-    createdAt: new Date(now - day * 2).toISOString(),
-  },
-  {
-    id: 't12',
-    title: 'Revisar contratos pendentes',
-    description: 'Assinar NDA com novos fornecedores.',
-    status: 'TODO',
-    priority: 'HIGH',
-    dueDate: new Date(now - day).toISOString(),
-    delegator: 'Mariana Rios',
-    assignee: A_CS,
-    checklists: [
-      { id: 'c1', title: 'Ler minuta', completed: true },
-      { id: 'c2', title: 'Assinar digitalmente', completed: false },
-    ],
-    history: [createHistory('Mariana Rios', 'Tarefa criada', day * 3)],
-    createdAt: new Date(now - day * 3).toISOString(),
-  },
-  {
-    id: 't13',
-    title: 'Treinamento de segurança',
-    description: 'Participar do workshop obrigatório da CIPA.',
-    status: 'REVIEW',
-    priority: 'MEDIUM',
-    dueDate: new Date(now).toISOString(),
-    delegator: 'Admin Geral',
-    assignee: A_JS,
-    checklists: [],
-    history: [createHistory('Admin Geral', 'Tarefa criada', day)],
-    createdAt: new Date(now - day).toISOString(),
-  },
-  {
-    id: 't14',
-    title: 'Enviar newsletter mensal',
-    description: 'Disparar e-mail marketing de outubro.',
-    status: 'DONE',
-    priority: 'LOW',
-    dueDate: new Date(now - day * 10).toISOString(),
-    delegator: 'Pedro Souza',
-    assignee: A_MO,
-    checklists: [],
-    history: [createHistory('Pedro Souza', 'Tarefa criada', day * 12)],
-    createdAt: new Date(now - day * 12).toISOString(),
-  },
-  {
-    id: 't15',
-    title: 'Analisar métricas de SEO',
-    description: 'Extrair dados do Google Analytics.',
-    status: 'TODO',
-    priority: 'MEDIUM',
-    dueDate: new Date(now + day * 4).toISOString(),
-    delegator: 'Mariana Rios',
-    assignee: A_AC,
-    checklists: [],
-    history: [createHistory('Mariana Rios', 'Tarefa criada', day)],
-    createdAt: new Date(now - day).toISOString(),
-  },
-  {
-    id: 't16',
-    title: 'Entrevista com candidatos',
-    description: 'Entrevistar 3 devs frontend.',
-    status: 'IN_PROGRESS',
-    priority: 'HIGH',
-    dueDate: new Date(now + day).toISOString(),
-    delegator: 'Admin Geral',
-    assignee: A_CS,
-    checklists: [
-      { id: 'c1', title: 'Candidato A', completed: true },
-      { id: 'c2', title: 'Candidato B', completed: true },
-      { id: 'c3', title: 'Candidato C', completed: false },
-    ],
-    history: [createHistory('Admin Geral', 'Tarefa criada', day * 4)],
-    createdAt: new Date(now - day * 4).toISOString(),
-  },
-  {
-    id: 't17',
-    title: 'Planejamento estratégico Q4',
-    description: 'Definir OKRs do último trimestre.',
-    status: 'REVIEW',
-    priority: 'URGENT',
-    dueDate: new Date(now).toISOString(),
-    delegator: 'Pedro Souza',
-    assignee: A_JS,
-    checklists: [],
-    history: [createHistory('Pedro Souza', 'Tarefa criada', day)],
-    createdAt: new Date(now - day).toISOString(),
-  },
-  {
-    id: 't18',
-    title: 'Backup dos servidores',
-    description: 'Garantir rotina de backup da base principal.',
-    status: 'DONE',
-    priority: 'HIGH',
-    dueDate: new Date(now - day * 2).toISOString(),
-    delegator: 'Mariana Rios',
-    assignee: A_MO,
-    checklists: [],
-    history: [createHistory('Mariana Rios', 'Tarefa criada', day * 5)],
-    createdAt: new Date(now - day * 5).toISOString(),
   },
 ]
+
+const statusMap = {
+  TODO: 'A Fazer',
+  IN_PROGRESS: 'Em Progresso',
+  REVIEW: 'Em Revisão',
+  DONE: 'Concluído',
+}
 
 export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>(MOCK_TASKS)
   const { user, addPoints } = useAuthStore()
 
+  const performerName = user?.name || 'Sistema'
+
   const updateTaskStatus = (taskId: string, status: TaskStatus) => {
     setTasks((prev) =>
       prev.map((t) => {
-        if (t.id === taskId) {
+        if (t.id === taskId && t.status !== status) {
           if (status === 'DONE' && t.status !== 'DONE') {
             addPoints(50)
             toast({
@@ -350,8 +232,10 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
           const historyAction: TaskHistory = {
             id: Math.random().toString(),
             action: 'STATUS_CHANGED',
-            description: `Movida para ${status === 'TODO' ? 'A Fazer' : status === 'IN_PROGRESS' ? 'Em Progresso' : status === 'REVIEW' ? 'Em Revisão' : 'Concluída'}`,
-            performedBy: user?.name || 'Sistema',
+            description: `Status alterado de ${statusMap[t.status]} para ${statusMap[status]}`,
+            oldValue: statusMap[t.status],
+            newValue: statusMap[status],
+            performedBy: performerName,
             performedAt: new Date().toISOString(),
           }
 
@@ -363,13 +247,85 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   }
 
   const toggleChecklist = (taskId: string, checklistId: string) => {
+    setTasks((prev) => {
+      return prev.map((t) => {
+        if (t.id === taskId) {
+          let toggledItemName = ''
+          let isNowCompleted = false
+
+          const checklists = t.checklists.map((c) => {
+            if (c.id === checklistId) {
+              toggledItemName = c.title
+              isNowCompleted = !c.completed
+              return {
+                ...c,
+                completed: isNowCompleted,
+                completedAt: isNowCompleted ? new Date().toISOString() : undefined,
+                completedBy: isNowCompleted ? performerName : undefined,
+              }
+            }
+            return c
+          })
+
+          const historyAction: TaskHistory = {
+            id: Math.random().toString(),
+            action: isNowCompleted ? 'CHECKLIST_COMPLETED' : 'CHECKLIST_UNCOMPLETED',
+            description: `Item "${toggledItemName}" ${isNowCompleted ? 'marcado como concluído' : 'desmarcado'}`,
+            performedBy: performerName,
+            performedAt: new Date().toISOString(),
+          }
+
+          // Check for 100% completion
+          const total = checklists.length
+          const completedCount = checklists.filter((c) => c.completed).length
+
+          if (isNowCompleted) {
+            if (completedCount === total) {
+              toast({
+                title: 'Checklist Finalizado! 🎉',
+                description: 'Todos os itens desta tarefa foram concluídos.',
+                variant: 'default',
+                className: 'bg-green-600 text-white border-green-700',
+              })
+            } else {
+              toast({
+                title: 'Item concluído',
+                description: `Progresso: ${completedCount}/${total}`,
+              })
+            }
+          }
+
+          return { ...t, checklists, history: [historyAction, ...t.history] }
+        }
+        return t
+      })
+    })
+  }
+
+  const addChecklistItem = (taskId: string, title: string) => {
     setTasks((prev) =>
       prev.map((t) => {
         if (t.id === taskId) {
-          const checklists = t.checklists.map((c) =>
-            c.id === checklistId ? { ...c, completed: !c.completed } : c,
-          )
-          return { ...t, checklists }
+          const newItem: ChecklistItem = {
+            id: `chk_${Math.random().toString(36).substr(2, 9)}`,
+            title,
+            completed: false,
+            createdAt: new Date().toISOString(),
+          }
+
+          const historyAction: TaskHistory = {
+            id: Math.random().toString(),
+            action: 'CHECKLIST_ADDED',
+            description: `Novo item adicionado: "${title}"`,
+            performedBy: performerName,
+            performedAt: new Date().toISOString(),
+          }
+
+          return {
+            ...t,
+            checklists: [...t.checklists, newItem],
+            history: [historyAction, ...t.history],
+          }
         }
         return t
       }),
@@ -382,9 +338,11 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         if (t.id === taskId && t.description !== description) {
           const historyAction: TaskHistory = {
             id: Math.random().toString(),
-            action: 'UPDATED',
+            action: 'TASK_UPDATED',
             description: 'Descrição da tarefa atualizada',
-            performedBy: user?.name || 'Sistema',
+            oldValue: t.description,
+            newValue: description,
+            performedBy: performerName,
             performedAt: new Date().toISOString(),
           }
           return { ...t, description, history: [historyAction, ...t.history] }
@@ -396,7 +354,9 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
   return React.createElement(
     TaskContext.Provider,
-    { value: { tasks, updateTaskStatus, toggleChecklist, updateTaskDescription } },
+    {
+      value: { tasks, updateTaskStatus, toggleChecklist, updateTaskDescription, addChecklistItem },
+    },
     children,
   )
 }

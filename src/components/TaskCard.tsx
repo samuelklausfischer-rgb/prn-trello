@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { format, isPast, isToday, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { CheckSquare, Clock, ArrowRight } from 'lucide-react'
+import { CheckSquare, Clock, ArrowRight, AlertCircle } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 
@@ -29,6 +29,10 @@ export default function TaskCard({
 
   const completedChecks = task.checklists.filter((c) => c.completed).length
   const totalChecks = task.checklists.length
+  const hasPendingChecks = totalChecks > 0 && completedChecks < totalChecks
+  const isHighPriority = task.priority === 'HIGH' || task.priority === 'URGENT'
+
+  const showChecklistAlert = hasPendingChecks && isHighPriority
 
   const isTaskOverdue = task.dueDate
     ? isPast(parseISO(task.dueDate)) && !isToday(parseISO(task.dueDate))
@@ -41,18 +45,25 @@ export default function TaskCard({
       onDragEnd={onDragEnd}
       onClick={onClick}
       className={cn(
-        'cursor-grab active:cursor-grabbing hover:shadow-md transition-all border-border/60',
+        'cursor-grab active:cursor-grabbing hover:shadow-md transition-all border-border/60 relative overflow-hidden',
         isDragging && 'opacity-50 scale-[0.98] shadow-sm',
       )}
     >
+      {showChecklistAlert && (
+        <div className="absolute top-0 right-0 w-0 h-0 border-t-[30px] border-t-orange-500 border-l-[30px] border-l-transparent z-10" />
+      )}
+
       <CardContent className="p-4 flex flex-col gap-3">
-        <div className="flex justify-between items-start gap-2">
+        <div className="flex justify-between items-start gap-2 relative z-20">
           <Badge
             variant="outline"
             className={cn('text-[10px] px-1.5 py-0 border', priorityConfig[task.priority].color)}
           >
             {priorityConfig[task.priority].label}
           </Badge>
+          {showChecklistAlert && (
+            <AlertCircle className="w-3.5 h-3.5 text-white absolute -top-1 -right-1" />
+          )}
         </div>
 
         <h4 className="font-semibold text-sm leading-tight text-foreground line-clamp-2">
@@ -79,7 +90,9 @@ export default function TaskCard({
                 'flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-md border',
                 completedChecks === totalChecks
                   ? 'bg-green-50 text-green-600 border-green-200'
-                  : 'bg-muted text-muted-foreground border-border',
+                  : showChecklistAlert
+                    ? 'bg-orange-50 text-orange-600 border-orange-200'
+                    : 'bg-muted text-muted-foreground border-border',
               )}
             >
               <CheckSquare className="w-3 h-3" />
