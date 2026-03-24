@@ -5,8 +5,7 @@ migrate(
       type: 'view',
       listRule: "@request.auth.id != ''",
       viewRule: "@request.auth.id != ''",
-      options: {
-        query: `SELECT 
+      viewQuery: `SELECT 
           u.id, 
           u.name, 
           u.avatar, 
@@ -18,7 +17,15 @@ migrate(
         FROM users u 
         LEFT JOIN levels l ON u.level = l.level_number 
         WHERE u.is_active = true`,
-      },
+      fields: [
+        { name: 'name', type: 'text' },
+        { name: 'avatar', type: 'text' },
+        { name: 'points', type: 'number' },
+        { name: 'level', type: 'number' },
+        { name: 'level_name', type: 'text' },
+        { name: 'level_icon', type: 'text' },
+        { name: 'position', type: 'number' },
+      ],
     })
     app.save(vRanking)
 
@@ -27,8 +34,7 @@ migrate(
       type: 'view',
       listRule: "@request.auth.id != ''",
       viewRule: "@request.auth.id != ''",
-      options: {
-        query: `SELECT 
+      viewQuery: `SELECT 
           u.id, 
           u.name, 
           u.points, 
@@ -39,7 +45,14 @@ migrate(
         FROM users u 
         LEFT JOIN tasks t ON (t.delegated_to = u.id OR t.created_by = u.id) 
         GROUP BY u.id`,
-      },
+      fields: [
+        { name: 'name', type: 'text' },
+        { name: 'points', type: 'number' },
+        { name: 'level', type: 'number' },
+        { name: 'streak_days', type: 'number' },
+        { name: 'total_tasks', type: 'number' },
+        { name: 'completed_tasks', type: 'number' },
+      ],
     })
     app.save(vUserStats)
   },
