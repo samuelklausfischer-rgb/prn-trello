@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-24T12:18:32.984Z",
+  "generatedAt": "2026-03-24T12:35:47.490Z",
   "collections": [
     {
       "name": "users",
@@ -132,8 +132,8 @@
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
         "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != ''"
+        "update": "created_by = @request.auth.id || @request.auth.role = 'admin'",
+        "delete": "created_by = @request.auth.id || @request.auth.role = 'admin'"
       },
       "fields": [
         {
@@ -251,8 +251,8 @@
       "name": "alerts",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != ''",
-        "view": "@request.auth.id != ''",
+        "list": "target_user = @request.auth.id || target_role = @request.auth.role || @request.auth.role = 'admin'",
+        "view": "target_user = @request.auth.id || target_role = @request.auth.role || @request.auth.role = 'admin'",
         "create": "@request.auth.role = 'admin'",
         "update": "@request.auth.role = 'admin'",
         "delete": "@request.auth.role = 'admin'"
@@ -361,9 +361,9 @@
       "apiRules": {
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
-        "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != ''"
+        "create": "@request.auth.role = 'admin'",
+        "update": "@request.auth.role = 'admin'",
+        "delete": "@request.auth.role = 'admin'"
       },
       "fields": [
         {
@@ -472,9 +472,9 @@
       "apiRules": {
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
-        "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != ''"
+        "create": "task_id.created_by = @request.auth.id || task_id.delegated_to = @request.auth.id || @request.auth.role = 'admin'",
+        "update": "task_id.created_by = @request.auth.id || task_id.delegated_to = @request.auth.id || @request.auth.role = 'admin'",
+        "delete": "task_id.created_by = @request.auth.id || task_id.delegated_to = @request.auth.id || @request.auth.role = 'admin'"
       },
       "fields": [
         {
@@ -547,9 +547,9 @@
       "apiRules": {
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
-        "create": "@request.auth.id != ''",
-        "update": null,
-        "delete": null
+        "create": "@request.auth.role = 'admin'",
+        "update": "@request.auth.role = 'admin'",
+        "delete": "@request.auth.role = 'admin'"
       },
       "fields": [
         {
@@ -627,11 +627,11 @@
       "name": "user_achievements",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != '' && user_id = @request.auth.id",
-        "view": "@request.auth.id != '' && user_id = @request.auth.id",
-        "create": null,
-        "update": "@request.auth.id != '' && user_id = @request.auth.id",
-        "delete": null
+        "list": "user_id = @request.auth.id || @request.auth.role = 'admin'",
+        "view": "user_id = @request.auth.id || @request.auth.role = 'admin'",
+        "create": "@request.auth.role = 'admin'",
+        "update": "@request.auth.role = 'admin'",
+        "delete": "@request.auth.role = 'admin'"
       },
       "fields": [
         {
@@ -696,11 +696,11 @@
       "name": "points_history",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id = user_id || @request.auth.role = 'admin'",
-        "view": "@request.auth.id = user_id || @request.auth.role = 'admin'",
-        "create": "@request.auth.id != ''",
-        "update": null,
-        "delete": null
+        "list": "user_id = @request.auth.id || @request.auth.role = 'admin'",
+        "view": "user_id = @request.auth.id || @request.auth.role = 'admin'",
+        "create": "@request.auth.role = 'admin'",
+        "update": "@request.auth.role = 'admin'",
+        "delete": "@request.auth.role = 'admin'"
       },
       "fields": [
         {
