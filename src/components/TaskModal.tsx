@@ -24,7 +24,9 @@ import { updateTask, TaskRecord } from '@/services/tasks'
 import { extractFieldErrors } from '@/lib/pocketbase/errors'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TaskChecklist } from './TaskChecklist'
+import { TaskHistoryTimeline } from './TaskHistoryTimeline'
 
 const schema = z.object({
   title: z.string().min(1, 'Obrigatório'),
@@ -95,143 +97,163 @@ export default function TaskModal({
         <DialogHeader>
           <DialogTitle>Editar Tarefa</DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Título</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descrição</FormLabel>
-                  <FormControl>
-                    <Textarea className="resize-none h-20" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todo">A Fazer</SelectItem>
-                        <SelectItem value="in_progress">Em Progresso</SelectItem>
-                        <SelectItem value="review">Em Revisão</SelectItem>
-                        <SelectItem value="done">Concluído</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="priority"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Prioridade</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Baixa</SelectItem>
-                        <SelectItem value="medium">Média</SelectItem>
-                        <SelectItem value="high">Alta</SelectItem>
-                        <SelectItem value="urgent">Urgente</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <FormField
-              control={form.control}
-              name="delegated_to"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Atribuir a</FormLabel>
-                  <Select
-                    value={field.value || 'unassigned'}
-                    onValueChange={(val) => field.onChange(val === 'unassigned' ? '' : val)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sem responsável" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Sem responsável</SelectItem>
-                      {users.map((u) => (
-                        <SelectItem key={u.id} value={u.id}>
-                          {u.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-2 gap-4 items-end">
-              <FormField
-                control={form.control}
-                name="points_reward"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pontos (Recompensa)</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="is_archived"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-2 shadow-sm h-10">
-                    <FormLabel className="mb-0 text-sm font-medium">Arquivada</FormLabel>
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            </div>
 
-            {task.id && (
-              <div className="pt-2 mt-4 border-t">
-                <TaskChecklist taskId={task.id} />
-              </div>
-            )}
+        <Tabs defaultValue="details" className="w-full mt-2">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="details">Detalhes</TabsTrigger>
+            <TabsTrigger value="history">Histórico</TabsTrigger>
+          </TabsList>
 
-            <Button type="submit" className="w-full mt-4">
-              Salvar Alterações
-            </Button>
-          </form>
-        </Form>
+          <TabsContent
+            value="details"
+            className="mt-4 focus-visible:outline-none focus-visible:ring-0"
+          >
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Título</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descrição</FormLabel>
+                      <FormControl>
+                        <Textarea className="resize-none h-20" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="todo">A Fazer</SelectItem>
+                            <SelectItem value="in_progress">Em Progresso</SelectItem>
+                            <SelectItem value="review">Em Revisão</SelectItem>
+                            <SelectItem value="done">Concluído</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="priority"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Prioridade</FormLabel>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="low">Baixa</SelectItem>
+                            <SelectItem value="medium">Média</SelectItem>
+                            <SelectItem value="high">Alta</SelectItem>
+                            <SelectItem value="urgent">Urgente</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={form.control}
+                  name="delegated_to"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Atribuir a</FormLabel>
+                      <Select
+                        value={field.value || 'unassigned'}
+                        onValueChange={(val) => field.onChange(val === 'unassigned' ? '' : val)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sem responsável" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unassigned">Sem responsável</SelectItem>
+                          {users.map((u) => (
+                            <SelectItem key={u.id} value={u.id}>
+                              {u.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-2 gap-4 items-end">
+                  <FormField
+                    control={form.control}
+                    name="points_reward"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Pontos (Recompensa)</FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="is_archived"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-2 shadow-sm h-10">
+                        <FormLabel className="mb-0 text-sm font-medium">Arquivada</FormLabel>
+                        <FormControl>
+                          <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {task.id && (
+                  <div className="pt-2 mt-4 border-t">
+                    <TaskChecklist taskId={task.id} />
+                  </div>
+                )}
+
+                <Button type="submit" className="w-full mt-4">
+                  Salvar Alterações
+                </Button>
+              </form>
+            </Form>
+          </TabsContent>
+
+          <TabsContent
+            value="history"
+            className="mt-4 focus-visible:outline-none focus-visible:ring-0"
+          >
+            <TaskHistoryTimeline taskId={task.id} />
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   )

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-24T11:25:48.585Z",
+  "generatedAt": "2026-03-24T11:29:25.571Z",
   "collections": [
     {
       "name": "users",
@@ -397,6 +397,88 @@
       "indexes": [
         "CREATE INDEX idx_checklists_task_id ON checklists (task_id)",
         "CREATE INDEX idx_checklists_is_completed ON checklists (is_completed)"
+      ]
+    },
+    {
+      "name": "task_history",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "task_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "tasks"
+        },
+        {
+          "name": "action",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "old_value",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "new_value",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "performed_by",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "performed_at",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "metadata",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_task_history_task_id ON task_history (task_id)",
+        "CREATE INDEX idx_task_history_performed_at ON task_history (performed_at DESC)"
       ]
     }
   ]

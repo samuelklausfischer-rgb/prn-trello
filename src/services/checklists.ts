@@ -26,7 +26,24 @@ export const getChecklistsByTask = (taskId: string) =>
 export const createChecklist = (data: Partial<ChecklistRecord>) =>
   pb.collection('checklists').create<ChecklistRecord>(data)
 
-export const updateChecklist = (id: string, data: Partial<ChecklistRecord>) =>
-  pb.collection('checklists').update<ChecklistRecord>(id, data)
+export const updateChecklist = async (id: string, data: Partial<ChecklistRecord>) => {
+  const oldItem = await pb.collection('checklists').getOne<ChecklistRecord>(id)
+  const item = await pb.collection('checklists').update<ChecklistRecord>(id, data)
+
+  const authId = pb.authStore.record?.id
+  if (authId && data.is_completed && !oldItem.is_completed) {
+    await pb
+      .collection('task_history')
+      .create({
+        task_id: item.task_id,
+        action: 'CHECKLIST_COMPLETED',
+        description: `Item do checklist concluído: ${item.title}`,
+        performed_by: authId,
+      })
+      .catch(console.error)
+  }
+
+  return item
+}
 
 export const deleteChecklist = (id: string) => pb.collection('checklists').delete(id)
