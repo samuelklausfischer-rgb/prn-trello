@@ -4,31 +4,41 @@ onRecordUpdate((e) => {
   const oldPoints = oldRecord ? oldRecord.get('points') || 0 : 0
 
   if (newPoints !== oldPoints) {
+    e.record.set('last_activity', new Date().toISOString())
+  }
+  e.next()
+}, 'users')
+
+onRecordAfterUpdateSuccess((e) => {
+  const newPoints = e.record.get('points') || 0
+  const oldRecord = e.record.originalCopy()
+  const oldPoints = oldRecord ? oldRecord.get('points') || 0 : 0
+
+  if (newPoints !== oldPoints) {
     const diff = newPoints - oldPoints
-    let reason = diff > 0 ? 'Pontos recebidos' : 'Pontos deduzidos'
+    let reason = diff > 0 ? 'Points awarded' : 'Points deducted'
     let sourceType = 'system'
     let sourceId = ''
 
     try {
       const reqInfo = e.requestInfo()
       if (reqInfo && reqInfo.headers) {
-        const hReason = reqInfo.headers['x-point-reason']
-        if (hReason) {
+        if (reqInfo.headers['x-point-reason']) {
           try {
-            reason = decodeURIComponent(hReason)
+            reason = decodeURIComponent(reqInfo.headers['x-point-reason'])
           } catch (_) {
-            reason = hReason
+            reason = reqInfo.headers['x-point-reason']
           }
         }
-
-        const hType = reqInfo.headers['x-source-type']
-        if (hType) sourceType = hType
-
-        const hId = reqInfo.headers['x-source-id']
-        if (hId) sourceId = hId
+        if (reqInfo.headers['x-source-type']) {
+          sourceType = reqInfo.headers['x-source-type']
+        }
+        if (reqInfo.headers['x-source-id']) {
+          sourceId = reqInfo.headers['x-source-id']
+        }
       }
     } catch (err) {
-      // Ignore if not executing inside an HTTP request context
+      // Ignored: Not running inside an HTTP request context
     }
 
     try {
@@ -41,7 +51,7 @@ onRecordUpdate((e) => {
       history.set('source_id', sourceId)
       history.set('balance_after', newPoints)
 
-      $app.save(history)
+      $app.saveNoValidate(history)
     } catch (dbErr) {
       console.error('Failed to log points history: ' + dbErr)
     }
