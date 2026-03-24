@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-24T11:22:36.282Z",
+  "generatedAt": "2026-03-24T11:25:48.585Z",
   "collections": [
     {
       "name": "users",
@@ -323,6 +323,81 @@
         }
       ],
       "indexes": []
+    },
+    {
+      "name": "checklists",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "task_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "tasks"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "order",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "is_completed",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "completed_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "completed_by",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_checklists_task_id ON checklists (task_id)",
+        "CREATE INDEX idx_checklists_is_completed ON checklists (is_completed)"
+      ]
     }
   ]
 }

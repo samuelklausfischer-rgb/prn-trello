@@ -24,6 +24,7 @@ import { updateTask, TaskRecord } from '@/services/tasks'
 import { extractFieldErrors } from '@/lib/pocketbase/errors'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
+import { TaskChecklist } from './TaskChecklist'
 
 const schema = z.object({
   title: z.string().min(1, 'Obrigatório'),
@@ -219,6 +220,13 @@ export default function TaskModal({
                 )}
               />
             </div>
+
+            {task.id && (
+              <div className="pt-2 mt-4 border-t">
+                <TaskChecklist taskId={task.id} />
+              </div>
+            )}
+
             <Button type="submit" className="w-full mt-4">
               Salvar Alterações
             </Button>
