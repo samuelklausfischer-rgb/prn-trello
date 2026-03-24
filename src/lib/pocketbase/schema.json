@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-24T13:08:11.574Z",
+  "generatedAt": "2026-03-24T13:10:32.375Z",
   "collections": [
     {
       "name": "users",
@@ -470,11 +470,11 @@
       "name": "checklists",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != ''",
-        "view": "@request.auth.id != ''",
-        "create": "task_id.created_by = @request.auth.id || task_id.delegated_to = @request.auth.id || @request.auth.role = 'admin'",
-        "update": "task_id.created_by = @request.auth.id || task_id.delegated_to = @request.auth.id || @request.auth.role = 'admin'",
-        "delete": "task_id.created_by = @request.auth.id || task_id.delegated_to = @request.auth.id || @request.auth.role = 'admin'"
+        "list": "@request.auth.role = 'admin' || task_id.created_by = @request.auth.id || task_id.delegated_to = @request.auth.id",
+        "view": "@request.auth.role = 'admin' || task_id.created_by = @request.auth.id || task_id.delegated_to = @request.auth.id",
+        "create": "@request.auth.role = 'admin' || task_id.created_by = @request.auth.id || task_id.delegated_to = @request.auth.id",
+        "update": "@request.auth.role = 'admin' || task_id.created_by = @request.auth.id || task_id.delegated_to = @request.auth.id",
+        "delete": "@request.auth.role = 'admin' || task_id.created_by = @request.auth.id || task_id.delegated_to = @request.auth.id"
       },
       "fields": [
         {
@@ -545,11 +545,11 @@
       "name": "task_history",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != ''",
-        "view": "@request.auth.id != ''",
-        "create": "@request.auth.role = 'admin'",
-        "update": "@request.auth.role = 'admin'",
-        "delete": "@request.auth.role = 'admin'"
+        "list": "@request.auth.role = 'admin' || task_id.created_by = @request.auth.id || task_id.delegated_to = @request.auth.id",
+        "view": "@request.auth.role = 'admin' || task_id.created_by = @request.auth.id || task_id.delegated_to = @request.auth.id",
+        "create": "@request.auth.id != ''",
+        "update": null,
+        "delete": null
       },
       "fields": [
         {
