@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-24T11:29:25.571Z",
+  "generatedAt": "2026-03-24T12:05:37.474Z",
   "collections": [
     {
       "name": "users",
@@ -320,9 +320,85 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "icon",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "requirement_type",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "requirement_value",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "points_reward",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "xp_reward",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "badge_color",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "rarity",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["common", "uncommon", "rare", "epic", "legendary"]
+        },
+        {
+          "name": "is_active",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "is_hidden",
+          "type": "bool",
+          "required": false,
+          "system": false
         }
       ],
-      "indexes": []
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_achievements_slug` ON `achievements` (slug)",
+        "CREATE INDEX `idx_achievements_category` ON `achievements` (category)"
+      ]
     },
     {
       "name": "checklists",
@@ -479,6 +555,75 @@
       "indexes": [
         "CREATE INDEX idx_task_history_task_id ON task_history (task_id)",
         "CREATE INDEX idx_task_history_performed_at ON task_history (performed_at DESC)"
+      ]
+    },
+    {
+      "name": "user_achievements",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user_id = @request.auth.id",
+        "view": "@request.auth.id != '' && user_id = @request.auth.id",
+        "create": null,
+        "update": "@request.auth.id != '' && user_id = @request.auth.id",
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "achievement_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "achievements"
+        },
+        {
+          "name": "progress",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "progress_target",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "unlocked_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "is_notified",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_user_achievements_unique ON user_achievements (user_id, achievement_id)",
+        "CREATE INDEX idx_user_achievements_unlocked ON user_achievements (unlocked_at DESC)"
       ]
     }
   ]

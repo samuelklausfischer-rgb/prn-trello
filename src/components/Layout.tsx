@@ -3,9 +3,10 @@ import { Outlet, Link, useLocation } from 'react-router-dom'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import AppSidebar from './AppSidebar'
 import Header from './Header'
+import AchievementNotifier from './AchievementNotifier'
 import { useAuth } from '@/hooks/useAuthHooks'
 import { cn } from '@/lib/utils'
-import { LayoutDashboard, CheckSquare, Trophy, ShieldCheck } from 'lucide-react'
+import { LayoutDashboard, CheckSquare, Trophy, ShieldCheck, Medal } from 'lucide-react'
 
 export default function Layout() {
   const { isAuthenticated, role } = useAuth()
@@ -33,6 +34,7 @@ export default function Layout() {
 
   return (
     <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+      <AchievementNotifier />
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-[100] bg-primary text-primary-foreground px-4 py-2 rounded-md font-bold shadow-lg"
@@ -83,17 +85,17 @@ export default function Layout() {
             <span className="text-[10px] font-medium">Tarefas</span>
           </Link>
           <Link
-            to="/team"
-            aria-label="Ir para Ranking"
+            to="/achievements"
+            aria-label="Ir para Conquistas"
             className={cn(
               'flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors',
-              location.pathname === '/team'
+              location.pathname === '/achievements'
                 ? 'text-primary'
                 : 'text-muted-foreground hover:text-foreground',
             )}
           >
-            <Trophy className="w-5 h-5" />
-            <span className="text-[10px] font-medium">Ranking</span>
+            <Medal className="w-5 h-5" />
+            <span className="text-[10px] font-medium">Conquistas</span>
           </Link>
           {role === 'ADMIN' && (
             <Link

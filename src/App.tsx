@@ -10,6 +10,7 @@ import Team from './pages/Team'
 import Admin from './pages/Admin'
 import Dashboard from './pages/Dashboard'
 import AdminDashboard from './pages/AdminDashboard'
+import Achievements from './pages/Achievements'
 import { AppProviders } from './stores/providers'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -30,6 +31,7 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/tasks" element={<Tasks />} />
               <Route path="/team" element={<Team />} />
+              <Route path="/achievements" element={<Achievements />} />
 
               {/* Admin Only Routes */}
               <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
