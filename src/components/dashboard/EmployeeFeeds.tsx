@@ -1,105 +1,128 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { CalendarClock, CheckSquare, Trophy } from 'lucide-react'
+import { CalendarClock, CheckSquare, Clock } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
-interface EmployeeFeedsProps {
-  recentTasks: any[]
-  upcomingDeadlines: any[]
+interface TaskItem {
+  id: string
+  title: string
+  status: string
+  dueDate?: string
+  priority?: string
 }
 
-const statusMap: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
-  TODO: { label: 'A Fazer', variant: 'secondary' },
-  IN_PROGRESS: { label: 'Em Progresso', variant: 'default' },
-  DONE: { label: 'Concluído', variant: 'outline' },
+interface EmployeeFeedsProps {
+  recentTasks: TaskItem[]
+  upcomingDeadlines: TaskItem[]
+}
+
+const statusMap: Record<
+  string,
+  { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }
+> = {
+  todo: { label: 'A Fazer', variant: 'secondary' },
+  in_progress: { label: 'Em Progresso', variant: 'default' },
+  review: { label: 'Em Revisão', variant: 'outline' },
+  done: { label: 'Concluído', variant: 'outline' },
+}
+
+const priorityColor: Record<string, string> = {
+  urgent: 'border-l-4 border-l-red-500',
+  high: 'border-l-4 border-l-orange-500',
+  medium: 'border-l-4 border-l-blue-500',
+  low: 'border-l-4 border-l-slate-300',
 }
 
 export function EmployeeFeeds({ recentTasks, upcomingDeadlines }: EmployeeFeedsProps) {
-  // Empty state for achievements as requested
-  const achievements: any[] = []
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <Card className="shadow-sm transition-shadow hover:shadow-md">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
+      <Card className="shadow-sm border-border flex flex-col">
         <CardHeader className="bg-muted/20 border-b pb-4">
           <CardTitle className="flex items-center gap-2 text-lg">
             <CheckSquare className="w-5 h-5 text-primary" />
             Tarefas Recentes
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="p-0 flex-1 overflow-auto">
           <div className="divide-y divide-border">
             {recentTasks.map((task) => (
               <div
                 key={task.id}
-                className="p-4 flex items-center justify-between hover:bg-muted/30 transition-colors"
+                className={cn(
+                  'p-4 flex items-center justify-between hover:bg-muted/30 transition-colors bg-background',
+                  task.priority ? priorityColor[task.priority] : '',
+                )}
               >
-                <p className="font-semibold text-sm text-foreground line-clamp-1">{task.title}</p>
+                <div className="min-w-0 flex-1 pr-4">
+                  <p className="font-semibold text-sm text-foreground line-clamp-1">{task.title}</p>
+                </div>
                 <Badge
                   variant={statusMap[task.status]?.variant || 'outline'}
-                  className="text-[10px]"
+                  className={cn(
+                    'text-[10px] whitespace-nowrap',
+                    task.status === 'done' &&
+                      'border-green-500 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20',
+                  )}
                 >
                   {statusMap[task.status]?.label || task.status}
                 </Badge>
               </div>
             ))}
+            {recentTasks.length === 0 && (
+              <div className="p-6 text-center text-muted-foreground text-sm">
+                Nenhuma tarefa recente.
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      <Card className="shadow-sm transition-shadow hover:shadow-md">
+      <Card className="shadow-sm border-border flex flex-col">
         <CardHeader className="bg-muted/20 border-b pb-4">
           <CardTitle className="flex items-center gap-2 text-lg">
             <CalendarClock className="w-5 h-5 text-destructive" />
             Próximos Prazos
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="p-0 flex-1 overflow-auto">
           <div className="divide-y divide-border">
-            {upcomingDeadlines.map((task) => (
-              <div
-                key={task.id}
-                className="p-4 flex items-center justify-between hover:bg-muted/30 transition-colors"
-              >
-                <p className="font-semibold text-sm text-foreground line-clamp-1">{task.title}</p>
-                <span className="text-xs font-bold text-destructive bg-destructive/10 px-2 py-1 rounded-md">
-                  {task.date}
-                </span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-sm transition-shadow hover:shadow-md md:col-span-2 lg:col-span-1">
-        <CardHeader className="bg-muted/20 border-b pb-4">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Trophy className="w-5 h-5 text-accent" />
-            Conquistas
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6 flex flex-col items-center justify-center text-center h-[240px]">
-          {achievements.length > 0 ? (
-            <div>List of achievements...</div>
-          ) : (
-            <div className="w-full flex flex-col items-center animate-fade-in">
-              <div className="p-4 bg-muted rounded-full mb-3 ring-4 ring-background shadow-sm">
-                <Trophy className="w-8 h-8 text-muted-foreground/40" />
-              </div>
-              <h4 className="text-sm font-bold text-foreground mb-1">Sem conquistas ainda</h4>
-              <p className="text-xs text-muted-foreground mb-6">
-                Complete mais tarefas para desbloquear badges exclusivos.
-              </p>
-
-              <div className="w-full space-y-1.5 px-4">
-                <div className="flex justify-between text-[10px] text-muted-foreground font-semibold">
-                  <span className="uppercase tracking-wider">Próximo Nível</span>
-                  <span>120/500 pts</span>
+            {upcomingDeadlines.map((task) => {
+              const isOverdue = task.dueDate ? new Date(task.dueDate) < new Date() : false
+              return (
+                <div
+                  key={task.id}
+                  className="p-4 flex flex-col gap-2 hover:bg-muted/30 transition-colors bg-background"
+                >
+                  <p className="font-semibold text-sm text-foreground line-clamp-1">{task.title}</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-medium">
+                      <Clock
+                        className={cn(
+                          'w-3.5 h-3.5',
+                          isOverdue ? 'text-destructive' : 'text-muted-foreground',
+                        )}
+                      />
+                      <span
+                        className={cn(
+                          isOverdue ? 'text-destructive font-bold' : 'text-muted-foreground',
+                        )}
+                      >
+                        {task.dueDate}
+                      </span>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] bg-background">
+                      {statusMap[task.status]?.label || task.status}
+                    </Badge>
+                  </div>
                 </div>
-                <Progress value={24} className="h-1.5" />
+              )
+            })}
+            {upcomingDeadlines.length === 0 && (
+              <div className="p-6 text-center text-muted-foreground text-sm">
+                Nenhum prazo próximo.
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

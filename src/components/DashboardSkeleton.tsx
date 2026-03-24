@@ -12,11 +12,15 @@ export default function DashboardSkeleton() {
           ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Skeleton className="h-[320px] lg:col-span-2 w-full rounded-xl shadow-sm" />
+          <Skeleton className="h-[350px] lg:col-span-2 w-full rounded-xl shadow-sm" />
           <div className="space-y-6 lg:col-span-1 flex flex-col">
-            <Skeleton className="h-[180px] w-full rounded-xl shadow-sm" />
-            <Skeleton className="h-[120px] w-full rounded-xl shadow-sm" />
+            <Skeleton className="h-[170px] w-full rounded-xl shadow-sm" />
+            <Skeleton className="h-[156px] w-full rounded-xl shadow-sm" />
           </div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Skeleton className="h-[400px] lg:col-span-2 w-full rounded-xl shadow-sm" />
+          <Skeleton className="h-[400px] lg:col-span-1 w-full rounded-xl shadow-sm" />
         </div>
       </div>
     </PageTransition>
