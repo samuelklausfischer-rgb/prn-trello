@@ -13,6 +13,9 @@ export type User = {
   level: number
   xp?: number
   streak_days?: number
+  bio?: string
+  phone?: string
+  department?: string
 }
 
 export const SYSTEM_USERS: User[] = [
@@ -59,6 +62,9 @@ const mapRecordToUser = (record: any): User | null => {
     level: record.level || 1,
     xp: record.xp || 0,
     streak_days: record.streak_days || 0,
+    bio: record.bio || '',
+    phone: record.phone || '',
+    department: record.department || '',
   }
 }
 
@@ -92,8 +98,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const newXp = (user.xp || 0) + points
 
     try {
-      // The backend level_updater hook will automatically calculate the level,
-      // and the points_logger hook will create the point_history log using the headers.
       await pb.collection('users').update(
         user.id,
         {

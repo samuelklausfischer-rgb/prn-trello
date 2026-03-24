@@ -5,3 +5,7 @@ export const getUsers = async () => {
     sort: 'name',
   })
 }
+
+export const updateUser = async (id: string, data: any) => {
+  return await pb.collection('users').update(id, data)
+}
