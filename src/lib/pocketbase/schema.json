@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-23T20:11:33.684Z",
+  "generatedAt": "2026-03-24T11:22:36.282Z",
   "collections": [
     {
       "name": "users",
@@ -163,9 +163,89 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "due_date",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "started_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "completed_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created_by",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "delegated_to",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "department",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "tags",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "is_archived",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "points_reward",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "points_awarded",
+          "type": "bool",
+          "required": false,
+          "system": false
         }
       ],
-      "indexes": []
+      "indexes": [
+        "CREATE INDEX `idx_tasks_status` ON `tasks` (status)",
+        "CREATE INDEX `idx_tasks_created_by` ON `tasks` (created_by)",
+        "CREATE INDEX `idx_tasks_delegated_to` ON `tasks` (delegated_to)",
+        "CREATE INDEX `idx_tasks_due_date` ON `tasks` (due_date)",
+        "CREATE INDEX `idx_tasks_delegated_status` ON `tasks` (delegated_to, status)"
+      ]
     },
     {
       "name": "alerts",
