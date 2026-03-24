@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-24T12:43:21.448Z",
+  "generatedAt": "2026-03-24T13:08:11.574Z",
   "collections": [
     {
       "name": "users",
@@ -129,11 +129,11 @@
       "name": "tasks",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != ''",
-        "view": "@request.auth.id != ''",
-        "create": "@request.auth.id != ''",
-        "update": "created_by = @request.auth.id || @request.auth.role = 'admin'",
-        "delete": "created_by = @request.auth.id || @request.auth.role = 'admin'"
+        "list": "@request.auth.role = 'admin' || created_by = @request.auth.id || delegated_to = @request.auth.id",
+        "view": "@request.auth.role = 'admin' || created_by = @request.auth.id || delegated_to = @request.auth.id",
+        "create": "@request.auth.role = 'admin' || (created_by = @request.auth.id && (delegated_to = '' || delegated_to = @request.auth.id))",
+        "update": "@request.auth.role = 'admin' || created_by = @request.auth.id || delegated_to = @request.auth.id",
+        "delete": "@request.auth.role = 'admin' || created_by = @request.auth.id"
       },
       "fields": [
         {
