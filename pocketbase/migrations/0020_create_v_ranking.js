@@ -5,8 +5,7 @@ migrate(
       type: 'view',
       listRule: "@request.auth.id != ''",
       viewRule: "@request.auth.id != ''",
-      viewQuery:
-        'SELECT id, name, avatar, points, level, ROW_NUMBER() OVER(ORDER BY points DESC) as position FROM users WHERE is_active = true',
+      viewQuery: 'SELECT id, name, avatar, points, level FROM users WHERE is_active = true',
     })
     app.save(collection)
   },

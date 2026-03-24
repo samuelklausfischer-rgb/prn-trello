@@ -24,9 +24,14 @@ export interface UserStatsRecord {
 }
 
 export const getRanking = async (): Promise<RankingRecord[]> => {
-  return await pb.collection('v_ranking').getFullList<RankingRecord>({
-    sort: 'position',
+  const records = await pb.collection('v_ranking').getFullList<Omit<RankingRecord, 'position'>>({
+    sort: '-points',
   })
+
+  return records.map((record, index) => ({
+    ...record,
+    position: index + 1,
+  })) as RankingRecord[]
 }
 
 export const getUserStats = async (userId: string): Promise<UserStatsRecord> => {
