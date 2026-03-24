@@ -19,6 +19,8 @@ export interface UserStatsRecord {
   streak_days: number
   total_tasks: number
   completed_tasks: number
+  completion_rate: number
+  xp: number
 }
 
 export const getRanking = async (): Promise<RankingRecord[]> => {

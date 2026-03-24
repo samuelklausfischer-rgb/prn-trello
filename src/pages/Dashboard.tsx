@@ -11,7 +11,7 @@ import { AchievementsWidget, AchievementItem } from '@/components/dashboard/Achi
 import DashboardSkeleton from '@/components/DashboardSkeleton'
 import PageTransition from '@/components/PageTransition'
 import { Target, CheckCircle, Trophy, BarChart3 } from 'lucide-react'
-import { getRanking } from '@/services/views'
+import { getRanking, getUserStats } from '@/services/views'
 import { getAchievements, getUserAchievements } from '@/services/achievements'
 import { getLevels } from '@/services/gamification'
 
@@ -50,24 +50,36 @@ export default function Dashboard() {
     if (!user?.id) return
 
     try {
-      const [tasks, allUsers, rankingRaw, achievementsList, userAchievements, levelsList] =
-        await Promise.all([
-          pb.collection('tasks').getFullList({
-            filter: `created_by = '${user.id}' || delegated_to = '${user.id}'`,
-            sort: '-updated',
-          }),
-          pb.collection('users').getFullList({ filter: 'is_active = true' }),
-          getRanking().catch(() => []),
-          getAchievements().catch(() => []),
-          getUserAchievements(user.id).catch(() => []),
-          getLevels().catch(() => []),
-        ])
+      const [
+        tasks,
+        allUsers,
+        rankingRaw,
+        achievementsList,
+        userAchievements,
+        levelsList,
+        userStats,
+      ] = await Promise.all([
+        pb.collection('tasks').getFullList({
+          filter: `created_by = '${user.id}' || delegated_to = '${user.id}'`,
+          sort: '-updated',
+        }),
+        pb.collection('users').getFullList({ filter: 'is_active = true' }),
+        getRanking().catch(() => []),
+        getAchievements().catch(() => []),
+        getUserAchievements(user.id).catch(() => []),
+        getLevels().catch(() => []),
+        getUserStats(user.id).catch(() => null),
+      ])
 
-      // Stats
-      const totalTasks = tasks.length
+      // Stats derived from User Stats View (with fallback to local calculation)
       const completedTasks = tasks.filter((t) => t.status === 'done')
-      const completedCount = completedTasks.length
-      const completionRate = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0
+      const totalTasks = userStats ? userStats.total_tasks : tasks.length
+      const completedCount = userStats ? userStats.completed_tasks : completedTasks.length
+      const completionRate = userStats
+        ? userStats.completion_rate
+        : totalTasks > 0
+          ? Math.round((completedCount / totalTasks) * 100)
+          : 0
 
       // Level info
       const currentUserData = await pb
@@ -159,9 +171,7 @@ export default function Dashboard() {
       const ranking: RankingItem[] = rankingRaw.map((r) => ({
         id: r.id,
         name: r.name,
-        avatar: r.avatar
-          ? pb.files.getURL({ id: r.id, collectionId: '_pb_users_auth_' }, r.avatar)
-          : '',
+        avatar: r.avatar ? pb.files.getURL({ id: r.id, collectionId: 'users' }, r.avatar) : '',
         points: r.points,
         level: r.level,
         position: r.position,
@@ -172,13 +182,13 @@ export default function Dashboard() {
           totalTasks,
           completed: completedCount,
           completionRate,
-          points: currentUserData.points || 0,
+          points: userStats?.points ?? currentUserData.points ?? 0,
           levelName: currentLevelObj.name,
         },
         productivityData: last7Days,
         progressData,
         teamComparison: [
-          { name: 'Você', value: currentUserData.points || 0, type: 'user' },
+          { name: 'Você', value: userStats?.points ?? currentUserData.points ?? 0, type: 'user' },
           { name: 'Média da Equipe', value: teamAvgPoints, type: 'team' },
         ],
         recentTasks,
