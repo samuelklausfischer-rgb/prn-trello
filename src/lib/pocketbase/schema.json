@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-24T12:12:50.873Z",
+  "generatedAt": "2026-03-24T12:18:32.984Z",
   "collections": [
     {
       "name": "users",
@@ -253,9 +253,9 @@
       "apiRules": {
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
-        "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != ''"
+        "create": "@request.auth.role = 'admin'",
+        "update": "@request.auth.role = 'admin'",
+        "delete": "@request.auth.role = 'admin'"
       },
       "fields": [
         {
@@ -285,9 +285,75 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "target_user",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "target_role",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["admin", "employee"]
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "message",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "scheduled_for",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "expires_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "action_url",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created_by",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "is_sent",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "sent_at",
+          "type": "date",
+          "required": false,
+          "system": false
         }
       ],
-      "indexes": []
+      "indexes": [
+        "CREATE INDEX `idx_alerts_target_user` ON `alerts` (target_user)",
+        "CREATE INDEX `idx_alerts_created_by` ON `alerts` (created_by)"
+      ]
     },
     {
       "name": "achievements",
@@ -760,6 +826,95 @@
         }
       ],
       "indexes": ["CREATE UNIQUE INDEX idx_levels_number ON levels (level_number)"]
+    },
+    {
+      "name": "notifications",
+      "type": "base",
+      "apiRules": {
+        "list": "user = @request.auth.id",
+        "view": "user = @request.auth.id",
+        "create": null,
+        "update": "user = @request.auth.id",
+        "delete": "user = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "alert",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "alerts"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "message",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "type",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "task_deadline",
+            "performance",
+            "achievement",
+            "system",
+            "custom",
+            "delegation"
+          ]
+        },
+        {
+          "name": "action_url",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "is_read",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "read_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_notifications_user ON notifications (user)",
+        "CREATE INDEX idx_notifications_user_is_read ON notifications (user, is_read)"
+      ]
     }
   ]
 }

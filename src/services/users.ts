@@ -1,3 +1,7 @@
 import pb from '@/lib/pocketbase/client'
 
-export const getUsers = () => pb.collection('users').getFullList({ sort: 'name' })
+export const getUsers = async () => {
+  return await pb.collection('users').getFullList({
+    sort: 'name',
+  })
+}

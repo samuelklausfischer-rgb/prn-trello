@@ -11,6 +11,7 @@ import {
   Activity,
   Info,
   AlertTriangle,
+  CheckCheck,
 } from 'lucide-react'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import {
@@ -28,23 +29,31 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/useAuthHooks'
-import useAlertStore from '@/stores/useAlertStore'
 import { useTheme } from './ThemeProvider'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { formatDistanceToNow, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import {
+  getNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+} from '@/services/notifications'
+import { useRealtime } from '@/hooks/use-realtime'
+import { cn } from '@/lib/utils'
 
 export default function Header() {
   const { user, logout, role } = useAuth()
-  const { alerts, markAsRead } = useAlertStore()
   const { theme, setTheme } = useTheme()
   const location = useLocation()
   const navigate = useNavigate()
   const [animProgress, setAnimProgress] = useState(0)
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [popoverOpen, setPopoverOpen] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -53,6 +62,24 @@ export default function Header() {
       return () => clearTimeout(timer)
     }
   }, [user?.xp])
+
+  const loadNotifications = async () => {
+    if (!user) return
+    try {
+      const data = await getNotifications()
+      setNotifications(data)
+    } catch (e) {
+      console.error('Failed to load notifications', e)
+    }
+  }
+
+  useEffect(() => {
+    loadNotifications()
+  }, [user])
+
+  useRealtime('notifications', () => {
+    loadNotifications()
+  })
 
   if (!user) return null
 
@@ -83,21 +110,38 @@ export default function Header() {
     navigate('/auth')
   }
 
+  const handleNotificationClick = async (notif: any) => {
+    if (!notif.is_read) {
+      await markNotificationAsRead(notif.id)
+      loadNotifications() // Optimistic update
+    }
+    if (notif.action_url) {
+      setPopoverOpen(false)
+      if (notif.action_url.startsWith('http')) {
+        window.open(notif.action_url, '_blank')
+      } else {
+        navigate(notif.action_url)
+      }
+    }
+  }
+
+  const handleMarkAll = async () => {
+    if (!user) return
+    await markAllNotificationsAsRead(user.id)
+    loadNotifications()
+  }
+
   const isAdmin = role === 'ADMIN'
 
-  const myAlerts = alerts
-    .filter((a) => !a.targetUserId || a.targetUserId === user.id)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-
-  const unreadAlerts = myAlerts.filter((a) => !a.readBy.includes(user.id))
+  const unreadAlerts = notifications.filter((n) => !n.is_read)
 
   const getAlertIcon = (type: string) => {
     switch (type) {
-      case 'TASK_DEADLINE':
+      case 'task_deadline':
         return <AlertTriangle className="w-4 h-4 text-orange-500" />
-      case 'ACHIEVEMENT':
+      case 'achievement':
         return <Trophy className="w-4 h-4 text-accent" />
-      case 'PERFORMANCE':
+      case 'performance':
         return <Activity className="w-4 h-4 text-blue-500" />
       default:
         return <Info className="w-4 h-4 text-primary" />
@@ -143,44 +187,66 @@ export default function Header() {
         </div>
 
         <div className="flex items-center gap-3">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+            <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" className="relative rounded-full">
                 <Bell className="w-5 h-5 text-muted-foreground" />
                 {unreadAlerts.length > 0 && (
                   <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full border-2 border-background animate-pulse" />
                 )}
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80 p-0 overflow-hidden">
+            </PopoverTrigger>
+            <PopoverContent
+              align="end"
+              className="w-80 p-0 overflow-hidden shadow-lg border-border/60"
+            >
               <div className="bg-muted/50 p-3 border-b border-border/50 flex items-center justify-between">
-                <h4 className="font-bold text-sm text-foreground">Notificações</h4>
-                <Badge variant="secondary" className="text-[10px]">
-                  {unreadAlerts.length} não lidas
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-bold text-sm text-foreground">Notificações</h4>
+                  <Badge variant="secondary" className="text-[10px]">
+                    {unreadAlerts.length} não lidas
+                  </Badge>
+                </div>
+                {unreadAlerts.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={handleMarkAll}
+                    title="Marcar todas como lidas"
+                  >
+                    <CheckCheck className="w-4 h-4 text-muted-foreground hover:text-primary" />
+                  </Button>
+                )}
               </div>
               <ScrollArea className="max-h-[300px]">
-                {myAlerts.length === 0 ? (
+                {notifications.length === 0 ? (
                   <div className="p-6 text-center text-sm text-muted-foreground">
                     Nenhuma notificação no momento.
                   </div>
                 ) : (
                   <div className="divide-y divide-border/50">
-                    {myAlerts.map((alert) => {
-                      const isUnread = !alert.readBy.includes(user.id)
+                    {notifications.map((alert) => {
+                      const isUnread = !alert.is_read
                       return (
                         <div
                           key={alert.id}
-                          className={`p-3 transition-colors hover:bg-muted/30 cursor-pointer flex gap-3 ${isUnread ? 'bg-primary/5' : ''}`}
-                          onClick={() => {
-                            if (isUnread) markAsRead(alert.id, user.id)
-                          }}
+                          className={cn(
+                            'p-3 transition-colors hover:bg-muted/30 cursor-pointer flex gap-3',
+                            isUnread && 'bg-primary/5',
+                          )}
+                          onClick={() => handleNotificationClick(alert)}
                         >
                           <div className="mt-0.5">{getAlertIcon(alert.type)}</div>
                           <div className="flex-1 space-y-1">
                             <div className="flex justify-between items-start gap-2">
                               <p
-                                className={`text-sm ${isUnread ? 'font-semibold text-foreground' : 'font-medium text-foreground/80'}`}
+                                className={cn(
+                                  'text-sm',
+                                  isUnread
+                                    ? 'font-semibold text-foreground'
+                                    : 'font-medium text-foreground/80',
+                                )}
                               >
                                 {alert.title}
                               </p>
@@ -192,7 +258,7 @@ export default function Header() {
                               {alert.message}
                             </p>
                             <p className="text-[10px] text-muted-foreground/80 font-medium">
-                              {formatDistanceToNow(parseISO(alert.createdAt), {
+                              {formatDistanceToNow(parseISO(alert.created), {
                                 addSuffix: true,
                                 locale: ptBR,
                               })}
@@ -204,8 +270,8 @@ export default function Header() {
                   </div>
                 )}
               </ScrollArea>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </PopoverContent>
+          </Popover>
 
           <Button
             variant="outline"

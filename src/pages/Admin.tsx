@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/useAuthHooks'
-import { SYSTEM_USERS } from '@/stores/useAuthStore'
-import useAlertStore, { AlertType } from '@/stores/useAlertStore'
+import { getUsers } from '@/services/users'
+import { createAlert } from '@/services/alerts'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import {
   Table,
@@ -24,33 +24,71 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Activity, ShieldCheck, Search, BellRing } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/use-toast'
 import PageTransition from '@/components/PageTransition'
 
 export default function Admin() {
   const { user } = useAuth()
-  const { addAlert } = useAlertStore()
 
+  const [users, setUsers] = useState<any[]>([])
   const [alertTitle, setAlertTitle] = useState('')
   const [alertMessage, setAlertMessage] = useState('')
-  const [alertType, setAlertType] = useState<AlertType>('SYSTEM')
-  const [targetUser, setTargetUser] = useState('ALL')
+  const [alertType, setAlertType] = useState('system')
+  const [targetType, setTargetType] = useState<'all' | 'role' | 'user'>('all')
+  const [targetRole, setTargetRole] = useState('employee')
+  const [targetUser, setTargetUser] = useState('')
+  const [actionUrl, setActionUrl] = useState('')
+  const [sendNow, setSendNow] = useState(true)
+  const [scheduledFor, setScheduledFor] = useState('')
 
-  const handleCreateAlert = (e: React.FormEvent) => {
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const data = await getUsers()
+        setUsers(data)
+      } catch (error) {
+        console.error('Failed to fetch users', error)
+      }
+    }
+    fetchUsers()
+  }, [])
+
+  const handleCreateAlert = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!alertTitle || !alertMessage || !user) return
 
-    addAlert({
-      title: alertTitle,
-      message: alertMessage,
-      type: alertType,
-      targetUserId: targetUser === 'ALL' ? undefined : targetUser,
-      createdBy: user.id,
-    })
+    if (targetType === 'user' && !targetUser) {
+      toast({ title: 'Selecione um usuário', variant: 'destructive' })
+      return
+    }
 
-    toast({ title: 'Alerta enviado com sucesso!' })
-    setAlertTitle('')
-    setAlertMessage('')
+    if (!sendNow && !scheduledFor) {
+      toast({ title: 'Selecione uma data para envio', variant: 'destructive' })
+      return
+    }
+
+    try {
+      await createAlert({
+        title: alertTitle,
+        message: alertMessage,
+        type: alertType,
+        target_user: targetType === 'user' ? targetUser : null,
+        target_role: targetType === 'role' ? targetRole : null,
+        action_url: actionUrl,
+        created_by: user.id,
+        is_sent: sendNow,
+        scheduled_for: sendNow ? null : new Date(scheduledFor).toISOString(),
+      })
+
+      toast({ title: 'Alerta programado com sucesso!' })
+      setAlertTitle('')
+      setAlertMessage('')
+      setActionUrl('')
+      setScheduledFor('')
+    } catch (error) {
+      toast({ title: 'Erro ao criar alerta', variant: 'destructive' })
+    }
   }
 
   const mockLogs = [
@@ -119,7 +157,7 @@ export default function Admin() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {SYSTEM_USERS.map((u) => (
+                  {users.map((u) => (
                     <TableRow key={u.id} className="hover:bg-muted/30 transition-colors">
                       <TableCell className="py-4">
                         <p className="font-bold text-foreground">{u.name}</p>
@@ -127,18 +165,27 @@ export default function Admin() {
                       </TableCell>
                       <TableCell>
                         <Badge
-                          variant={u.role === 'ADMIN' ? 'default' : 'secondary'}
-                          className={`font-bold tracking-wider text-[10px] ${u.role === 'ADMIN' ? 'bg-amber-500 hover:bg-amber-600' : ''}`}
+                          variant={u.role === 'admin' ? 'default' : 'secondary'}
+                          className={`font-bold tracking-wider text-[10px] uppercase ${u.role === 'admin' ? 'bg-amber-500 hover:bg-amber-600' : ''}`}
                         >
-                          {u.role === 'ADMIN' ? 'ADMINISTRADOR' : 'FUNCIONÁRIO'}
+                          {u.role}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <p className="font-bold text-primary">Nível {u.level}</p>
-                        <p className="text-xs text-muted-foreground font-medium">{u.points} pts</p>
+                        <p className="font-bold text-primary">Nível {u.level || 1}</p>
+                        <p className="text-xs text-muted-foreground font-medium">
+                          {u.points || 0} pts
+                        </p>
                       </TableCell>
                     </TableRow>
                   ))}
+                  {users.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-center py-6 text-muted-foreground">
+                        Nenhum usuário encontrado.
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -151,41 +198,75 @@ export default function Admin() {
                   <BellRing className="w-5 h-5 text-accent" />
                   Enviar Alerta
                 </CardTitle>
-                <CardDescription>Comunique-se com a equipe ou indivíduos.</CardDescription>
+                <CardDescription>
+                  Comunique-se com a equipe ou indivíduos via Notificações.
+                </CardDescription>
               </CardHeader>
               <CardContent className="p-5">
                 <form onSubmit={handleCreateAlert} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="target">Destinatário</Label>
-                    <Select value={targetUser} onValueChange={setTargetUser}>
+                    <Label htmlFor="targetType">Destino</Label>
+                    <Select value={targetType} onValueChange={(v: any) => setTargetType(v)}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="ALL">Todos os Usuários</SelectItem>
-                        {SYSTEM_USERS.filter((u) => u.role !== 'ADMIN').map((u) => (
-                          <SelectItem key={u.id} value={u.id}>
-                            {u.name}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="all">Todos os Usuários</SelectItem>
+                        <SelectItem value="role">Por Cargo</SelectItem>
+                        <SelectItem value="user">Usuário Específico</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {targetType === 'role' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="targetRole">Cargo</Label>
+                      <Select value={targetRole} onValueChange={setTargetRole}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">Administrador</SelectItem>
+                          <SelectItem value="employee">Funcionário</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {targetType === 'user' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="targetUser">Usuário</Label>
+                      <Select value={targetUser} onValueChange={setTargetUser}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um usuário" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {users.map((u) => (
+                            <SelectItem key={u.id} value={u.id}>
+                              {u.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <Label htmlFor="type">Tipo de Alerta</Label>
-                    <Select value={alertType} onValueChange={(v: AlertType) => setAlertType(v)}>
+                    <Select value={alertType} onValueChange={setAlertType}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="SYSTEM">Sistema</SelectItem>
-                        <SelectItem value="TASK_DEADLINE">Prazo de Tarefa</SelectItem>
-                        <SelectItem value="ACHIEVEMENT">Conquista</SelectItem>
-                        <SelectItem value="PERFORMANCE">Desempenho</SelectItem>
-                        <SelectItem value="CUSTOM">Outro</SelectItem>
+                        <SelectItem value="system">Sistema</SelectItem>
+                        <SelectItem value="task_deadline">Prazo de Tarefa</SelectItem>
+                        <SelectItem value="achievement">Conquista</SelectItem>
+                        <SelectItem value="performance">Desempenho</SelectItem>
+                        <SelectItem value="custom">Outro</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="title">Título</Label>
                     <Input
@@ -195,6 +276,7 @@ export default function Admin() {
                       required
                     />
                   </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="message">Mensagem</Label>
                     <Textarea
@@ -205,8 +287,37 @@ export default function Admin() {
                       required
                     />
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="actionUrl">Link de Ação (Opcional)</Label>
+                    <Input
+                      id="actionUrl"
+                      value={actionUrl}
+                      onChange={(e) => setActionUrl(e.target.value)}
+                      placeholder="https://..."
+                    />
+                  </div>
+
+                  <div className="flex items-center space-x-2 py-2">
+                    <Switch id="sendNow" checked={sendNow} onCheckedChange={setSendNow} />
+                    <Label htmlFor="sendNow">Enviar Imediatamente</Label>
+                  </div>
+
+                  {!sendNow && (
+                    <div className="space-y-2">
+                      <Label htmlFor="scheduledFor">Agendar para</Label>
+                      <Input
+                        id="scheduledFor"
+                        type="datetime-local"
+                        value={scheduledFor}
+                        onChange={(e) => setScheduledFor(e.target.value)}
+                        required={!sendNow}
+                      />
+                    </div>
+                  )}
+
                   <Button type="submit" className="w-full">
-                    Disparar Alerta
+                    {sendNow ? 'Disparar Alerta' : 'Agendar Alerta'}
                   </Button>
                 </form>
               </CardContent>
