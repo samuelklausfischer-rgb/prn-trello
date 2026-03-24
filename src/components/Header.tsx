@@ -8,7 +8,6 @@ import {
   Moon,
   Sun,
   Bell,
-  CheckCircle2,
   Activity,
   Info,
   AlertTriangle,
@@ -49,11 +48,11 @@ export default function Header() {
 
   useEffect(() => {
     if (user) {
-      const target = ((user.points % 500) / 500) * 100
+      const target = (((user.xp || 0) % 500) / 500) * 100 // Dynamic progress visual
       const timer = setTimeout(() => setAnimProgress(target), 200)
       return () => clearTimeout(timer)
     }
-  }, [user?.points])
+  }, [user?.xp])
 
   if (!user) return null
 
@@ -66,6 +65,10 @@ export default function Header() {
         return 'Gestão de Tarefas'
       case '/team':
         return 'Equipe & Ranking'
+      case '/achievements':
+        return 'Conquistas'
+      case '/profile':
+        return 'Meu Perfil'
       case '/admin':
         return 'Painel Admin'
       case '/admin/dashboard':
@@ -281,8 +284,13 @@ export default function Header() {
                 )}
               </DropdownMenuItem>
 
-              <DropdownMenuItem className="cursor-pointer py-2 text-foreground">
-                <UserIcon className="w-4 h-4 mr-2 text-muted-foreground" /> Meu Perfil
+              <DropdownMenuItem asChild>
+                <Link
+                  to="/profile"
+                  className="cursor-pointer py-2 w-full text-foreground flex items-center"
+                >
+                  <UserIcon className="w-4 h-4 mr-2 text-muted-foreground" /> Meu Perfil
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={handleLogout}

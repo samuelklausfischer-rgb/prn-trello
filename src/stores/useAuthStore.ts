@@ -42,7 +42,7 @@ type AuthContextType = {
   user: User | null
   login: (user: User) => void
   logout: () => void
-  addPoints: (points: number) => void
+  addPoints: (points: number, reason?: string, sourceType?: string) => void
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -82,15 +82,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     pb.authStore.clear()
   }
 
-  const addPoints = async (points: number) => {
+  const addPoints = async (
+    points: number,
+    reason: string = 'Ajuste manual',
+    sourceType: string = 'system',
+  ) => {
     if (!user) return
     const newPoints = user.points + points
-    const newLevel = Math.floor(newPoints / 500) + 1
-
-    setUser((prev) => (prev ? { ...prev, points: newPoints, level: newLevel } : null))
+    const newXp = (user.xp || 0) + points
 
     try {
-      await pb.collection('users').update(user.id, { points: newPoints, level: newLevel })
+      // The backend level_updater hook will automatically calculate the level,
+      // and the points_logger hook will create the point_history log using the headers.
+      await pb.collection('users').update(
+        user.id,
+        {
+          points: newPoints,
+          xp: newXp,
+        },
+        {
+          headers: {
+            'x-point-reason': encodeURIComponent(reason),
+            'x-source-type': sourceType,
+          },
+        },
+      )
     } catch (e) {
       console.error('Failed to update points:', e)
     }

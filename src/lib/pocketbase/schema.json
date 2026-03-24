@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-24T12:05:37.474Z",
+  "generatedAt": "2026-03-24T12:12:50.873Z",
   "collections": [
     {
       "name": "users",
@@ -625,6 +625,141 @@
         "CREATE UNIQUE INDEX idx_user_achievements_unique ON user_achievements (user_id, achievement_id)",
         "CREATE INDEX idx_user_achievements_unlocked ON user_achievements (unlocked_at DESC)"
       ]
+    },
+    {
+      "name": "points_history",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id = user_id || @request.auth.role = 'admin'",
+        "view": "@request.auth.id = user_id || @request.auth.role = 'admin'",
+        "create": "@request.auth.id != ''",
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "points",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "reason",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "source_type",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "source_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "balance_after",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_points_history_user ON points_history (user_id)"]
+    },
+    {
+      "name": "levels",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "level_number",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "min_xp",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "max_xp",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "icon",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "color",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "rewards",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE UNIQUE INDEX idx_levels_number ON levels (level_number)"]
     }
   ]
 }
