@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getTasks, updateTask, TaskRecord } from '@/services/tasks'
 import { getUsers } from '@/services/users'
+import { getChecklists, ChecklistRecord } from '@/services/checklists'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useToast } from '@/hooks/use-toast'
 import { getErrorMessage } from '@/lib/pocketbase/errors'
@@ -16,6 +17,7 @@ import { Plus, LayoutDashboard, Search, Archive } from 'lucide-react'
 export default function Tasks() {
   const [tasks, setTasks] = useState<TaskRecord[]>([])
   const [users, setUsers] = useState<any[]>([])
+  const [checklists, setChecklists] = useState<ChecklistRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [showArchived, setShowArchived] = useState(false)
@@ -28,9 +30,10 @@ export default function Tasks() {
 
   const loadData = async () => {
     try {
-      const [tData, uData] = await Promise.all([getTasks(), getUsers()])
+      const [tData, uData, cData] = await Promise.all([getTasks(), getUsers(), getChecklists()])
       setTasks(tData)
       setUsers(uData)
+      setChecklists(cData)
     } finally {
       setLoading(false)
     }
@@ -41,6 +44,10 @@ export default function Tasks() {
   }, [])
 
   useRealtime('tasks', () => {
+    loadData()
+  })
+
+  useRealtime('checklists', () => {
     loadData()
   })
 
@@ -124,17 +131,21 @@ export default function Tasks() {
                 placeholder="Buscar tarefas..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 h-10 w-full sm:w-64 glass-card border-white/20 focus:ring-primary"
+                className="pl-9 h-10 w-full sm:w-64 glass-card border-white/20 focus:ring-primary rounded-xl"
               />
             </div>
             <Button
               variant={showArchived ? 'secondary' : 'outline'}
               onClick={() => setShowArchived(!showArchived)}
+              className="rounded-xl"
             >
               <Archive className="w-4 h-4 mr-2" />{' '}
               {showArchived ? 'Ocultar Arquivados' : 'Mostrar Arquivados'}
             </Button>
-            <Button onClick={() => setIsNewTaskOpen(true)}>
+            <Button
+              onClick={() => setIsNewTaskOpen(true)}
+              className="rounded-xl shadow-[0_0_15px_rgba(0,212,255,0.4)]"
+            >
               <Plus className="w-4 h-4 mr-2" /> Nova Tarefa
             </Button>
           </div>
@@ -146,23 +157,24 @@ export default function Tasks() {
             return (
               <div
                 key={col.id}
-                className={`stagger-item stagger-${(index % 5) + 2} flex flex-col glass-card rounded-2xl p-4 min-w-[320px] w-[320px] h-full transition-colors hover:bg-white/50 dark:hover:bg-slate-900/50`}
+                className={`stagger-item stagger-${(index % 5) + 2} flex flex-col glass-card rounded-[2rem] p-4 min-w-[340px] w-[340px] h-full transition-colors hover:bg-white/50 dark:hover:bg-slate-900/50`}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => handleDrop(e, col.id)}
               >
-                <div className="flex items-center justify-between mb-4 px-1">
-                  <h3 className="font-bold text-sm uppercase tracking-wider flex items-center gap-2 text-foreground/80">
+                <div className="flex items-center justify-between mb-4 px-2">
+                  <h3 className="font-extrabold text-[13px] uppercase tracking-widest flex items-center gap-2 text-foreground/80">
                     {col.label}{' '}
-                    <span className="bg-background/80 backdrop-blur-md border border-border/50 px-2 py-0.5 rounded-full text-xs shadow-sm">
+                    <span className="bg-background/90 backdrop-blur-md border border-border/50 px-2.5 py-0.5 rounded-full text-xs shadow-sm text-foreground">
                       {colTasks.length}
                     </span>
                   </h3>
                 </div>
-                <div className="flex-1 space-y-3 overflow-y-auto pr-2 custom-scrollbar min-h-[150px]">
+                <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar min-h-[150px]">
                   {colTasks.map((task) => (
                     <TaskCard
                       key={task.id}
                       task={task}
+                      checklists={checklists.filter((c) => c.task_id === task.id)}
                       onClick={() => setSelectedTaskId(task.id)}
                       onDragStart={(e: React.DragEvent) => handleDragStart(e, task.id)}
                       onDragEnd={() => setDraggedTaskId(null)}
@@ -170,7 +182,7 @@ export default function Tasks() {
                     />
                   ))}
                   {colTasks.length === 0 && (
-                    <div className="h-24 border-2 border-dashed border-border/60 rounded-xl flex items-center justify-center text-sm text-muted-foreground font-medium bg-background/20 backdrop-blur-sm">
+                    <div className="h-28 border-2 border-dashed border-border/60 rounded-3xl flex items-center justify-center text-sm text-muted-foreground font-medium bg-background/20 backdrop-blur-sm">
                       Solte as tarefas aqui
                     </div>
                   )}

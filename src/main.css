@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -108,7 +108,7 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
-    @apply antialiased transition-colors duration-300;
+    @apply antialiased transition-colors duration-300 font-sans;
   }
 }
 
@@ -120,19 +120,38 @@
     @apply bg-slate-900/40 backdrop-blur-[20px] border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)];
   }
 
+  .premium-task-card {
+    @apply bg-gradient-to-br from-background/95 to-background/60 backdrop-blur-xl border-white/40 dark:border-white/10;
+    box-shadow:
+      0 8px 32px -4px rgba(31, 38, 135, 0.1),
+      inset 0 1px 1px rgba(255, 255, 255, 0.5);
+  }
+  .dark .premium-task-card {
+    box-shadow:
+      0 8px 32px -4px rgba(0, 0, 0, 0.5),
+      inset 0 1px 1px rgba(255, 255, 255, 0.05);
+  }
+  .premium-task-card:hover {
+    @apply border-accent/40;
+    box-shadow:
+      0 12px 40px -8px rgba(161, 0, 255, 0.25),
+      0 0 20px -5px rgba(0, 212, 255, 0.2),
+      inset 0 1px 1px rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+  }
+  .dark .premium-task-card:hover {
+    box-shadow:
+      0 12px 40px -8px rgba(161, 0, 255, 0.35),
+      0 0 20px -5px rgba(0, 212, 255, 0.25),
+      inset 0 1px 1px rgba(255, 255, 255, 0.05);
+  }
+
   .glass-panel {
     @apply bg-background/60 backdrop-blur-2xl border-b border-border/50;
   }
 
   .hover-3d {
     @apply transition-all duration-300 ease-out will-change-transform;
-  }
-  .hover-3d:hover {
-    transform: perspective(1000px) rotateX(2deg) rotateY(-2deg) scale(1.02);
-    box-shadow: 0 15px 30px rgba(0, 212, 255, 0.2);
-  }
-  .dark .hover-3d:hover {
-    box-shadow: 0 15px 30px rgba(161, 0, 255, 0.2);
   }
 
   .bg-particles {
@@ -203,12 +222,6 @@
     }
   }
 
-  @keyframes shimmer-loader {
-    100% {
-      transform: translateX(100%);
-    }
-  }
-
   .animate-fade-in-up {
     animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
     will-change: transform, opacity;
@@ -255,6 +268,10 @@
 
     .bg-particles {
       animation: none !important;
+    }
+
+    .premium-task-card:hover {
+      transform: none !important;
     }
   }
 }

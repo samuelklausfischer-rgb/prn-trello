@@ -16,6 +16,12 @@ export interface ChecklistRecord {
   }
 }
 
+export const getChecklists = () =>
+  pb.collection('checklists').getFullList<ChecklistRecord>({
+    sort: 'order,created',
+    expand: 'completed_by',
+  })
+
 export const getChecklistsByTask = (taskId: string) =>
   pb.collection('checklists').getFullList<ChecklistRecord>({
     filter: `task_id = "${taskId}"`,
