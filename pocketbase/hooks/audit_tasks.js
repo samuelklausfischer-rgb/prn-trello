@@ -12,14 +12,14 @@ onRecordAfterUpdateSuccess((e) => {
       userId = reqInfo.auth.id
     }
   } catch (err) {
-    // Ignored: Not running inside an HTTP request context
+    // Ignored: Background process or non-HTTP context
   }
 
   if (!userId) {
     userId = e.record.get('created_by')
   }
 
-  const fieldsToWatch = ['status', 'priority', 'title', 'delegated_to', 'due_date']
+  const fieldsToWatch = ['priority', 'title', 'delegated_to', 'due_date']
   const historyCol = $app.findCollectionByNameOrId('task_history')
 
   fieldsToWatch.forEach((field) => {
@@ -27,15 +27,15 @@ onRecordAfterUpdateSuccess((e) => {
     const newVal = e.record.get(field)
 
     if (String(oldVal || '') !== String(newVal || '')) {
-      const record = new Record(historyCol)
-      record.set('task_id', e.record.id)
-      record.set('action', `${field}_update`)
-      record.set('description', `Task ${field} updated`)
-      record.set('old_value', String(oldVal || ''))
-      record.set('new_value', String(newVal || ''))
-      record.set('performed_by', userId)
-
       try {
+        const record = new Record(historyCol)
+        record.set('task_id', e.record.id)
+        record.set('action', `${field}_update`.toUpperCase())
+        record.set('description', `Campo ${field} atualizado`)
+        record.set('old_value', String(oldVal || ''))
+        record.set('new_value', String(newVal || ''))
+        record.set('performed_by', userId)
+
         $app.saveNoValidate(record)
       } catch (err) {
         console.error('Failed to log task history: ' + err)

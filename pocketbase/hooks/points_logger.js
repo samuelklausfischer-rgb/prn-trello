@@ -16,19 +16,17 @@ onRecordAfterUpdateSuccess((e) => {
 
   if (newPoints !== oldPoints) {
     const diff = newPoints - oldPoints
-    let reason = diff > 0 ? 'Points awarded' : 'Points deducted'
+    let reason = diff > 0 ? 'Pontos recebidos' : 'Pontos deduzidos'
     let sourceType = 'system'
     let sourceId = ''
 
+    let hasHeaders = false
     try {
       const reqInfo = e.requestInfo()
       if (reqInfo && reqInfo.headers) {
         if (reqInfo.headers['x-point-reason']) {
-          try {
-            reason = decodeURIComponent(reqInfo.headers['x-point-reason'])
-          } catch (_) {
-            reason = reqInfo.headers['x-point-reason']
-          }
+          hasHeaders = true
+          reason = decodeURIComponent(reqInfo.headers['x-point-reason'])
         }
         if (reqInfo.headers['x-source-type']) {
           sourceType = reqInfo.headers['x-source-type']
@@ -39,6 +37,14 @@ onRecordAfterUpdateSuccess((e) => {
       }
     } catch (err) {
       // Ignored: Not running inside an HTTP request context
+    }
+
+    // Only log generic points update if explicit headers are passed.
+    // Native system hooks (like task completions) handle their own detailed logging
+    // to avoid duplicate records in points_history.
+    if (!hasHeaders) {
+      e.next()
+      return
     }
 
     try {

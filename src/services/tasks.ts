@@ -54,8 +54,6 @@ export const createTask = async (data: Partial<TaskRecord>) => {
 export const updateTask = async (id: string, data: Partial<TaskRecord>) => {
   if (!id) throw new Error('Task ID is required for update')
 
-  const oldTask = await pb.collection('tasks').getOne<TaskRecord>(id)
-
   // Strictly define fields that can be updated, excluding system fields like id, created, updated, and expand
   const allowedFields: (keyof TaskRecord)[] = [
     'status',
@@ -93,79 +91,14 @@ export const updateTask = async (id: string, data: Partial<TaskRecord>) => {
     }
   }
 
-  // Validate that status only contains the correct enum values
-  const validStatuses = ['todo', 'in_progress', 'review', 'done']
-  if (payload.status && !validStatuses.includes(payload.status)) {
-    throw new Error(`Invalid status: ${payload.status}. Must be one of ${validStatuses.join(', ')}`)
-  }
-
-  // Handle automatic timestamp updates based on status change, using valid ISO 8601 strings
-  if (payload.status) {
-    if (payload.status === 'in_progress' && !oldTask.started_at) {
-      payload.started_at = new Date().toISOString()
-    }
-    if (payload.status === 'done' && !oldTask.completed_at) {
-      payload.completed_at = new Date().toISOString()
-    } else if (payload.status !== 'done' && oldTask.completed_at) {
-      // PocketBase requires empty string "" to clear date fields, not null
-      payload.completed_at = ''
-    }
-  }
-
-  // If no fields are to be updated, skip the API call
+  // If no valid fields are provided to update, return the original task safely
   if (Object.keys(payload).length === 0) {
-    return oldTask
+    return await pb.collection('tasks').getOne<TaskRecord>(id)
   }
 
-  const task = await pb.collection('tasks').update<TaskRecord>(id, payload)
-
-  const authId = pb.authStore.record?.id
-  if (authId) {
-    const historyPromises = []
-    const statusMap: Record<string, string> = {
-      todo: 'A Fazer',
-      in_progress: 'Em Progresso',
-      review: 'Em Revisão',
-      done: 'Concluído',
-    }
-
-    if (payload.status && payload.status !== oldTask.status) {
-      const isCompleted = payload.status === 'done'
-      historyPromises.push(
-        pb.collection('task_history').create({
-          task_id: task.id,
-          action: isCompleted ? 'TASK_COMPLETED' : 'STATUS_CHANGED',
-          description: isCompleted
-            ? 'Tarefa marcada como concluída'
-            : `Status alterado de ${statusMap[oldTask.status] || oldTask.status} para ${statusMap[payload.status] || payload.status}`,
-          old_value: statusMap[oldTask.status] || oldTask.status,
-          new_value: statusMap[payload.status] || payload.status,
-          performed_by: authId,
-        }),
-      )
-    }
-
-    if (payload.delegated_to !== undefined && payload.delegated_to !== oldTask.delegated_to) {
-      historyPromises.push(
-        pb.collection('task_history').create({
-          task_id: task.id,
-          action: 'DELEGATED',
-          description: payload.delegated_to
-            ? 'Tarefa delegada para outro membro'
-            : 'Delegação de tarefa removida',
-          old_value: oldTask.delegated_to || 'Nenhum',
-          new_value: payload.delegated_to || 'Nenhum',
-          performed_by: authId,
-        }),
-      )
-    }
-
-    if (historyPromises.length > 0) {
-      await Promise.allSettled(historyPromises)
-    }
-  }
-
-  return task
+  // Just push the update; all history tracking, date calculations, and gamification
+  // side-effects are securely handled by isolated backend hooks to guarantee atomicity.
+  return await pb.collection('tasks').update<TaskRecord>(id, payload)
 }
 
 export const deleteTask = (id: string) => pb.collection('tasks').delete(id)
