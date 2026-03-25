@@ -53,7 +53,43 @@ export const createTask = async (data: Partial<TaskRecord>) => {
 
 export const updateTask = async (id: string, data: Partial<TaskRecord>) => {
   const oldTask = await pb.collection('tasks').getOne<TaskRecord>(id)
-  const task = await pb.collection('tasks').update<TaskRecord>(id, data)
+
+  const allowedFields = [
+    'title',
+    'description',
+    'status',
+    'priority',
+    'due_date',
+    'started_at',
+    'completed_at',
+    'delegated_to',
+    'department',
+    'tags',
+    'is_archived',
+    'points_reward',
+    'points_awarded',
+  ]
+
+  const payload: Record<string, any> = {}
+  let hasChanges = false
+
+  for (const key of allowedFields) {
+    if (key in data) {
+      const newValue = (data as any)[key]
+      const oldValue = (oldTask as any)[key]
+
+      if (JSON.stringify(newValue) !== JSON.stringify(oldValue)) {
+        payload[key] = newValue
+        hasChanges = true
+      }
+    }
+  }
+
+  if (!hasChanges) {
+    return oldTask
+  }
+
+  const task = await pb.collection('tasks').update<TaskRecord>(id, payload)
 
   const authId = pb.authStore.record?.id
   if (authId) {
@@ -65,32 +101,32 @@ export const updateTask = async (id: string, data: Partial<TaskRecord>) => {
       done: 'Concluído',
     }
 
-    if (data.status && data.status !== oldTask.status) {
-      const isCompleted = data.status === 'done'
+    if (payload.status) {
+      const isCompleted = payload.status === 'done'
       historyPromises.push(
         pb.collection('task_history').create({
           task_id: id,
           action: isCompleted ? 'TASK_COMPLETED' : 'STATUS_CHANGED',
           description: isCompleted
             ? 'Tarefa marcada como concluída'
-            : `Status alterado de ${statusMap[oldTask.status] || oldTask.status} para ${statusMap[data.status] || data.status}`,
+            : `Status alterado de ${statusMap[oldTask.status] || oldTask.status} para ${statusMap[payload.status] || payload.status}`,
           old_value: statusMap[oldTask.status] || oldTask.status,
-          new_value: statusMap[data.status] || data.status,
+          new_value: statusMap[payload.status] || payload.status,
           performed_by: authId,
         }),
       )
     }
 
-    if (data.delegated_to !== undefined && data.delegated_to !== oldTask.delegated_to) {
+    if ('delegated_to' in payload) {
       historyPromises.push(
         pb.collection('task_history').create({
           task_id: id,
           action: 'DELEGATED',
-          description: data.delegated_to
+          description: payload.delegated_to
             ? 'Tarefa delegada para outro membro'
             : 'Delegação de tarefa removida',
           old_value: oldTask.delegated_to || 'Nenhum',
-          new_value: data.delegated_to || 'Nenhum',
+          new_value: payload.delegated_to || 'Nenhum',
           performed_by: authId,
         }),
       )

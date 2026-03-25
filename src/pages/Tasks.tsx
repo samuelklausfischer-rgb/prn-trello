@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { getTasks, updateTask, TaskRecord } from '@/services/tasks'
 import { getUsers } from '@/services/users'
 import { useRealtime } from '@/hooks/use-realtime'
+import { useToast } from '@/hooks/use-toast'
+import { getErrorMessage } from '@/lib/pocketbase/errors'
 import TaskCard from '@/components/TaskCard'
 import TaskModal from '@/components/TaskModal'
 import NewTaskDialog from '@/components/NewTaskDialog'
@@ -22,6 +24,8 @@ export default function Tasks() {
   const [isNewTaskOpen, setIsNewTaskOpen] = useState(false)
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null)
 
+  const { toast } = useToast()
+
   const loadData = async () => {
     try {
       const [tData, uData] = await Promise.all([getTasks(), getUsers()])
@@ -35,6 +39,7 @@ export default function Tasks() {
   useEffect(() => {
     loadData()
   }, [])
+
   useRealtime('tasks', () => {
     loadData()
   })
@@ -60,10 +65,32 @@ export default function Tasks() {
   const handleDrop = async (e: React.DragEvent, status: any) => {
     e.preventDefault()
     const id = e.dataTransfer.getData('text/plain')
-    if (id) {
-      await updateTask(id, { status })
+    if (!id) return
+
+    const taskToUpdate = tasks.find((t) => t.id === id)
+    if (!taskToUpdate || taskToUpdate.status === status) {
+      setDraggedTaskId(null)
+      return
     }
+
+    const previousTasks = [...tasks]
+
+    // Optimistically update the UI to make the interaction snappy
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status } : t)))
     setDraggedTaskId(null)
+
+    try {
+      await updateTask(id, { status })
+    } catch (error) {
+      console.error('Failed to update task:', error)
+      // Revert to original state on failure
+      setTasks(previousTasks)
+      toast({
+        title: 'Erro ao mover tarefa',
+        description: getErrorMessage(error) || 'A tarefa retornou para a sua posição original.',
+        variant: 'destructive',
+      })
+    }
   }
 
   if (loading) return <BoardSkeleton />
@@ -81,7 +108,7 @@ export default function Tasks() {
             <div>
               <h1 className="text-3xl font-extrabold tracking-tight">Quadro de Tarefas</h1>
               <p className="text-sm font-medium text-muted-foreground mt-1">
-                Gerencie suas atividades e ganhe pontos.
+                Gerencie suas atividades e ganhe pontos no PRN Organizador.
               </p>
             </div>
           </div>
