@@ -58,13 +58,14 @@ export const updateTask = async (id: string, data: Partial<TaskRecord>) => {
 
   // Strictly define fields that can be updated, excluding system fields like id, created, updated, and expand
   const allowedFields: (keyof TaskRecord)[] = [
-    'title',
-    'description',
     'status',
     'priority',
+    'title',
+    'description',
     'due_date',
     'started_at',
     'completed_at',
+    'created_by',
     'delegated_to',
     'department',
     'tags',
@@ -78,7 +79,17 @@ export const updateTask = async (id: string, data: Partial<TaskRecord>) => {
   // Filter payload to avoid sending read-only system fields and causing 400 Bad Request
   for (const key of allowedFields) {
     if (key in data && data[key] !== undefined) {
-      payload[key] = data[key]
+      // Data Integrity: Relation fields must be sent as string IDs, never as full objects
+      if (key === 'created_by' || key === 'delegated_to') {
+        const val = data[key]
+        if (val && typeof val === 'object' && 'id' in val) {
+          payload[key] = (val as any).id
+        } else {
+          payload[key] = val
+        }
+      } else {
+        payload[key] = data[key]
+      }
     }
   }
 
