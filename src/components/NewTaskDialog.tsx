@@ -37,10 +37,12 @@ export default function NewTaskDialog({
   open,
   onOpenChange,
   users,
+  isPrivateWorkspace,
 }: {
   open: boolean
   onOpenChange: (o: boolean) => void
   users: any[]
+  isPrivateWorkspace?: boolean
 }) {
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -58,7 +60,12 @@ export default function NewTaskDialog({
       await createTask({
         ...values,
         created_by: pb.authStore.record?.id,
-        delegated_to: values.delegated_to === 'unassigned' ? '' : values.delegated_to,
+        delegated_to: isPrivateWorkspace
+          ? ''
+          : values.delegated_to === 'unassigned'
+            ? ''
+            : values.delegated_to,
+        is_private: !!isPrivateWorkspace,
       })
       onOpenChange(false)
       form.reset()
@@ -72,7 +79,7 @@ export default function NewTaskDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nova Tarefa</DialogTitle>
+          <DialogTitle>{isPrivateWorkspace ? 'Nova Tarefa Pessoal' : 'Nova Tarefa'}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -146,32 +153,34 @@ export default function NewTaskDialog({
                 )}
               />
             </div>
-            <FormField
-              control={form.control}
-              name="delegated_to"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Atribuir a</FormLabel>
-                  <Select
-                    value={field.value || 'unassigned'}
-                    onValueChange={(val) => field.onChange(val === 'unassigned' ? '' : val)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sem responsável" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Sem responsável</SelectItem>
-                      {users.map((u: any) => (
-                        <SelectItem key={u.id} value={u.id}>
-                          {u.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {!isPrivateWorkspace && (
+              <FormField
+                control={form.control}
+                name="delegated_to"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Atribuir a</FormLabel>
+                    <Select
+                      value={field.value || 'unassigned'}
+                      onValueChange={(val) => field.onChange(val === 'unassigned' ? '' : val)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sem responsável" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unassigned">Sem responsável</SelectItem>
+                        {users.map((u: any) => (
+                          <SelectItem key={u.id} value={u.id}>
+                            {u.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <FormField
               control={form.control}
               name="points_reward"

@@ -14,6 +14,7 @@ export interface TaskRecord {
   department?: string
   tags?: string[]
   is_archived: boolean
+  is_private: boolean
   points_reward: number
   points_awarded: boolean
   created: string
@@ -68,6 +69,7 @@ export const updateTask = async (id: string, data: Partial<TaskRecord>) => {
     'department',
     'tags',
     'is_archived',
+    'is_private',
     'points_reward',
     'points_awarded',
   ]

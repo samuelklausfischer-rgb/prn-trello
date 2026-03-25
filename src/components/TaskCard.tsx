@@ -13,6 +13,14 @@ import {
   ChevronDown,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
 export default function TaskCard({
@@ -22,6 +30,9 @@ export default function TaskCard({
   onDragStart,
   onDragEnd,
   isDragging,
+  isAdmin,
+  users = [],
+  onDelegate,
 }: {
   task: TaskRecord
   checklists?: ChecklistRecord[]
@@ -29,6 +40,9 @@ export default function TaskCard({
   onDragStart: (e: React.DragEvent) => void
   onDragEnd: (e: React.DragEvent) => void
   isDragging?: boolean
+  isAdmin?: boolean
+  users?: any[]
+  onDelegate?: (taskId: string, userId: string) => void
 }) {
   const priorityColors: Record<string, string> = {
     low: 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30',
@@ -50,6 +64,20 @@ export default function TaskCard({
   }
   const TaskIcon = getContextIcon()
 
+  const AssigneeAvatar = () =>
+    assignee ? (
+      <Avatar className="h-7 w-7 border-2 border-background shadow-md">
+        <AvatarImage src={assignee.avatar} alt={assignee.name} />
+        <AvatarFallback className="text-[10px] bg-gradient-to-br from-primary to-accent text-white font-bold">
+          {assignee.name.charAt(0)}
+        </AvatarFallback>
+      </Avatar>
+    ) : (
+      <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center border-2 border-background shadow-sm hover:bg-muted/80 transition-colors">
+        <User className="h-3.5 w-3.5 text-muted-foreground" />
+      </div>
+    )
+
   return (
     <Card
       draggable
@@ -57,7 +85,7 @@ export default function TaskCard({
       onDragEnd={onDragEnd}
       onClick={onClick}
       className={cn(
-        'cursor-pointer hover-3d premium-task-card !rounded-3xl',
+        'cursor-pointer hover-3d premium-task-card !rounded-3xl relative',
         isDragging && 'opacity-50 scale-95 shadow-none',
         task.is_archived && 'opacity-60 bg-muted/30 grayscale-[0.3]',
       )}
@@ -73,11 +101,18 @@ export default function TaskCard({
           >
             {task.priority.toUpperCase()}
           </Badge>
-          {task.points_reward > 0 && (
-            <span className="text-[11px] font-black text-white bg-gradient-to-br from-primary to-accent border border-white/20 px-2.5 py-0.5 rounded-lg whitespace-nowrap shadow-[0_0_12px_rgba(161,0,255,0.6)]">
-              +{task.points_reward} pts
-            </span>
-          )}
+          <div className="flex gap-1.5 items-center">
+            {task.is_private && (
+              <span className="text-[9px] font-bold text-muted-foreground bg-muted border border-border/50 px-1.5 py-0.5 rounded-md">
+                PRIVADA
+              </span>
+            )}
+            {task.points_reward > 0 && (
+              <span className="text-[11px] font-black text-white bg-gradient-to-br from-primary to-accent border border-white/20 px-2.5 py-0.5 rounded-lg whitespace-nowrap shadow-[0_0_12px_rgba(161,0,255,0.6)]">
+                +{task.points_reward} pts
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="flex items-start gap-2.5 mt-1">
@@ -126,17 +161,49 @@ export default function TaskCard({
               </Badge>
             )}
           </div>
-          {assignee ? (
-            <Avatar className="h-7 w-7 border-2 border-background shadow-md">
-              <AvatarImage src={assignee.avatar} alt={assignee.name} />
-              <AvatarFallback className="text-[10px] bg-gradient-to-br from-primary to-accent text-white font-bold">
-                {assignee.name.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
-          ) : (
-            <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center border-2 border-background shadow-sm">
-              <User className="h-3.5 w-3.5 text-muted-foreground" />
+          {isAdmin && !task.is_private ? (
+            <div onClick={(e) => e.stopPropagation()}>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="outline-none focus-visible:ring-2 ring-primary rounded-full hover:scale-110 transition-transform">
+                  <AssigneeAvatar />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-48 glass-card border-white/10 rounded-xl p-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <DropdownMenuLabel className="text-xs text-muted-foreground font-semibold px-2">
+                    Delegação Ágil
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-border/50" />
+                  <DropdownMenuItem
+                    onClick={() => onDelegate?.(task.id, '')}
+                    className="cursor-pointer text-xs font-medium focus:bg-primary/20 rounded-md"
+                  >
+                    <User className="w-3.5 h-3.5 mr-2 text-muted-foreground" /> Sem responsável
+                  </DropdownMenuItem>
+                  {users
+                    ?.filter((u) => u.role?.toLowerCase() === 'employee')
+                    .map((u) => (
+                      <DropdownMenuItem
+                        key={u.id}
+                        onClick={() => onDelegate?.(task.id, u.id)}
+                        className="cursor-pointer text-xs font-medium focus:bg-primary/20 rounded-md"
+                      >
+                        <Avatar className="w-4 h-4 mr-2 border border-border">
+                          <AvatarImage src={u.avatar} />
+                          <AvatarFallback className="text-[8px] bg-primary text-white font-bold">
+                            {u.name.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="truncate">{u.name}</span>
+                      </DropdownMenuItem>
+                    ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
+          ) : (
+            <AssigneeAvatar />
           )}
         </div>
       </CardContent>

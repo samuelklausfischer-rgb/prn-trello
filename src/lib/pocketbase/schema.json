@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-25T16:37:45.500Z",
+  "generatedAt": "2026-03-25T16:42:33.869Z",
   "collections": [
     {
       "name": "users",
@@ -29,29 +29,21 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         },
         {
           "name": "role",
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": [
-            "admin",
-            "employee"
-          ]
+          "selectValues": ["admin", "employee"]
         },
         {
           "name": "department",
@@ -137,8 +129,8 @@
       "name": "tasks",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.role = 'admin' || created_by = @request.auth.id || delegated_to = @request.auth.id",
-        "view": "@request.auth.role = 'admin' || created_by = @request.auth.id || delegated_to = @request.auth.id",
+        "list": "@request.auth.role = 'admin' || (is_private = false && (created_by = @request.auth.id || delegated_to = @request.auth.id)) || (is_private = true && created_by = @request.auth.id)",
+        "view": "@request.auth.role = 'admin' || (is_private = false && (created_by = @request.auth.id || delegated_to = @request.auth.id)) || (is_private = true && created_by = @request.auth.id)",
         "create": "@request.auth.role = 'admin' || (created_by = @request.auth.id && (delegated_to = '' || delegated_to = @request.auth.id))",
         "update": "@request.auth.role = 'admin' || created_by = @request.auth.id || delegated_to = @request.auth.id",
         "delete": "@request.auth.role = 'admin' || created_by = @request.auth.id"
@@ -149,43 +141,28 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": [
-            "todo",
-            "in_progress",
-            "review",
-            "done"
-          ]
+          "selectValues": ["todo", "in_progress", "review", "done"]
         },
         {
           "name": "priority",
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": [
-            "low",
-            "medium",
-            "high",
-            "urgent"
-          ]
+          "selectValues": ["low", "medium", "high", "urgent"]
         },
         {
           "name": "created",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         },
         {
           "name": "title",
@@ -260,6 +237,12 @@
           "type": "bool",
           "required": false,
           "system": false
+        },
+        {
+          "name": "is_private",
+          "type": "bool",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
@@ -300,19 +283,14 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         },
         {
           "name": "target_user",
@@ -326,10 +304,7 @@
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": [
-            "admin",
-            "employee"
-          ]
+          "selectValues": ["admin", "employee"]
         },
         {
           "name": "title",
@@ -420,19 +395,14 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         },
         {
           "name": "name",
@@ -493,13 +463,7 @@
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": [
-            "common",
-            "uncommon",
-            "rare",
-            "epic",
-            "legendary"
-          ]
+          "selectValues": ["common", "uncommon", "rare", "epic", "legendary"]
         },
         {
           "name": "is_active",
@@ -579,19 +543,14 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         }
       ],
       "indexes": [
@@ -653,9 +612,7 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "metadata",
@@ -668,19 +625,14 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         }
       ],
       "indexes": [
@@ -742,19 +694,14 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         }
       ],
       "indexes": [
@@ -815,24 +762,17 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         }
       ],
-      "indexes": [
-        "CREATE INDEX idx_points_history_user ON points_history (user_id)"
-      ]
+      "indexes": ["CREATE INDEX idx_points_history_user ON points_history (user_id)"]
     },
     {
       "name": "levels",
@@ -892,24 +832,17 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         }
       ],
-      "indexes": [
-        "CREATE UNIQUE INDEX idx_levels_number ON levels (level_number)"
-      ]
+      "indexes": ["CREATE UNIQUE INDEX idx_levels_number ON levels (level_number)"]
     },
     {
       "name": "notifications",
@@ -985,19 +918,14 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         }
       ],
       "indexes": [

@@ -36,6 +36,7 @@ const schema = z.object({
   delegated_to: z.string().optional(),
   points_reward: z.coerce.number().min(0),
   is_archived: z.boolean().default(false),
+  is_private: z.boolean().default(false),
 })
 
 export default function TaskModal({
@@ -43,11 +44,13 @@ export default function TaskModal({
   open,
   onOpenChange,
   users,
+  isAdmin,
 }: {
   task: TaskRecord | null
   open: boolean
   onOpenChange: (o: boolean) => void
   users: any[]
+  isAdmin?: boolean
 }) {
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -58,6 +61,7 @@ export default function TaskModal({
       title: '',
       description: '',
       is_archived: false,
+      is_private: false,
     },
   })
 
@@ -71,6 +75,7 @@ export default function TaskModal({
         delegated_to: task.delegated_to || '',
         points_reward: task.points_reward || 0,
         is_archived: task.is_archived || false,
+        is_private: task.is_private || false,
       })
     }
   }, [task, open, form])
@@ -80,7 +85,8 @@ export default function TaskModal({
     try {
       await updateTask(task.id, {
         ...values,
-        delegated_to: values.delegated_to === 'unassigned' ? '' : values.delegated_to,
+        delegated_to:
+          values.is_private || values.delegated_to === 'unassigned' ? '' : values.delegated_to,
       })
       onOpenChange(false)
     } catch (e) {
@@ -90,6 +96,8 @@ export default function TaskModal({
   }
 
   if (!task) return null
+
+  const isPrivateWatch = form.watch('is_private')
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -180,32 +188,34 @@ export default function TaskModal({
                     )}
                   />
                 </div>
-                <FormField
-                  control={form.control}
-                  name="delegated_to"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Atribuir a</FormLabel>
-                      <Select
-                        value={field.value || 'unassigned'}
-                        onValueChange={(val) => field.onChange(val === 'unassigned' ? '' : val)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sem responsável" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="unassigned">Sem responsável</SelectItem>
-                          {users.map((u) => (
-                            <SelectItem key={u.id} value={u.id}>
-                              {u.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {!isPrivateWatch && (
+                  <FormField
+                    control={form.control}
+                    name="delegated_to"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Atribuir a</FormLabel>
+                        <Select
+                          value={field.value || 'unassigned'}
+                          onValueChange={(val) => field.onChange(val === 'unassigned' ? '' : val)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sem responsável" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="unassigned">Sem responsável</SelectItem>
+                            {users.map((u) => (
+                              <SelectItem key={u.id} value={u.id}>
+                                {u.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
                 <div className="grid grid-cols-2 gap-4 items-end">
                   <FormField
                     control={form.control}
@@ -220,18 +230,36 @@ export default function TaskModal({
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="is_archived"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-2 shadow-sm h-10">
-                        <FormLabel className="mb-0 text-sm font-medium">Arquivada</FormLabel>
-                        <FormControl>
-                          <Switch checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                      </FormItem>
+                  <div className="space-y-2">
+                    <FormField
+                      control={form.control}
+                      name="is_archived"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-2 shadow-sm h-10">
+                          <FormLabel className="mb-0 text-xs font-medium">Arquivada</FormLabel>
+                          <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    {isAdmin && (
+                      <FormField
+                        control={form.control}
+                        name="is_private"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-2 shadow-sm h-10 border-accent/30 bg-accent/5">
+                            <FormLabel className="mb-0 text-xs font-medium text-accent">
+                              Privada
+                            </FormLabel>
+                            <FormControl>
+                              <Switch checked={field.value} onCheckedChange={field.onChange} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
                     )}
-                  />
+                  </div>
                 </div>
 
                 {task.id && (
