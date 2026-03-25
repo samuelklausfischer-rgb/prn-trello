@@ -57,7 +57,7 @@ export default function Header() {
 
   useEffect(() => {
     if (user) {
-      const target = (((user.xp || 0) % 500) / 500) * 100 // Dynamic progress visual
+      const target = (((user.xp || 0) % 500) / 500) * 100 
       const timer = setTimeout(() => setAnimProgress(target), 200)
       return () => clearTimeout(timer)
     }
@@ -113,7 +113,7 @@ export default function Header() {
   const handleNotificationClick = async (notif: any) => {
     if (!notif.is_read) {
       await markNotificationAsRead(notif.id)
-      loadNotifications() // Optimistic update
+      loadNotifications() 
     }
     if (notif.action_url) {
       setPopoverOpen(false)
@@ -142,29 +142,29 @@ export default function Header() {
       case 'achievement':
         return <Trophy className="w-4 h-4 text-accent" />
       case 'performance':
-        return <Activity className="w-4 h-4 text-blue-500" />
+        return <Activity className="w-4 h-4 text-primary" />
       default:
         return <Info className="w-4 h-4 text-primary" />
     }
   }
 
   return (
-    <header className="h-16 border-b bg-card flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20 shadow-subtle transition-colors duration-300">
-      <div className="flex items-center gap-4">
+    <header className="h-16 border-b border-border/50 glass-panel flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20 transition-colors duration-300">
+      <div className="flex items-center gap-4 animate-fade-in-up stagger-1">
         <SidebarTrigger aria-label="Alternar Menu Lateral" />
         <Breadcrumb className="hidden sm:block">
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink
                 asChild
-                className="text-muted-foreground hover:text-primary transition-colors"
+                className="text-muted-foreground hover:text-primary transition-colors font-semibold"
               >
                 <Link to="/">PRN</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage className="font-medium text-foreground">
+              <BreadcrumbPage className="font-bold text-foreground">
                 {getBreadcrumb()}
               </BreadcrumbPage>
             </BreadcrumbItem>
@@ -172,9 +172,9 @@ export default function Header() {
         </Breadcrumb>
       </div>
 
-      <div className="flex items-center gap-5">
+      <div className="flex items-center gap-5 animate-fade-in-up stagger-2">
         <div className="hidden sm:flex flex-col items-end justify-center">
-          <p className="text-xs font-bold text-primary dark:text-primary flex items-center gap-1.5">
+          <p className="text-xs font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent flex items-center gap-1.5">
             <Trophy className="w-3.5 h-3.5 text-accent" />
             Nível {user.level}{' '}
             <span className="font-normal text-muted-foreground ml-1">({user.points} pts)</span>
@@ -189,21 +189,21 @@ export default function Header() {
         <div className="flex items-center gap-3">
           <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative rounded-full">
-                <Bell className="w-5 h-5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="relative rounded-full hover-3d glass-card bg-transparent border-transparent">
+                <Bell className="w-5 h-5 text-foreground/80" />
                 {unreadAlerts.length > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full border-2 border-background animate-pulse" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent rounded-full border border-background shadow-[0_0_8px_rgba(161,0,255,0.8)] animate-pulse" />
                 )}
               </Button>
             </PopoverTrigger>
             <PopoverContent
               align="end"
-              className="w-80 p-0 overflow-hidden shadow-lg border-border/60"
+              className="w-80 p-0 overflow-hidden glass-card border-border/60"
             >
-              <div className="bg-muted/50 p-3 border-b border-border/50 flex items-center justify-between">
+              <div className="bg-background/50 p-3 border-b border-border/50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <h4 className="font-bold text-sm text-foreground">Notificações</h4>
-                  <Badge variant="secondary" className="text-[10px]">
+                  <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary">
                     {unreadAlerts.length} não lidas
                   </Badge>
                 </div>
@@ -251,7 +251,7 @@ export default function Header() {
                                 {alert.title}
                               </p>
                               {isUnread && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-1.5"></span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_5px_rgba(161,0,255,0.8)] flex-shrink-0 mt-1.5"></span>
                               )}
                             </div>
                             <p className="text-xs text-muted-foreground line-clamp-2">
@@ -278,19 +278,19 @@ export default function Header() {
             size="icon"
             aria-label="Alternar modo escuro"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="rounded-full shadow-sm bg-background hidden sm:flex"
+            className="rounded-full shadow-sm glass-card hover-3d hidden sm:flex"
           >
             {theme === 'dark' ? (
-              <Sun className="w-4 h-4 text-amber-500" />
+              <Sun className="w-4 h-4 text-amber-500 drop-shadow-md" />
             ) : (
-              <Moon className="w-4 h-4 text-primary" />
+              <Moon className="w-4 h-4 text-primary drop-shadow-md" />
             )}
           </Button>
 
           {isAdmin && (
             <Badge
               variant="default"
-              className="hidden sm:flex bg-amber-500 hover:bg-amber-600 text-white gap-1 px-2.5 shadow-sm border-transparent"
+              className="hidden sm:flex bg-gradient-to-r from-amber-500 to-amber-600 text-white gap-1 px-2.5 shadow-sm border-transparent"
             >
               <ShieldCheck className="w-3 h-3" /> ADMIN
             </Badge>
@@ -300,39 +300,34 @@ export default function Header() {
             <DropdownMenuTrigger asChild>
               <button
                 aria-label="Menu de usuário"
-                className="flex items-center gap-2 outline-none rounded-full ring-offset-background focus-visible:ring-2 focus-visible:ring-ring transition-transform hover:scale-105 active:scale-95"
+                className="flex items-center gap-2 outline-none rounded-full ring-offset-background focus-visible:ring-2 focus-visible:ring-ring transition-transform hover:scale-105 active:scale-95 hover-3d"
               >
                 <Avatar
                   className={`h-9 w-9 shadow-sm ${
                     isAdmin
                       ? 'border-2 border-amber-500 ring-2 ring-amber-500/20'
-                      : 'border-2 border-primary/20'
+                      : 'border-2 border-primary/50 ring-2 ring-primary/20'
                   }`}
                 >
                   <AvatarImage src={user.avatar} />
                   <AvatarFallback
-                    className={`${isAdmin ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' : 'bg-primary/10 text-primary'} font-bold`}
+                    className={`${isAdmin ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' : 'bg-gradient-to-br from-primary to-accent text-white'} font-bold`}
                   >
                     {user.name.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 font-sans">
-              <div className="px-2 py-2.5 border-b mb-1">
+            <DropdownMenuContent align="end" className="w-56 font-sans glass-card">
+              <div className="px-2 py-2.5 border-b border-border/50 mb-1">
                 <p className="font-bold text-sm text-foreground truncate">{user.name}</p>
                 <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                {isAdmin && (
-                  <Badge className="mt-2 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 dark:bg-amber-500/20 dark:text-amber-400 border-0 px-1.5 py-0">
-                    Admin Privileges
-                  </Badge>
-                )}
               </div>
 
-              <DropdownMenuItem className="flex sm:hidden flex-col items-start gap-1 py-3 border-b mb-1">
+              <DropdownMenuItem className="flex sm:hidden flex-col items-start gap-1 py-3 border-b border-border/50 mb-1">
                 <span className="font-semibold text-sm text-foreground">Nível {user.level}</span>
                 <span className="text-xs text-muted-foreground">{user.points} pts totais</span>
-                <Progress value={animProgress} className="h-1.5 w-full mt-1.5" />
+                <Progress value={animProgress} className="h-1.5 w-full mt-1.5 bg-primary/20" />
               </DropdownMenuItem>
 
               <DropdownMenuItem
@@ -371,3 +366,4 @@ export default function Header() {
     </header>
   )
 }
+

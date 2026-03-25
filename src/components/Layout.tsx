@@ -6,7 +6,7 @@ import Header from './Header'
 import AchievementNotifier from './AchievementNotifier'
 import { useAuth } from '@/hooks/useAuthHooks'
 import { cn } from '@/lib/utils'
-import { LayoutDashboard, CheckSquare, Trophy, ShieldCheck, Medal } from 'lucide-react'
+import { LayoutDashboard, CheckSquare, ShieldCheck, Medal } from 'lucide-react'
 
 export default function Layout() {
   const { isAuthenticated, role } = useAuth()
@@ -44,7 +44,7 @@ export default function Layout() {
 
       <AppSidebar />
 
-      <SidebarInset className="bg-background flex flex-col min-h-screen pb-16 md:pb-0 transition-colors duration-300">
+      <SidebarInset className="bg-background/95 bg-particles flex flex-col min-h-screen pb-16 md:pb-0 transition-colors duration-300">
         <Header />
 
         <main
@@ -57,7 +57,7 @@ export default function Layout() {
           </div>
         </main>
 
-        <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t border-border flex items-center justify-around z-50 px-2 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)] transition-colors duration-300">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 glass-panel border-t-white/10 flex items-center justify-around z-50 px-2 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
           <Link
             to="/dashboard"
             aria-label="Ir para Dashboard"
@@ -90,7 +90,7 @@ export default function Layout() {
             className={cn(
               'flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors',
               location.pathname === '/achievements'
-                ? 'text-primary'
+                ? 'text-accent'
                 : 'text-muted-foreground hover:text-foreground',
             )}
           >
@@ -117,3 +117,4 @@ export default function Layout() {
     </SidebarProvider>
   )
 }
+
