@@ -97,7 +97,8 @@ export const updateTask = async (id: string, data: Partial<TaskRecord>) => {
       payload.completed_at = new Date().toISOString()
       hasChanges = true
     } else if (payload.status !== 'done' && oldTask.completed_at) {
-      payload.completed_at = null
+      // PocketBase requires empty string "" to clear date fields, not null
+      payload.completed_at = ''
       hasChanges = true
     }
   }
@@ -134,7 +135,7 @@ export const updateTask = async (id: string, data: Partial<TaskRecord>) => {
       )
     }
 
-    if (payload.delegated_to !== undefined) {
+    if (payload.delegated_to !== undefined && payload.delegated_to !== oldTask.delegated_to) {
       historyPromises.push(
         pb.collection('task_history').create({
           task_id: task.id,

@@ -65,7 +65,6 @@ export default function Tasks() {
   const handleDrop = async (e: React.DragEvent, status: TaskRecord['status']) => {
     e.preventDefault()
 
-    // Properly target the record ID by safely extracting it
     const draggedId = e.dataTransfer.getData('text/plain')?.trim()
     if (!draggedId) {
       setDraggedTaskId(null)
@@ -85,7 +84,6 @@ export default function Tasks() {
     setDraggedTaskId(null)
 
     try {
-      // Specifically ensuring the status field is sent correctly and record ID is targeted
       await updateTask(taskToUpdate.id, { status })
     } catch (error) {
       console.error('Failed to update task:', error)
