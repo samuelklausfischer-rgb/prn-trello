@@ -5,6 +5,10 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   :root {
     --background: 240 20% 98%;
     --foreground: 240 10% 10%;
@@ -12,23 +16,23 @@
     --card-foreground: 240 10% 10%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 10%;
-    
+
     /* Neon Blue #00D4FF -> HSL: 190 100% 50% */
-    --primary: 190 100% 45%; 
+    --primary: 190 100% 50%;
     --primary-foreground: 0 0% 100%;
-    
+
     /* Neon Purple #A100FF -> HSL: 278 100% 50% */
-    --accent: 278 100% 60%;
+    --accent: 278 100% 50%;
     --accent-foreground: 0 0% 100%;
 
     --secondary: 240 5% 90%;
     --secondary-foreground: 240 10% 10%;
     --muted: 240 5% 94%;
     --muted-foreground: 240 5% 45%;
-    
+
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
-    
+
     --border: 240 5% 85%;
     --input: 240 5% 85%;
     --ring: 190 100% 50%;
@@ -39,15 +43,15 @@
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 240 10% 10%;
-    --sidebar-primary: 190 100% 45%;
+    --sidebar-primary: 190 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 5% 94%;
     --sidebar-accent-foreground: 240 10% 10%;
     --sidebar-border: 240 5% 85%;
     --sidebar-ring: 190 100% 50%;
 
-    --chart-1: 190 100% 45%;
-    --chart-2: 278 100% 60%;
+    --chart-1: 190 100% 50%;
+    --chart-2: 278 100% 50%;
     --chart-3: 160 84% 39%;
     --chart-4: 38 92% 50%;
     --chart-5: 0 84.2% 60.2%;
@@ -60,21 +64,23 @@
     --card-foreground: 0 0% 98%;
     --popover: 240 10% 8%;
     --popover-foreground: 0 0% 98%;
-    
+
+    /* Neon Blue #00D4FF */
     --primary: 190 100% 50%;
     --primary-foreground: 240 10% 5%;
-    
-    --accent: 278 100% 65%;
+
+    /* Neon Purple #A100FF */
+    --accent: 278 100% 50%;
     --accent-foreground: 0 0% 100%;
 
     --secondary: 240 10% 15%;
     --secondary-foreground: 0 0% 98%;
     --muted: 240 10% 15%;
     --muted-foreground: 240 5% 65%;
-    
+
     --destructive: 0 62.8% 50.6%;
     --destructive-foreground: 0 0% 98%;
-    
+
     --border: 240 10% 20%;
     --input: 240 10% 20%;
     --ring: 190 100% 50%;
@@ -89,7 +95,7 @@
     --sidebar-ring: 190 100% 50%;
 
     --chart-1: 190 100% 50%;
-    --chart-2: 278 100% 65%;
+    --chart-2: 278 100% 50%;
     --chart-3: 160 84% 45%;
     --chart-4: 38 92% 55%;
     --chart-5: 0 62.8% 50.6%;
@@ -104,48 +110,75 @@
     color: hsl(var(--foreground));
     @apply antialiased transition-colors duration-300;
   }
-
-  section[aria-label='Notifications alt+T'] {
-    padding: 0 !important;
-    margin: 0 !important;
-  }
 }
 
 @layer utilities {
   .glass-card {
-    @apply bg-white/60 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.05)];
+    @apply bg-white/40 backdrop-blur-[20px] border border-white/30 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)];
   }
   .dark .glass-card {
-    @apply bg-black/40 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)];
+    @apply bg-slate-900/40 backdrop-blur-[20px] border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)];
   }
-  
+
   .glass-panel {
-    @apply bg-background/80 backdrop-blur-2xl border-b border-border/50;
+    @apply bg-background/60 backdrop-blur-2xl border-b border-border/50;
   }
 
   .hover-3d {
-    @apply transition-all duration-300 ease-out will-change-transform hover:-translate-y-1 hover:scale-[1.02] hover:shadow-[0_15px_30px_rgba(0,212,255,0.15)];
+    @apply transition-all duration-300 ease-out will-change-transform;
   }
-  .dark .hover-3d {
-    @apply hover:shadow-[0_15px_30px_rgba(161,0,255,0.2)];
+  .hover-3d:hover {
+    transform: perspective(1000px) rotateX(2deg) rotateY(-2deg) scale(1.02);
+    box-shadow: 0 15px 30px rgba(0, 212, 255, 0.2);
+  }
+  .dark .hover-3d:hover {
+    box-shadow: 0 15px 30px rgba(161, 0, 255, 0.2);
   }
 
   .bg-particles {
-    background-image: radial-gradient(circle at 50% 50%, rgba(0, 212, 255, 0.05) 0%, transparent 20%),
-                      radial-gradient(circle at 10% 90%, rgba(161, 0, 255, 0.05) 0%, transparent 20%);
-    background-size: 150px 150px;
-    animation: floatingParticles 30s infinite linear;
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(0, 212, 255, 0.08) 0%, transparent 25%),
+      radial-gradient(circle at 10% 90%, rgba(161, 0, 255, 0.08) 0%, transparent 25%),
+      radial-gradient(circle at 90% 10%, rgba(0, 212, 255, 0.05) 0%, transparent 25%);
+    background-size: 200px 200px;
+    animation: floatingParticles 40s infinite linear;
+    will-change: background-position;
   }
 
-  .stagger-1 { animation-delay: 100ms !important; }
-  .stagger-2 { animation-delay: 200ms !important; }
-  .stagger-3 { animation-delay: 300ms !important; }
-  .stagger-4 { animation-delay: 400ms !important; }
-  .stagger-5 { animation-delay: 500ms !important; }
+  .stagger-item {
+    opacity: 0;
+    animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    will-change: transform, opacity;
+  }
+  .stagger-1 {
+    animation-delay: 50ms;
+  }
+  .stagger-2 {
+    animation-delay: 100ms;
+  }
+  .stagger-3 {
+    animation-delay: 150ms;
+  }
+  .stagger-4 {
+    animation-delay: 200ms;
+  }
+  .stagger-5 {
+    animation-delay: 250ms;
+  }
 
   @keyframes floatingParticles {
-    0% { background-position: 0 0; }
-    100% { background-position: 150px 150px; }
+    0% {
+      background-position:
+        0 0,
+        0 0,
+        0 0;
+    }
+    100% {
+      background-position:
+        200px 200px,
+        -100px -100px,
+        150px -150px;
+    }
   }
 
   @keyframes fade-in-down {
@@ -158,9 +191,10 @@
       opacity: 1;
     }
   }
+
   @keyframes fade-in-up {
     from {
-      transform: translateY(20px);
+      transform: translateY(30px);
       opacity: 0;
     }
     to {
@@ -169,11 +203,20 @@
     }
   }
 
+  @keyframes shimmer-loader {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
   .animate-fade-in-up {
     animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    will-change: transform, opacity;
   }
+
   .animate-fade-in-down {
     animation: fade-in-down 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    will-change: transform, opacity;
   }
 
   .custom-scrollbar::-webkit-scrollbar {
@@ -192,17 +235,26 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+
     .hover-3d {
       @apply transform-none transition-none hover:shadow-none;
     }
-    .animate-fade-in-up, .animate-fade-in-down, .animate-fade-in {
-      animation: none !important;
-      opacity: 1 !important;
+
+    .hover-3d:hover {
       transform: none !important;
+      box-shadow: none !important;
     }
+
     .bg-particles {
       animation: none !important;
     }
   }
 }
-

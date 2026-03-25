@@ -73,14 +73,14 @@ export default function Tasks() {
   return (
     <PageTransition>
       <div className="h-full flex flex-col pb-4">
-        <div className="flex flex-col sm:flex-row justify-between mb-6 bg-card p-5 rounded-2xl shadow-sm border gap-4">
+        <div className="flex flex-col sm:flex-row justify-between mb-8 glass-card p-6 rounded-3xl gap-4 stagger-item stagger-1">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-primary/10 rounded-xl hidden md:flex">
+            <div className="p-3 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl hidden md:flex backdrop-blur-md shadow-sm border border-white/10">
               <LayoutDashboard className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">Tarefas</h1>
-              <p className="text-sm text-muted-foreground">
+              <h1 className="text-3xl font-extrabold tracking-tight">Quadro de Tarefas</h1>
+              <p className="text-sm font-medium text-muted-foreground mt-1">
                 Gerencie suas atividades e ganhe pontos.
               </p>
             </div>
@@ -92,7 +92,7 @@ export default function Tasks() {
                 placeholder="Buscar tarefas..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 h-10 w-full sm:w-64"
+                className="pl-9 h-10 w-full sm:w-64 glass-card border-white/20 focus:ring-primary"
               />
             </div>
             <Button
@@ -109,19 +109,19 @@ export default function Tasks() {
         </div>
 
         <div className="flex-1 flex gap-5 overflow-x-auto pb-4 items-start px-1 custom-scrollbar">
-          {statuses.map((col) => {
+          {statuses.map((col, index) => {
             const colTasks = filteredTasks.filter((t) => t.status === col.id)
             return (
               <div
                 key={col.id}
-                className="flex flex-col bg-muted/40 rounded-xl p-4 min-w-[320px] w-[320px] border h-full transition-colors hover:bg-muted/60"
+                className={`stagger-item stagger-${(index % 5) + 2} flex flex-col glass-card rounded-2xl p-4 min-w-[320px] w-[320px] h-full transition-colors hover:bg-white/50 dark:hover:bg-slate-900/50`}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => handleDrop(e, col.id)}
               >
                 <div className="flex items-center justify-between mb-4 px-1">
-                  <h3 className="font-bold text-sm uppercase tracking-wide flex items-center gap-2">
+                  <h3 className="font-bold text-sm uppercase tracking-wider flex items-center gap-2 text-foreground/80">
                     {col.label}{' '}
-                    <span className="bg-background border px-2 py-0.5 rounded-full text-xs shadow-sm">
+                    <span className="bg-background/80 backdrop-blur-md border border-border/50 px-2 py-0.5 rounded-full text-xs shadow-sm">
                       {colTasks.length}
                     </span>
                   </h3>
@@ -138,7 +138,7 @@ export default function Tasks() {
                     />
                   ))}
                   {colTasks.length === 0 && (
-                    <div className="h-24 border-2 border-dashed border-border/80 rounded-xl flex items-center justify-center text-sm text-muted-foreground font-medium bg-background/30">
+                    <div className="h-24 border-2 border-dashed border-border/60 rounded-xl flex items-center justify-center text-sm text-muted-foreground font-medium bg-background/20 backdrop-blur-sm">
                       Solte as tarefas aqui
                     </div>
                   )}

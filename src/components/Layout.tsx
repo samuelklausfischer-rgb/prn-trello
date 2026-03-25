@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import AppSidebar from './AppSidebar'
@@ -12,6 +12,8 @@ export default function Layout() {
   const { isAuthenticated, role } = useAuth()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [scrollY, setScrollY] = useState(0)
+  const mainRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     const handleResize = () => {
@@ -28,6 +30,10 @@ export default function Layout() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
+  const handleScroll = (e: React.UIEvent<HTMLElement>) => {
+    setScrollY(e.currentTarget.scrollTop)
+  }
+
   if (!isAuthenticated) {
     return <Outlet />
   }
@@ -37,20 +43,28 @@ export default function Layout() {
       <AchievementNotifier />
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-[100] bg-primary text-primary-foreground px-4 py-2 rounded-md font-bold shadow-lg"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-[100] bg-primary text-primary-foreground px-4 py-2 rounded-md font-bold shadow-neon"
       >
         Pular para o conteúdo principal
       </a>
 
       <AppSidebar />
 
-      <SidebarInset className="bg-background/95 bg-particles flex flex-col min-h-screen pb-16 md:pb-0 transition-colors duration-300">
+      <SidebarInset className="relative flex flex-col min-h-screen pb-16 md:pb-0 transition-colors duration-300 z-0 bg-transparent">
+        {/* Parallax Background */}
+        <div
+          className="fixed inset-0 z-[-1] bg-background bg-particles pointer-events-none transition-transform duration-75 ease-out"
+          style={{ transform: `translateY(${scrollY * 0.15}px)` }}
+        />
+
         <Header />
 
         <main
+          ref={mainRef}
           id="main-content"
-          className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto outline-none"
+          className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto overflow-x-hidden outline-none"
           tabIndex={-1}
+          onScroll={handleScroll}
         >
           <div className="max-w-[1600px] mx-auto h-full">
             <Outlet />
@@ -64,7 +78,7 @@ export default function Layout() {
             className={cn(
               'flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors',
               location.pathname === '/dashboard'
-                ? 'text-primary'
+                ? 'text-primary drop-shadow-md'
                 : 'text-muted-foreground hover:text-foreground',
             )}
           >
@@ -77,7 +91,7 @@ export default function Layout() {
             className={cn(
               'flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors',
               location.pathname === '/tasks'
-                ? 'text-primary'
+                ? 'text-primary drop-shadow-md'
                 : 'text-muted-foreground hover:text-foreground',
             )}
           >
@@ -90,7 +104,7 @@ export default function Layout() {
             className={cn(
               'flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors',
               location.pathname === '/achievements'
-                ? 'text-accent'
+                ? 'text-accent drop-shadow-md'
                 : 'text-muted-foreground hover:text-foreground',
             )}
           >
@@ -104,7 +118,7 @@ export default function Layout() {
               className={cn(
                 'flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors',
                 location.pathname.startsWith('/admin')
-                  ? 'text-primary'
+                  ? 'text-amber-500 drop-shadow-md'
                   : 'text-muted-foreground hover:text-foreground',
               )}
             >
@@ -117,4 +131,3 @@ export default function Layout() {
     </SidebarProvider>
   )
 }
-

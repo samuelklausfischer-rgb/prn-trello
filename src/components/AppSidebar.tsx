@@ -37,13 +37,16 @@ export default function AppSidebar() {
   }
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/50 shadow-sm hidden md:flex glass-panel bg-transparent">
+    <Sidebar
+      collapsible="icon"
+      className="border-r border-white/20 dark:border-white/5 shadow-lg hidden md:flex glass-panel bg-transparent"
+    >
       <SidebarHeader className="h-16 flex items-center border-b border-border/50">
         <div className="flex items-center gap-3 px-3 w-full overflow-hidden">
-          <div className="bg-gradient-to-br from-primary to-accent rounded-lg p-1.5 shrink-0 flex items-center justify-center shadow-neon">
+          <div className="bg-gradient-to-br from-primary to-accent rounded-xl p-1.5 shrink-0 flex items-center justify-center shadow-neon">
             <Zap className="h-5 w-5 text-white" />
           </div>
-          <span className="font-bold text-lg bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent tracking-tight truncate group-data-[collapsible=icon]:hidden">
+          <span className="font-extrabold text-lg bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent tracking-tight truncate group-data-[collapsible=icon]:hidden drop-shadow-sm">
             PRN Organizador
           </span>
         </div>
@@ -56,24 +59,24 @@ export default function AppSidebar() {
                 const isActive =
                   location.pathname === item.path || location.pathname.startsWith(item.path + '/')
                 return (
-                  <SidebarMenuItem key={item.path} className={`animate-fade-in-up stagger-${index + 1}`}>
+                  <SidebarMenuItem key={item.path} className={`stagger-item stagger-${index + 1}`}>
                     <SidebarMenuButton
                       asChild
                       isActive={isActive}
                       tooltip={item.title}
-                      className={`h-10 transition-all duration-300 hover-3d ${
+                      className={`h-11 transition-all duration-300 hover-3d rounded-xl ${
                         isActive
-                          ? 'bg-primary/10 text-primary font-semibold shadow-sm border border-primary/20'
-                          : 'hover:bg-primary/5 text-muted-foreground'
+                          ? 'bg-gradient-to-r from-primary/10 to-transparent text-primary font-bold shadow-sm border border-primary/20 before:absolute before:left-0 before:top-1/4 before:bottom-1/4 before:w-1 before:bg-primary before:rounded-r-md'
+                          : 'hover:bg-primary/5 text-muted-foreground font-medium'
                       }`}
                     >
                       <Link
                         to={item.path}
                         aria-label={item.title}
-                        className="flex items-center gap-3"
+                        className="flex items-center gap-3 px-1"
                       >
                         <item.icon
-                          className={`w-5 h-5 ${isActive ? 'text-primary drop-shadow-md' : 'text-muted-foreground'}`}
+                          className={`w-5 h-5 transition-colors ${isActive ? 'text-primary drop-shadow-md' : 'text-muted-foreground'}`}
                         />
                         <span>{item.title}</span>
                       </Link>
@@ -88,4 +91,3 @@ export default function AppSidebar() {
     </Sidebar>
   )
 }
-

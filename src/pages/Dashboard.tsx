@@ -71,7 +71,6 @@ export default function Dashboard() {
         getUserStats(user.id).catch(() => null),
       ])
 
-      // Stats derived from User Stats View (with fallback to local calculation)
       const completedTasks = tasks.filter((t) => t.status === 'done')
       const totalTasks = userStats ? userStats.total_tasks : tasks.length
       const completedCount = userStats ? userStats.completed_tasks : completedTasks.length
@@ -81,7 +80,6 @@ export default function Dashboard() {
           ? Math.round((completedCount / totalTasks) * 100)
           : 0
 
-      // Level info
       const currentUserData = await pb
         .collection('users')
         .getOne(user.id)
@@ -93,13 +91,11 @@ export default function Dashboard() {
         max_xp: 500,
       }
 
-      // Comparison
       const teamAvgPoints =
         allUsers.length > 0
           ? Math.round(allUsers.reduce((acc, u) => acc + (u.points || 0), 0) / allUsers.length)
           : 0
 
-      // Progress Chart
       const progressData = [
         { name: 'Concluído', value: completedCount, key: 'done' },
         {
@@ -110,7 +106,6 @@ export default function Dashboard() {
         { name: 'A Fazer', value: tasks.filter((t) => t.status === 'todo').length, key: 'todo' },
       ].filter((d) => d.value > 0)
 
-      // Productivity 7 days
       const today = new Date()
       today.setHours(23, 59, 59, 999)
       const last7Days = Array.from({ length: 7 }).map((_, i) => {
@@ -130,7 +125,6 @@ export default function Dashboard() {
         if (match) match.tasks++
       })
 
-      // Tasks Lists
       const recentTasks = tasks.slice(0, 5).map((t) => ({
         id: t.id,
         title: t.title,
@@ -149,7 +143,6 @@ export default function Dashboard() {
           dueDate: dateFormatter.format(new Date(t.due_date!)),
         }))
 
-      // Achievements Formatting
       const formattedAchievements: AchievementItem[] = achievementsList
         .map((ach) => {
           const userAch = userAchievements.find((ua) => ua.achievement_id === ach.id)
@@ -167,7 +160,6 @@ export default function Dashboard() {
         })
         .sort((a, b) => (b.unlocked ? 1 : 0) - (a.unlocked ? 1 : 0) || b.progress - a.progress)
 
-      // Ranking formatting
       const ranking: RankingItem[] = rankingRaw.map((r) => ({
         id: r.id,
         name: r.name,
@@ -238,14 +230,14 @@ export default function Dashboard() {
   return (
     <PageTransition>
       <div className="space-y-8 pb-8">
-        <div className="bg-primary dark:bg-card border dark:border-border p-8 rounded-2xl text-primary-foreground dark:text-foreground shadow-elevation relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between transition-colors duration-300">
-          <div className="absolute right-0 top-0 w-64 h-full bg-gradient-to-l from-accent/20 to-transparent pointer-events-none"></div>
+        <div className="bg-gradient-to-r from-primary/80 to-accent/80 dark:from-primary/20 dark:to-accent/20 glass-card p-8 rounded-3xl text-white dark:text-foreground relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between transition-colors duration-300 stagger-item stagger-1">
+          <div className="absolute inset-0 bg-white/10 dark:bg-black/20 pointer-events-none backdrop-blur-md"></div>
           <div className="relative z-10 space-y-2">
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight drop-shadow-md">
               Bem-vindo(a) de volta, {user.name.split(' ')[0]}!
             </h1>
-            <p className="text-primary-foreground/90 dark:text-muted-foreground text-lg font-medium">
-              Aqui está o resumo do seu desempenho na PRN Diagnósticos.
+            <p className="text-white/90 dark:text-muted-foreground text-lg font-medium drop-shadow-sm">
+              Aqui está o resumo do seu desempenho na PRN Organizador.
             </p>
           </div>
           <div className="relative z-10 mt-6 md:mt-0">
@@ -253,7 +245,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 stagger-item stagger-2">
           <MetricCard
             title="Minhas Tarefas"
             value={data.stats.totalTasks}
@@ -270,7 +262,7 @@ export default function Dashboard() {
             title="Taxa de Conclusão"
             value={`${data.stats.completionRate}%`}
             icon={BarChart3}
-            colorClass="text-blue-500"
+            colorClass="text-primary"
           />
           <MetricCard
             title="Meus Pontos"
@@ -281,13 +273,15 @@ export default function Dashboard() {
           />
         </div>
 
-        <EmployeeCharts
-          productivityData={data.productivityData}
-          progressData={data.progressData}
-          teamComparison={data.teamComparison}
-        />
+        <div className="stagger-item stagger-3">
+          <EmployeeCharts
+            productivityData={data.productivityData}
+            progressData={data.progressData}
+            teamComparison={data.teamComparison}
+          />
+        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 stagger-item stagger-4">
           <div className="lg:col-span-2 space-y-6 flex flex-col">
             <EmployeeFeeds
               recentTasks={data.recentTasks}

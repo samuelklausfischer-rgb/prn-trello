@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/hooks/useAuthHooks'
-import { Trophy, Loader2, Target, Users, LayoutDashboard } from 'lucide-react'
+import { Trophy, Loader2, Target, Users, LayoutDashboard, Zap } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 import pb from '@/lib/pocketbase/client'
 import { extractFieldErrors } from '@/lib/pocketbase/errors'
@@ -55,7 +55,7 @@ export default function Auth() {
         await pb.collection('users').authWithPassword(email, password)
         toast({
           title: 'Conta criada com sucesso!',
-          description: 'Bem-vindo(a) ao PRN CRM.',
+          description: 'Bem-vindo(a) ao PRN Organizador.',
         })
       } else {
         await pb.collection('users').authWithPassword(email, password)
@@ -117,59 +117,61 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen w-full flex flex-col md:flex-row bg-background">
-      <div className="hidden md:flex flex-col flex-1 bg-primary text-white p-12 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-accent/40 via-primary to-primary -z-10"></div>
+      <div className="hidden md:flex flex-col flex-1 bg-slate-950 text-white p-12 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-accent/40 via-primary/20 to-slate-950 -z-10 bg-particles"></div>
 
-        <div className="flex items-center gap-3 z-10 animate-fade-in-up">
-          <div className="bg-white/10 p-2.5 rounded-xl backdrop-blur-sm border border-white/20 shadow-lg">
-            <Trophy className="w-8 h-8 text-accent" />
+        <div className="flex items-center gap-3 z-10 animate-fade-in-up stagger-1">
+          <div className="bg-gradient-to-br from-primary to-accent p-2.5 rounded-xl shadow-neon">
+            <Zap className="w-8 h-8 text-white" />
           </div>
-          <span className="text-3xl font-extrabold tracking-tight">PRN CRM</span>
+          <span className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+            PRN Organizador
+          </span>
         </div>
 
-        <div
-          className="flex-1 flex flex-col justify-center max-w-xl space-y-8 z-10 animate-fade-in-up"
-          style={{ animationDelay: '100ms' }}
-        >
+        <div className="flex-1 flex flex-col justify-center max-w-xl space-y-8 z-10 animate-fade-in-up stagger-2">
           <h1 className="text-5xl font-bold leading-[1.1] tracking-tight">
-            Gestão inteligente e <span className="text-accent">gamificada</span> para equipes.
+            Gestão inteligente e{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
+              gamificada
+            </span>{' '}
+            para equipes.
           </h1>
-          <p className="text-lg text-primary-foreground/80 font-medium max-w-lg leading-relaxed">
+          <p className="text-lg text-white/80 font-medium max-w-lg leading-relaxed">
             Acompanhe tarefas, alcance metas e lidere o ranking da empresa em um único ambiente
             integrado.
           </p>
 
           <div className="space-y-4 pt-4">
-            <div className="flex items-center gap-3 bg-black/10 w-fit px-4 py-2.5 rounded-full border border-white/10 backdrop-blur-md">
-              <LayoutDashboard className="w-5 h-5 text-accent" />
+            <div className="flex items-center gap-3 glass-card px-5 py-3 rounded-full w-fit hover-3d">
+              <LayoutDashboard className="w-5 h-5 text-primary" />
               <span className="font-semibold text-sm">Painéis Personalizados por Perfil</span>
             </div>
-            <div className="flex items-center gap-3 bg-black/10 w-fit px-4 py-2.5 rounded-full border border-white/10 backdrop-blur-md">
+            <div className="flex items-center gap-3 glass-card px-5 py-3 rounded-full w-fit hover-3d">
               <Target className="w-5 h-5 text-accent" />
               <span className="font-semibold text-sm">Metas e Pontuações Dinâmicas</span>
             </div>
-            <div className="flex items-center gap-3 bg-black/10 w-fit px-4 py-2.5 rounded-full border border-white/10 backdrop-blur-md">
-              <Users className="w-5 h-5 text-accent" />
+            <div className="flex items-center gap-3 glass-card px-5 py-3 rounded-full w-fit hover-3d">
+              <Users className="w-5 h-5 text-primary" />
               <span className="font-semibold text-sm">Ranking de Equipe em Tempo Real</span>
             </div>
           </div>
         </div>
 
-        <div className="mt-auto text-primary-foreground/60 text-sm font-medium z-10 animate-fade-in">
+        <div className="mt-auto text-white/50 text-sm font-medium z-10 animate-fade-in stagger-3">
           &copy; {new Date().getFullYear()} PRN Systems. Todos os direitos reservados.
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 relative">
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 relative bg-particles">
         <div className="absolute top-6 left-6 md:hidden flex items-center gap-2">
-          <Trophy className="w-6 h-6 text-primary" />
-          <span className="font-bold text-primary tracking-tight">PRN CRM</span>
+          <Zap className="w-6 h-6 text-primary" />
+          <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent tracking-tight">
+            PRN Organizador
+          </span>
         </div>
 
-        <div
-          className="w-full max-w-md space-y-8 animate-fade-in-up"
-          style={{ animationDelay: '150ms' }}
-        >
+        <div className="w-full max-w-md space-y-8 animate-fade-in-up stagger-2 glass-card p-8 sm:p-10 rounded-3xl border-t border-l border-white/20">
           <div className="space-y-2">
             <h2 className="text-3xl font-bold text-foreground tracking-tight">
               {mode === 'login' ? 'Acesse sua conta' : 'Crie sua conta'}
@@ -190,9 +192,13 @@ export default function Auth() {
             }}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">Entrar</TabsTrigger>
-              <TabsTrigger value="register">Cadastrar</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted/50 p-1">
+              <TabsTrigger value="login" className="rounded-md">
+                Entrar
+              </TabsTrigger>
+              <TabsTrigger value="register" className="rounded-md">
+                Cadastrar
+              </TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -211,7 +217,7 @@ export default function Auth() {
                       setErrorMsg('')
                       setFieldErrors((prev) => ({ ...prev, name: '' }))
                     }}
-                    className={`h-12 ${fieldErrors.name ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                    className={`h-12 bg-background/50 border-white/10 ${fieldErrors.name ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                     aria-invalid={!!fieldErrors.name}
                   />
                   {fieldErrors.name && (
@@ -233,7 +239,7 @@ export default function Auth() {
                     setErrorMsg('')
                     setFieldErrors((prev) => ({ ...prev, email: '' }))
                   }}
-                  className={`h-12 ${errorMsg || fieldErrors.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                  className={`h-12 bg-background/50 border-white/10 ${errorMsg || fieldErrors.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                   aria-invalid={!!fieldErrors.email}
                 />
                 {fieldErrors.email && (
@@ -248,7 +254,7 @@ export default function Auth() {
                   {mode === 'login' && (
                     <a
                       href="#"
-                      className="text-xs font-semibold text-primary hover:underline"
+                      className="text-xs font-semibold text-primary hover:text-accent transition-colors"
                       onClick={(e) => e.preventDefault()}
                     >
                       Esqueceu a senha?
@@ -265,7 +271,7 @@ export default function Auth() {
                     setErrorMsg('')
                     setFieldErrors((prev) => ({ ...prev, password: '' }))
                   }}
-                  className={`h-12 ${errorMsg || fieldErrors.password ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                  className={`h-12 bg-background/50 border-white/10 ${errorMsg || fieldErrors.password ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                   aria-invalid={!!fieldErrors.password}
                 />
                 {fieldErrors.password && (
@@ -277,16 +283,12 @@ export default function Auth() {
             </div>
 
             {errorMsg && (
-              <div className="text-sm font-semibold text-destructive animate-in fade-in slide-in-from-top-1 bg-destructive/10 p-3 rounded-md border border-destructive/20">
+              <div className="text-sm font-semibold text-destructive animate-in fade-in slide-in-from-top-1 bg-destructive/10 p-3 rounded-xl border border-destructive/20">
                 {errorMsg}
               </div>
             )}
 
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full h-12 text-md font-bold transition-all active:scale-[0.98] shadow-md group relative overflow-hidden"
-            >
+            <Button type="submit" disabled={isLoading} className="w-full h-12 text-md">
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -297,13 +299,12 @@ export default function Auth() {
                   <span className="relative z-10">
                     {mode === 'login' ? 'Entrar no Sistema' : 'Criar Conta'}
                   </span>
-                  <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
                 </>
               )}
             </Button>
           </form>
 
-          <div className="pt-6 border-t border-border space-y-4">
+          <div className="pt-6 border-t border-border/50 space-y-4">
             <p className="text-xs font-semibold text-muted-foreground text-center uppercase tracking-wider">
               Acesso Rápido (Demonstração)
             </p>
@@ -311,20 +312,24 @@ export default function Auth() {
               <Button
                 variant="outline"
                 type="button"
-                className="h-auto py-3 px-4 flex flex-col items-start gap-1"
+                className="h-auto py-3 px-4 flex flex-col items-start gap-1 bg-background/30"
                 onClick={() => handleDemoFill('admin')}
               >
-                <span className="text-xs font-bold text-amber-600">Admin</span>
-                <span className="text-[10px] text-muted-foreground">paulonovack...</span>
+                <span className="text-xs font-bold text-amber-500">Admin</span>
+                <span className="text-[10px] text-muted-foreground truncate w-full text-left">
+                  paulonovack...
+                </span>
               </Button>
               <Button
                 variant="outline"
                 type="button"
-                className="h-auto py-3 px-4 flex flex-col items-start gap-1"
+                className="h-auto py-3 px-4 flex flex-col items-start gap-1 bg-background/30"
                 onClick={() => handleDemoFill('employee')}
               >
                 <span className="text-xs font-bold text-primary">Funcionário</span>
-                <span className="text-[10px] text-muted-foreground">joao@prn.com</span>
+                <span className="text-[10px] text-muted-foreground truncate w-full text-left">
+                  joao@prn.com
+                </span>
               </Button>
             </div>
           </div>

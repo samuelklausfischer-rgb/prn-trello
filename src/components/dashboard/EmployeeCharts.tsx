@@ -23,8 +23,8 @@ const prodConfig = { tasks: { label: 'Tarefas Concluídas', color: 'hsl(var(--pr
 
 const progConfig = {
   todo: { label: 'A Fazer', color: 'hsl(var(--muted-foreground))' },
-  inProgress: { label: 'Em Progresso', color: '#3b82f6' },
-  done: { label: 'Concluído', color: '#22c55e' },
+  inProgress: { label: 'Em Progresso', color: 'hsl(var(--primary))' },
+  done: { label: 'Concluído', color: 'hsl(var(--accent))' },
 }
 
 const compConfig = {
@@ -38,32 +38,40 @@ export function EmployeeCharts({
 }: EmployeeChartsProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <Card className="shadow-sm lg:col-span-2 flex flex-col">
-        <CardHeader>
-          <CardTitle className="text-sm font-bold text-muted-foreground uppercase">
+      <Card className="glass-card border-white/20 dark:border-white/10 lg:col-span-2 flex flex-col">
+        <CardHeader className="bg-muted/10 border-b border-border/50">
+          <CardTitle className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
             Sua Produtividade (Últimos 7 dias)
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex-1 min-h-[250px]">
+        <CardContent className="flex-1 min-h-[250px] pt-6">
           <ChartContainer config={prodConfig} className="h-full w-full">
             <LineChart data={productivityData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid vertical={false} strokeDasharray="3 3" />
+              <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis
                 dataKey="day"
                 tickLine={false}
                 axisLine={false}
-                tickMargin={8}
-                className="capitalize"
+                tickMargin={12}
+                className="capitalize font-medium text-xs"
               />
-              <YAxis tickLine={false} axisLine={false} tickMargin={8} allowDecimals={false} />
-              <ChartTooltip content={<ChartTooltipContent />} />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={12}
+                allowDecimals={false}
+                className="font-medium text-xs"
+              />
+              <ChartTooltip
+                content={<ChartTooltipContent className="glass-card border-white/20" />}
+              />
               <Line
                 type="monotone"
                 dataKey="tasks"
                 stroke="var(--color-tasks)"
-                strokeWidth={3}
-                dot={{ r: 4 }}
-                activeDot={{ r: 6 }}
+                strokeWidth={4}
+                dot={{ r: 4, strokeWidth: 2, fill: 'hsl(var(--background))' }}
+                activeDot={{ r: 6, strokeWidth: 0, fill: 'hsl(var(--accent))' }}
               />
             </LineChart>
           </ChartContainer>
@@ -71,9 +79,9 @@ export function EmployeeCharts({
       </Card>
 
       <div className="space-y-6 lg:col-span-1 flex flex-col h-full">
-        <Card className="shadow-sm flex-1 flex flex-col justify-center">
+        <Card className="glass-card border-white/20 dark:border-white/10 flex-1 flex flex-col justify-center">
           <CardHeader className="pb-0">
-            <CardTitle className="text-sm font-bold text-muted-foreground uppercase text-center">
+            <CardTitle className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-center">
               Status das Tarefas
             </CardTitle>
           </CardHeader>
@@ -85,9 +93,10 @@ export function EmployeeCharts({
                     data={progressData}
                     dataKey="value"
                     nameKey="name"
-                    innerRadius={40}
+                    innerRadius={45}
                     outerRadius={65}
-                    paddingAngle={3}
+                    paddingAngle={5}
+                    cornerRadius={5}
                   >
                     {progressData.map((entry, index) => (
                       <Cell
@@ -96,21 +105,25 @@ export function EmployeeCharts({
                       />
                     ))}
                   </Pie>
-                  <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent hideLabel className="glass-card border-white/20" />
+                    }
+                  />
                 </PieChart>
               </ChartContainer>
             ) : (
-              <div className="h-[140px] flex items-center justify-center text-muted-foreground text-sm">
+              <div className="h-[140px] flex items-center justify-center text-muted-foreground text-sm font-medium">
                 Sem tarefas ativas
               </div>
             )}
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm flex-1 flex flex-col justify-center">
+        <Card className="glass-card border-white/20 dark:border-white/10 flex-1 flex flex-col justify-center">
           <CardHeader className="pb-0">
-            <CardTitle className="text-sm font-bold text-muted-foreground uppercase">
-              Você vs Média da Equipe (Pontos)
+            <CardTitle className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              Você vs Média (Pontos)
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-4 pb-4">
@@ -127,16 +140,18 @@ export function EmployeeCharts({
                   width={110}
                   tickLine={false}
                   axisLine={false}
-                  tick={{ fontSize: 12, fontWeight: 500 }}
+                  tick={{ fontSize: 12, fontWeight: 600, fill: 'hsl(var(--foreground))' }}
                 />
-                <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                <Bar dataKey="value" fill="var(--color-value)" radius={[0, 4, 4, 0]} barSize={24}>
+                <ChartTooltip
+                  content={<ChartTooltipContent hideLabel className="glass-card border-white/20" />}
+                />
+                <Bar dataKey="value" fill="url(#colorUv)" radius={[0, 4, 4, 0]} barSize={24}>
                   {teamComparison.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
                       fill={
                         entry.type === 'user'
-                          ? 'hsl(var(--primary))'
+                          ? 'hsl(var(--accent))'
                           : 'hsl(var(--muted-foreground))'
                       }
                     />

@@ -12,18 +12,22 @@ interface MetricCardProps {
 
 export function MetricCard({ title, value, icon: Icon, colorClass, subtitle }: MetricCardProps) {
   return (
-    <Card className="shadow-sm hover:shadow-md transition-all duration-300 dark:hover:brightness-110">
+    <Card className="hover-3d glass-card border-white/20 dark:border-white/10">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
           {title}
         </CardTitle>
-        <Icon className={cn('h-5 w-5', colorClass || 'text-primary')} />
+        <div className="p-2 rounded-xl bg-background/50 backdrop-blur-md shadow-sm border border-border/50">
+          <Icon className={cn('h-5 w-5', colorClass || 'text-primary')} />
+        </div>
       </CardHeader>
       <CardContent>
-        <div className={cn('text-3xl font-bold tracking-tight', colorClass || 'text-foreground')}>
+        <div
+          className={cn('text-3xl font-extrabold tracking-tight', colorClass || 'text-foreground')}
+        >
           {value}
         </div>
-        {subtitle && <p className="text-xs text-muted-foreground mt-1 font-medium">{subtitle}</p>}
+        {subtitle && <p className="text-xs text-muted-foreground mt-1 font-semibold">{subtitle}</p>}
       </CardContent>
     </Card>
   )

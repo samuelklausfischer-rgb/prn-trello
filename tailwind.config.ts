@@ -89,7 +89,7 @@ export default {
       boxShadow: {
         subtle: '0 8px 32px 0 rgba(0, 0, 0, 0.05)',
         elevation: '0 8px 32px 0 rgba(0, 0, 0, 0.05)',
-        neon: '0 0 15px rgba(0, 212, 255, 0.3), 0 0 30px rgba(161, 0, 255, 0.1)',
+        neon: '0 0 15px rgba(0, 212, 255, 0.3), 0 0 30px rgba(161, 0, 255, 0.2)',
       },
       keyframes: {
         fadeIn: {
@@ -106,8 +106,8 @@ export default {
           '100%': { transform: 'scale(1)' },
         },
         shimmer: {
-          '0%': { backgroundPosition: '-1000px 0' },
-          '100%': { backgroundPosition: '1000px 0' },
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
         },
         'accordion-down': {
           from: { height: '0' },
@@ -122,7 +122,7 @@ export default {
         'fade-in': 'fadeIn 0.3s ease-in-out forwards',
         'slide-up': 'slideUp 0.3s ease-out forwards',
         'bounce-in': 'bounceIn 0.5s ease-out forwards',
-        'shimmer': 'shimmer 2.5s infinite linear',
+        shimmer: 'shimmer 2s infinite linear',
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
       },
@@ -130,4 +130,3 @@ export default {
   },
   plugins: [animatePlugin, typographyPlugin, aspectRatioPlugin],
 } satisfies Config
-

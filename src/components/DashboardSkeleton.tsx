@@ -5,22 +5,22 @@ export default function DashboardSkeleton() {
   return (
     <PageTransition>
       <div className="space-y-8 pb-8">
-        <Skeleton className="h-32 md:h-28 w-full rounded-2xl" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Skeleton className="h-32 md:h-28 w-full rounded-3xl" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-28 w-full rounded-xl shadow-sm" />
+            <Skeleton key={i} className="h-28 w-full rounded-2xl" />
           ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Skeleton className="h-[350px] lg:col-span-2 w-full rounded-xl shadow-sm" />
+          <Skeleton className="h-[350px] lg:col-span-2 w-full rounded-2xl" />
           <div className="space-y-6 lg:col-span-1 flex flex-col">
-            <Skeleton className="h-[170px] w-full rounded-xl shadow-sm" />
-            <Skeleton className="h-[156px] w-full rounded-xl shadow-sm" />
+            <Skeleton className="h-[170px] w-full rounded-2xl" />
+            <Skeleton className="h-[156px] w-full rounded-2xl" />
           </div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Skeleton className="h-[400px] lg:col-span-2 w-full rounded-xl shadow-sm" />
-          <Skeleton className="h-[400px] lg:col-span-1 w-full rounded-xl shadow-sm" />
+          <Skeleton className="h-[400px] lg:col-span-2 w-full rounded-2xl" />
+          <Skeleton className="h-[400px] lg:col-span-1 w-full rounded-2xl" />
         </div>
       </div>
     </PageTransition>

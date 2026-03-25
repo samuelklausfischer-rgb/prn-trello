@@ -19,10 +19,11 @@ export default function TaskCard({
   isDragging?: boolean
 }) {
   const priorityColors: Record<string, string> = {
-    low: 'bg-green-100 text-green-700',
-    medium: 'bg-yellow-100 text-yellow-700',
-    high: 'bg-orange-100 text-orange-700',
-    urgent: 'bg-red-100 text-red-700',
+    low: 'bg-green-100/80 text-green-800 border-green-200 dark:bg-green-900/50 dark:text-green-300',
+    medium:
+      'bg-yellow-100/80 text-yellow-800 border-yellow-200 dark:bg-yellow-900/50 dark:text-yellow-300',
+    high: 'bg-orange-100/80 text-orange-800 border-orange-200 dark:bg-orange-900/50 dark:text-orange-300',
+    urgent: 'bg-red-100/80 text-red-800 border-red-200 dark:bg-red-900/50 dark:text-red-300',
   }
 
   const assignee = task.expand?.delegated_to
@@ -34,21 +35,21 @@ export default function TaskCard({
       onDragEnd={onDragEnd}
       onClick={onClick}
       className={cn(
-        'cursor-pointer hover:shadow-md transition-shadow border-border/60',
-        isDragging && 'opacity-50 scale-95',
-        task.is_archived && 'opacity-60 bg-muted/50',
+        'cursor-pointer hover-3d glass-card bg-background/80 dark:bg-background/40 border-white/20 dark:border-white/5',
+        isDragging && 'opacity-50 scale-95 shadow-none',
+        task.is_archived && 'opacity-60 bg-muted/30 grayscale-[0.3]',
       )}
     >
       <CardContent className="p-4 flex flex-col gap-3">
         <div className="flex justify-between items-start gap-2">
           <Badge
             variant="outline"
-            className={cn('text-[10px] px-1.5 py-0 border-0', priorityColors[task.priority])}
+            className={cn('text-[10px] px-1.5 py-0 border', priorityColors[task.priority])}
           >
             {task.priority.toUpperCase()}
           </Badge>
           {task.points_reward > 0 && (
-            <span className="text-[10px] font-bold text-amber-600 bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded-md whitespace-nowrap">
+            <span className="text-[10px] font-bold text-accent bg-accent/10 border border-accent/20 px-1.5 py-0.5 rounded-md whitespace-nowrap shadow-sm">
               +{task.points_reward} pts
             </span>
           )}
@@ -56,10 +57,10 @@ export default function TaskCard({
         <h4 className="font-semibold text-sm leading-tight text-foreground line-clamp-2">
           {task.title}
         </h4>
-        <div className="flex items-center justify-between mt-1 pt-3 border-t border-border/50">
+        <div className="flex items-center justify-between mt-1 pt-3 border-t border-border/40">
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium">
             {task.is_archived && (
-              <Badge variant="secondary" className="text-[10px] py-0 px-1.5">
+              <Badge variant="secondary" className="text-[10px] py-0 px-1.5 bg-background/50">
                 Arquivada
               </Badge>
             )}
@@ -67,12 +68,12 @@ export default function TaskCard({
           {assignee ? (
             <Avatar className="h-6 w-6 border border-border shadow-sm">
               <AvatarImage src={assignee.avatar} alt={assignee.name} />
-              <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-bold">
+              <AvatarFallback className="text-[10px] bg-gradient-to-br from-primary to-accent text-white font-bold">
                 {assignee.name.charAt(0)}
               </AvatarFallback>
             </Avatar>
           ) : (
-            <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center border border-border">
+            <div className="h-6 w-6 rounded-full bg-muted/50 flex items-center justify-center border border-border">
               <User className="h-3 w-3 text-muted-foreground" />
             </div>
           )}
