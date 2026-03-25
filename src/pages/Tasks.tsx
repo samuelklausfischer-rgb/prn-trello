@@ -44,7 +44,7 @@ export default function Tasks() {
     loadData()
   })
 
-  const statuses = [
+  const statuses: { id: TaskRecord['status']; label: string }[] = [
     { id: 'todo', label: 'A Fazer' },
     { id: 'in_progress', label: 'Em Progresso' },
     { id: 'review', label: 'Em Revisão' },
@@ -62,12 +62,17 @@ export default function Tasks() {
     e.dataTransfer.setData('text/plain', id)
   }
 
-  const handleDrop = async (e: React.DragEvent, status: any) => {
+  const handleDrop = async (e: React.DragEvent, status: TaskRecord['status']) => {
     e.preventDefault()
-    const id = e.dataTransfer.getData('text/plain')
-    if (!id) return
 
-    const taskToUpdate = tasks.find((t) => t.id === id)
+    // Properly target the record ID by safely extracting it
+    const draggedId = e.dataTransfer.getData('text/plain')?.trim()
+    if (!draggedId) {
+      setDraggedTaskId(null)
+      return
+    }
+
+    const taskToUpdate = tasks.find((t) => t.id === draggedId)
     if (!taskToUpdate || taskToUpdate.status === status) {
       setDraggedTaskId(null)
       return
@@ -76,11 +81,12 @@ export default function Tasks() {
     const previousTasks = [...tasks]
 
     // Optimistically update the UI to make the interaction snappy
-    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status } : t)))
+    setTasks((prev) => prev.map((t) => (t.id === taskToUpdate.id ? { ...t, status } : t)))
     setDraggedTaskId(null)
 
     try {
-      await updateTask(id, { status })
+      // Specifically ensuring the status field is sent correctly and record ID is targeted
+      await updateTask(taskToUpdate.id, { status })
     } catch (error) {
       console.error('Failed to update task:', error)
       // Revert to original state on failure

@@ -52,9 +52,11 @@ export const createTask = async (data: Partial<TaskRecord>) => {
 }
 
 export const updateTask = async (id: string, data: Partial<TaskRecord>) => {
+  if (!id) throw new Error('Task ID is required for update')
+
   const oldTask = await pb.collection('tasks').getOne<TaskRecord>(id)
 
-  const allowedFields = [
+  const allowedFields: (keyof TaskRecord)[] = [
     'title',
     'description',
     'status',
@@ -74,14 +76,29 @@ export const updateTask = async (id: string, data: Partial<TaskRecord>) => {
   let hasChanges = false
 
   for (const key of allowedFields) {
-    if (key in data) {
-      const newValue = (data as any)[key]
-      const oldValue = (oldTask as any)[key]
+    if (data[key] !== undefined) {
+      const newValue = data[key]
+      const oldValue = oldTask[key]
 
       if (JSON.stringify(newValue) !== JSON.stringify(oldValue)) {
         payload[key] = newValue
         hasChanges = true
       }
+    }
+  }
+
+  // Handle automatic timestamp updates based on status change
+  if (payload.status) {
+    if (payload.status === 'in_progress' && !oldTask.started_at) {
+      payload.started_at = new Date().toISOString()
+      hasChanges = true
+    }
+    if (payload.status === 'done' && !oldTask.completed_at) {
+      payload.completed_at = new Date().toISOString()
+      hasChanges = true
+    } else if (payload.status !== 'done' && oldTask.completed_at) {
+      payload.completed_at = null
+      hasChanges = true
     }
   }
 
@@ -105,7 +122,7 @@ export const updateTask = async (id: string, data: Partial<TaskRecord>) => {
       const isCompleted = payload.status === 'done'
       historyPromises.push(
         pb.collection('task_history').create({
-          task_id: id,
+          task_id: task.id,
           action: isCompleted ? 'TASK_COMPLETED' : 'STATUS_CHANGED',
           description: isCompleted
             ? 'Tarefa marcada como concluída'
@@ -117,10 +134,10 @@ export const updateTask = async (id: string, data: Partial<TaskRecord>) => {
       )
     }
 
-    if ('delegated_to' in payload) {
+    if (payload.delegated_to !== undefined) {
       historyPromises.push(
         pb.collection('task_history').create({
-          task_id: id,
+          task_id: task.id,
           action: 'DELEGATED',
           description: payload.delegated_to
             ? 'Tarefa delegada para outro membro'
