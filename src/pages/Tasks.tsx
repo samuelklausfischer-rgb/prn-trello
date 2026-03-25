@@ -25,7 +25,7 @@ import { Plus, LayoutDashboard, Search, Archive, Users, Lock } from 'lucide-reac
 
 export default function Tasks() {
   const { user, role } = useAuth()
-  const isAdmin = role === 'ADMIN'
+  const isAdmin = role === 'ADMIN' || role === 'admin'
 
   const [tasks, setTasks] = useState<TaskRecord[]>([])
   const [users, setUsers] = useState<any[]>([])
@@ -34,7 +34,7 @@ export default function Tasks() {
   const [search, setSearch] = useState('')
   const [showArchived, setShowArchived] = useState(false)
 
-  const [activeTab, setActiveTab] = useState<'team' | 'private'>('team')
+  const [activeTab, setActiveTab] = useState<'team' | 'private'>('private')
   const [employeeFilter, setEmployeeFilter] = useState('all')
 
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
@@ -70,7 +70,11 @@ export default function Tasks() {
 
   const filteredTasks = tasks.filter((t) => {
     const matchSearch = t.title.toLowerCase().includes(search.toLowerCase())
-    const matchArchive = showArchived ? true : !t.is_archived
+
+    // In team view, archived tasks are hidden to keep focus
+    const effectiveShowArchived = isAdmin && activeTab === 'team' ? false : showArchived
+    const matchArchive = effectiveShowArchived ? true : !t.is_archived
+
     let matchView = true
 
     if (isAdmin) {
@@ -218,14 +222,20 @@ export default function Tasks() {
                   className="pl-9 h-10 w-full sm:w-56 glass-card border-white/20 focus:ring-primary rounded-xl"
                 />
               </div>
-              <Button
-                variant={showArchived ? 'secondary' : 'outline'}
-                onClick={() => setShowArchived(!showArchived)}
-                className="rounded-xl"
-              >
-                <Archive className="w-4 h-4 sm:mr-2" />{' '}
-                <span className="hidden sm:inline">{showArchived ? 'Ocultar' : 'Arquivados'}</span>
-              </Button>
+
+              {(!isAdmin || activeTab === 'private') && (
+                <Button
+                  variant={showArchived ? 'secondary' : 'outline'}
+                  onClick={() => setShowArchived(!showArchived)}
+                  className="rounded-xl"
+                >
+                  <Archive className="w-4 h-4 sm:mr-2" />{' '}
+                  <span className="hidden sm:inline">
+                    {showArchived ? 'Ocultar' : 'Arquivados'}
+                  </span>
+                </Button>
+              )}
+
               <Button
                 onClick={() => setIsNewTaskOpen(true)}
                 className="rounded-xl shadow-[0_0_15px_rgba(0,212,255,0.4)]"
@@ -244,14 +254,14 @@ export default function Tasks() {
                 className="w-full sm:w-auto"
               >
                 <TabsList className="bg-background/50 border border-border/50 p-1 rounded-xl">
-                  <TabsTrigger value="team" className="rounded-lg gap-2">
-                    <Users className="w-4 h-4" /> Visão Equipe
-                  </TabsTrigger>
                   <TabsTrigger
                     value="private"
                     className="rounded-lg gap-2 text-accent data-[state=active]:text-accent"
                   >
                     <Lock className="w-4 h-4" /> Meu Espaço
+                  </TabsTrigger>
+                  <TabsTrigger value="team" className="rounded-lg gap-2">
+                    <Users className="w-4 h-4" /> Visão Equipe
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -284,13 +294,13 @@ export default function Tasks() {
         {isAdmin ? (
           <Tabs value={activeTab} className="flex-1 flex flex-col overflow-hidden">
             <TabsContent
-              value="team"
+              value="private"
               className="flex-1 mt-0 outline-none overflow-hidden h-full flex flex-col"
             >
               {boardContent}
             </TabsContent>
             <TabsContent
-              value="private"
+              value="team"
               className="flex-1 mt-0 outline-none overflow-hidden h-full flex flex-col"
             >
               {boardContent}
