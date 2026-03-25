@@ -5,7 +5,17 @@ export interface Achievement {
   name: string
   slug: string
   description: string
-  category: 'tasks' | 'checklists' | 'streak' | 'collaboration' | 'milestone'
+  category:
+    | 'tasks'
+    | 'checklists'
+    | 'streak'
+    | 'collaboration'
+    | 'milestone'
+    | 'licitacao'
+    | 'digitadora'
+    | 'financas'
+    | 'engenharia_ia'
+    | 'comercial'
   icon: string
   requirement_type: string
   requirement_value: number
