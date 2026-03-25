@@ -1,14 +1,3 @@
-onRecordUpdate((e) => {
-  const newPoints = e.record.get('points') || 0
-  const oldRecord = e.record.originalCopy()
-  const oldPoints = oldRecord ? oldRecord.get('points') || 0 : 0
-
-  if (newPoints !== oldPoints) {
-    e.record.set('last_activity', new Date().toISOString())
-  }
-  e.next()
-}, 'users')
-
 onRecordAfterUpdateSuccess((e) => {
   const newPoints = e.record.get('points') || 0
   const oldRecord = e.record.originalCopy()
@@ -39,9 +28,6 @@ onRecordAfterUpdateSuccess((e) => {
       // Ignored: Not running inside an HTTP request context
     }
 
-    // Only log generic points update if explicit headers are passed.
-    // Native system hooks (like task completions) handle their own detailed logging
-    // to avoid duplicate records in points_history.
     if (!hasHeaders) {
       e.next()
       return

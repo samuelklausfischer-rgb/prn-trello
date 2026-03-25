@@ -5,9 +5,7 @@ onRecordUpdate((e) => {
 
   if (newXp !== oldXp) {
     try {
-      const levels = $app.findRecordsByFilter('levels', 'min_xp <= {:xp}', '-min_xp', 1, 0, {
-        xp: newXp,
-      })
+      const levels = $app.findRecordsByFilter('levels', `min_xp <= ${newXp}`, '-min_xp', 1, 0)
 
       if (levels && levels.length > 0) {
         const newLevel = levels[0].get('level_number')
