@@ -4,17 +4,21 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useAuth } from '@/hooks/useAuthHooks'
-import { Trophy, Loader2, Target, Users, LayoutDashboard, Zap } from 'lucide-react'
+import { Loader2, Target, Users, LayoutDashboard, Zap, ShieldCheck } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 import pb from '@/lib/pocketbase/client'
 import { extractFieldErrors } from '@/lib/pocketbase/errors'
 import { ClientResponseError } from 'pocketbase'
+import { cn } from '@/lib/utils'
 
 export default function Auth() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [passwordConfirm, setPasswordConfirm] = useState('')
   const [name, setName] = useState('')
+  const [role, setRole] = useState<'admin' | 'employee'>('employee')
   const [isLoading, setIsLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -24,7 +28,8 @@ export default function Auth() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const from = (location.state as any)?.from?.pathname || '/'
+  const defaultRedirect = mode === 'register' ? '/tasks' : '/'
+  const from = (location.state as any)?.from?.pathname || defaultRedirect
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -37,9 +42,20 @@ export default function Auth() {
     setErrorMsg('')
     setFieldErrors({})
 
-    if (!email || !password) {
-      setErrorMsg('Por favor, preencha todos os campos obrigatórios.')
-      return
+    if (mode === 'register') {
+      if (!name || !email || !password || !passwordConfirm) {
+        setErrorMsg('Por favor, preencha todos os campos obrigatórios.')
+        return
+      }
+      if (password !== passwordConfirm) {
+        setErrorMsg('As senhas não coincidem.')
+        return
+      }
+    } else {
+      if (!email || !password) {
+        setErrorMsg('Por favor, preencha todos os campos obrigatórios.')
+        return
+      }
     }
 
     setIsLoading(true)
@@ -49,8 +65,9 @@ export default function Auth() {
         await pb.collection('users').create({
           email,
           password,
-          passwordConfirm: password,
+          passwordConfirm,
           name,
+          role,
         })
         await pb.collection('users').authWithPassword(email, password)
         toast({
@@ -99,19 +116,6 @@ export default function Auth() {
       })
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  const handleDemoFill = (type: 'admin' | 'employee') => {
-    setMode('login')
-    setFieldErrors({})
-    setErrorMsg('')
-    if (type === 'admin') {
-      setEmail('paulonovack@gmail.com')
-      setPassword('securepassword123')
-    } else {
-      setEmail('joao@prn.com')
-      setPassword('securepassword123')
     }
   }
 
@@ -205,27 +209,71 @@ export default function Auth() {
           <form onSubmit={handleAuth} className="space-y-6">
             <div className="space-y-4">
               {mode === 'register' && (
-                <div className="space-y-2.5">
-                  <Label htmlFor="name">Nome Completo (Opcional)</Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="João Silva"
-                    value={name}
-                    onChange={(e) => {
-                      setName(e.target.value)
-                      setErrorMsg('')
-                      setFieldErrors((prev) => ({ ...prev, name: '' }))
-                    }}
-                    className={`h-12 bg-background/50 border-white/10 ${fieldErrors.name ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                    aria-invalid={!!fieldErrors.name}
-                  />
-                  {fieldErrors.name && (
-                    <p className="text-sm font-medium text-destructive animate-in fade-in slide-in-from-top-1">
-                      {fieldErrors.name}
-                    </p>
-                  )}
-                </div>
+                <>
+                  <div className="space-y-3 pb-2">
+                    <Label className="text-muted-foreground text-xs uppercase tracking-wider font-bold">
+                      Tipo de Perfil
+                    </Label>
+                    <RadioGroup
+                      value={role}
+                      onValueChange={(val) => setRole(val as 'admin' | 'employee')}
+                      className="grid grid-cols-2 gap-3"
+                    >
+                      <Label
+                        htmlFor="role-admin"
+                        className={cn(
+                          'flex flex-col items-center justify-center rounded-xl border-2 p-3 cursor-pointer transition-all hover:bg-accent/5',
+                          role === 'admin'
+                            ? 'border-primary bg-primary/10 text-primary shadow-[0_0_15px_rgba(0,212,255,0.15)]'
+                            : 'border-white/10 text-muted-foreground bg-background/50',
+                        )}
+                      >
+                        <RadioGroupItem value="admin" id="role-admin" className="sr-only" />
+                        <ShieldCheck className="w-5 h-5 mb-1.5" />
+                        <span className="font-semibold text-sm">Criar conta Admin</span>
+                      </Label>
+                      <Label
+                        htmlFor="role-employee"
+                        className={cn(
+                          'flex flex-col items-center justify-center rounded-xl border-2 p-3 cursor-pointer transition-all hover:bg-accent/5',
+                          role === 'employee'
+                            ? 'border-primary bg-primary/10 text-primary shadow-[0_0_15px_rgba(0,212,255,0.15)]'
+                            : 'border-white/10 text-muted-foreground bg-background/50',
+                        )}
+                      >
+                        <RadioGroupItem value="employee" id="role-employee" className="sr-only" />
+                        <Users className="w-5 h-5 mb-1.5" />
+                        <span className="font-semibold text-sm text-center leading-tight">
+                          Criar conta
+                          <br />
+                          Funcionário
+                        </span>
+                      </Label>
+                    </RadioGroup>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    <Label htmlFor="name">Nome Completo</Label>
+                    <Input
+                      id="name"
+                      type="text"
+                      placeholder="João Silva"
+                      value={name}
+                      onChange={(e) => {
+                        setName(e.target.value)
+                        setErrorMsg('')
+                        setFieldErrors((prev) => ({ ...prev, name: '' }))
+                      }}
+                      className={`h-12 bg-background/50 border-white/10 ${fieldErrors.name ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                      aria-invalid={!!fieldErrors.name}
+                    />
+                    {fieldErrors.name && (
+                      <p className="text-sm font-medium text-destructive animate-in fade-in slide-in-from-top-1">
+                        {fieldErrors.name}
+                      </p>
+                    )}
+                  </div>
+                </>
               )}
               <div className="space-y-2.5">
                 <Label htmlFor="email">Email Corporativo</Label>
@@ -248,6 +296,7 @@ export default function Auth() {
                   </p>
                 )}
               </div>
+
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Senha</Label>
@@ -280,6 +329,23 @@ export default function Auth() {
                   </p>
                 )}
               </div>
+
+              {mode === 'register' && (
+                <div className="space-y-2.5">
+                  <Label htmlFor="passwordConfirm">Confirmar Senha</Label>
+                  <Input
+                    id="passwordConfirm"
+                    type="password"
+                    placeholder="••••••••"
+                    value={passwordConfirm}
+                    onChange={(e) => {
+                      setPasswordConfirm(e.target.value)
+                      setErrorMsg('')
+                    }}
+                    className={`h-12 bg-background/50 border-white/10 ${errorMsg.includes('senhas não coincidem') ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                  />
+                </div>
+              )}
             </div>
 
             {errorMsg && (
@@ -288,7 +354,7 @@ export default function Auth() {
               </div>
             )}
 
-            <Button type="submit" disabled={isLoading} className="w-full h-12 text-md">
+            <Button type="submit" disabled={isLoading} className="w-full h-12 text-md mt-2">
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -303,36 +369,6 @@ export default function Auth() {
               )}
             </Button>
           </form>
-
-          <div className="pt-6 border-t border-border/50 space-y-4">
-            <p className="text-xs font-semibold text-muted-foreground text-center uppercase tracking-wider">
-              Acesso Rápido (Demonstração)
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                variant="outline"
-                type="button"
-                className="h-auto py-3 px-4 flex flex-col items-start gap-1 bg-background/30"
-                onClick={() => handleDemoFill('admin')}
-              >
-                <span className="text-xs font-bold text-amber-500">Admin</span>
-                <span className="text-[10px] text-muted-foreground truncate w-full text-left">
-                  paulonovack...
-                </span>
-              </Button>
-              <Button
-                variant="outline"
-                type="button"
-                className="h-auto py-3 px-4 flex flex-col items-start gap-1 bg-background/30"
-                onClick={() => handleDemoFill('employee')}
-              >
-                <span className="text-xs font-bold text-primary">Funcionário</span>
-                <span className="text-[10px] text-muted-foreground truncate w-full text-left">
-                  joao@prn.com
-                </span>
-              </Button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
