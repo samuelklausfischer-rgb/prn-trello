@@ -79,15 +79,16 @@ export default function Tasks() {
 
     const previousTasks = [...tasks]
 
-    // Optimistically update the UI to make the interaction snappy
+    // Optimistically update the UI to make the interaction snappy and maintain local state
     setTasks((prev) => prev.map((t) => (t.id === taskToUpdate.id ? { ...t, status } : t)))
     setDraggedTaskId(null)
 
     try {
+      // Ensure only the status field is sent to respect database schema validation constraints
       await updateTask(taskToUpdate.id, { status })
     } catch (error) {
       console.error('Failed to update task:', error)
-      // Revert to original state on failure
+      // Rollback to original state on network or validation failure
       setTasks(previousTasks)
       toast({
         title: 'Erro ao mover tarefa',

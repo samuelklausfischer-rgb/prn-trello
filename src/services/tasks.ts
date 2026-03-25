@@ -56,6 +56,7 @@ export const updateTask = async (id: string, data: Partial<TaskRecord>) => {
 
   const oldTask = await pb.collection('tasks').getOne<TaskRecord>(id)
 
+  // Strictly define fields that can be updated, excluding system fields like id, created, updated, and expand
   const allowedFields: (keyof TaskRecord)[] = [
     'title',
     'description',
@@ -73,37 +74,35 @@ export const updateTask = async (id: string, data: Partial<TaskRecord>) => {
   ]
 
   const payload: Record<string, any> = {}
-  let hasChanges = false
 
+  // Filter payload to avoid sending read-only system fields and causing 400 Bad Request
   for (const key of allowedFields) {
-    if (data[key] !== undefined) {
-      const newValue = data[key]
-      const oldValue = oldTask[key]
-
-      if (JSON.stringify(newValue) !== JSON.stringify(oldValue)) {
-        payload[key] = newValue
-        hasChanges = true
-      }
+    if (key in data && data[key] !== undefined) {
+      payload[key] = data[key]
     }
   }
 
-  // Handle automatic timestamp updates based on status change
+  // Validate that status only contains the correct enum values
+  const validStatuses = ['todo', 'in_progress', 'review', 'done']
+  if (payload.status && !validStatuses.includes(payload.status)) {
+    throw new Error(`Invalid status: ${payload.status}. Must be one of ${validStatuses.join(', ')}`)
+  }
+
+  // Handle automatic timestamp updates based on status change, using valid ISO 8601 strings
   if (payload.status) {
     if (payload.status === 'in_progress' && !oldTask.started_at) {
       payload.started_at = new Date().toISOString()
-      hasChanges = true
     }
     if (payload.status === 'done' && !oldTask.completed_at) {
       payload.completed_at = new Date().toISOString()
-      hasChanges = true
     } else if (payload.status !== 'done' && oldTask.completed_at) {
       // PocketBase requires empty string "" to clear date fields, not null
       payload.completed_at = ''
-      hasChanges = true
     }
   }
 
-  if (!hasChanges) {
+  // If no fields are to be updated, skip the API call
+  if (Object.keys(payload).length === 0) {
     return oldTask
   }
 
@@ -119,7 +118,7 @@ export const updateTask = async (id: string, data: Partial<TaskRecord>) => {
       done: 'Concluído',
     }
 
-    if (payload.status) {
+    if (payload.status && payload.status !== oldTask.status) {
       const isCompleted = payload.status === 'done'
       historyPromises.push(
         pb.collection('task_history').create({
@@ -150,7 +149,9 @@ export const updateTask = async (id: string, data: Partial<TaskRecord>) => {
       )
     }
 
-    await Promise.allSettled(historyPromises)
+    if (historyPromises.length > 0) {
+      await Promise.allSettled(historyPromises)
+    }
   }
 
   return task
