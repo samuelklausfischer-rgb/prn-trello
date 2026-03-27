@@ -11,6 +11,8 @@ import {
   CheckCircle2,
   Circle,
   ChevronDown,
+  Clock,
+  AlertTriangle,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -22,6 +24,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
+import { isPast, differenceInHours, format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 
 export default function TaskCard({
   task,
@@ -78,6 +82,15 @@ export default function TaskCard({
       </div>
     )
 
+  const dueDate = task.due_date ? new Date(task.due_date) : null
+  const isOverdue = dueDate && task.status !== 'done' && isPast(dueDate)
+  const isCritical =
+    dueDate &&
+    task.status !== 'done' &&
+    task.deadline_type === 'mandatory' &&
+    !isOverdue &&
+    differenceInHours(dueDate, new Date()) <= 24
+
   return (
     <Card
       draggable
@@ -92,15 +105,30 @@ export default function TaskCard({
     >
       <CardContent className="p-5 flex flex-col gap-3.5">
         <div className="flex justify-between items-start gap-2">
-          <Badge
-            variant="outline"
-            className={cn(
-              'text-[10px] px-2 py-0.5 border font-bold tracking-wide',
-              priorityColors[task.priority],
+          <div className="flex gap-1.5 flex-wrap">
+            <Badge
+              variant="outline"
+              className={cn(
+                'text-[10px] px-2 py-0.5 border font-bold tracking-wide',
+                priorityColors[task.priority],
+              )}
+            >
+              {task.priority.toUpperCase()}
+            </Badge>
+            {isOverdue && (
+              <Badge
+                variant="destructive"
+                className="text-[10px] uppercase font-bold animate-pulse px-2 py-0.5"
+              >
+                <AlertTriangle className="w-3 h-3 mr-1" /> Atrasada
+              </Badge>
             )}
-          >
-            {task.priority.toUpperCase()}
-          </Badge>
+            {isCritical && (
+              <Badge className="bg-orange-500 hover:bg-orange-600 text-white text-[10px] uppercase font-bold shadow-[0_0_12px_rgba(249,115,22,0.5)] px-2 py-0.5 border-none">
+                <Clock className="w-3 h-3 mr-1" /> Prazo Crítico
+              </Badge>
+            )}
+          </div>
           <div className="flex gap-1.5 items-center">
             {task.is_private && (
               <span className="text-[9px] font-bold text-muted-foreground bg-muted border border-border/50 px-1.5 py-0.5 rounded-md">
@@ -119,9 +147,43 @@ export default function TaskCard({
           <div className="mt-0.5 p-1.5 rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-[0_0_10px_rgba(0,212,255,0.2)] shrink-0">
             <TaskIcon className="w-4 h-4" />
           </div>
-          <h4 className="font-semibold text-[15px] leading-tight text-foreground line-clamp-2 pt-0.5">
-            {task.title}
-          </h4>
+          <div className="flex flex-col gap-1 w-full">
+            <h4 className="font-semibold text-[15px] leading-tight text-foreground line-clamp-2 pt-0.5">
+              {task.title}
+            </h4>
+
+            <div
+              className={cn(
+                'flex items-center gap-1.5 text-xs mt-1 p-1.5 rounded-lg border w-fit',
+                isOverdue
+                  ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                  : isCritical
+                    ? 'bg-orange-500/10 text-orange-500 border-orange-500/20'
+                    : 'bg-muted/50 text-muted-foreground border-transparent',
+              )}
+            >
+              <Clock className="w-3.5 h-3.5" />
+              {dueDate ? (
+                <>
+                  <span className="font-medium">
+                    {format(dueDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                  </span>
+                  {task.deadline_type === 'mandatory' && (
+                    <span
+                      className={cn(
+                        'text-[9px] uppercase font-bold px-1.5 py-0.5 rounded ml-1',
+                        isOverdue || isCritical ? 'bg-background/50' : 'bg-primary/10 text-primary',
+                      )}
+                    >
+                      Obrigatório
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="font-medium">Sem Prazo</span>
+              )}
+            </div>
+          </div>
         </div>
 
         {checklists.length > 0 && (

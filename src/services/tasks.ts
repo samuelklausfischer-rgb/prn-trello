@@ -7,6 +7,7 @@ export interface TaskRecord {
   status: 'todo' | 'in_progress' | 'review' | 'done'
   priority: 'low' | 'medium' | 'high' | 'urgent'
   due_date?: string
+  deadline_type?: 'mandatory' | 'optional'
   started_at?: string
   completed_at?: string
   created_by: string
@@ -62,6 +63,7 @@ export const updateTask = async (id: string, data: Partial<TaskRecord>) => {
     'title',
     'description',
     'due_date',
+    'deadline_type',
     'started_at',
     'completed_at',
     'created_by',

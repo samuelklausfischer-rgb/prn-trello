@@ -28,6 +28,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TaskChecklist } from './TaskChecklist'
 import { TaskHistoryTimeline } from './TaskHistoryTimeline'
 
+const formatDateTimeLocal = (dateString?: string) => {
+  if (!dateString) return ''
+  const d = new Date(dateString)
+  if (isNaN(d.getTime())) return ''
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+}
+
 const schema = z.object({
   title: z.string().min(1, 'Obrigatório'),
   description: z.string().optional(),
@@ -37,6 +44,8 @@ const schema = z.object({
   points_reward: z.coerce.number().min(0),
   is_archived: z.boolean().default(false),
   is_private: z.boolean().default(false),
+  due_date: z.string().optional(),
+  deadline_type: z.enum(['mandatory', 'optional']).default('optional'),
 })
 
 export default function TaskModal({
@@ -62,6 +71,8 @@ export default function TaskModal({
       description: '',
       is_archived: false,
       is_private: false,
+      due_date: '',
+      deadline_type: 'optional',
     },
   })
 
@@ -76,6 +87,8 @@ export default function TaskModal({
         points_reward: task.points_reward || 0,
         is_archived: task.is_archived || false,
         is_private: task.is_private || false,
+        due_date: task.due_date || '',
+        deadline_type: task.deadline_type || 'optional',
       })
     }
   }, [task, open, form])
@@ -85,8 +98,11 @@ export default function TaskModal({
     try {
       await updateTask(task.id, {
         ...values,
-        delegated_to:
-          values.is_private || values.delegated_to === 'unassigned' ? '' : values.delegated_to,
+        delegated_to: values.is_private
+          ? task.created_by
+          : values.delegated_to === 'unassigned'
+            ? ''
+            : values.delegated_to,
       })
       onOpenChange(false)
     } catch (e) {
@@ -98,10 +114,13 @@ export default function TaskModal({
   if (!task) return null
 
   const isPrivateWatch = form.watch('is_private')
+  const employeeUsers = users.filter(
+    (u: any) => u.role?.toLowerCase() === 'employee' || u.role === 'EMPLOYEE',
+  )
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar">
         <DialogHeader>
           <DialogTitle>Editar Tarefa</DialogTitle>
         </DialogHeader>
@@ -188,6 +207,50 @@ export default function TaskModal({
                     )}
                   />
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="due_date"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Prazo (Opcional)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="datetime-local"
+                            value={field.value ? formatDateTimeLocal(field.value) : ''}
+                            onChange={(e) => {
+                              const val = e.target.value
+                              if (!val) field.onChange('')
+                              else field.onChange(new Date(val).toISOString())
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="deadline_type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de Prazo</FormLabel>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="optional">Opcional</SelectItem>
+                            <SelectItem value="mandatory">Obrigatório</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 {!isPrivateWatch && (
                   <FormField
                     control={form.control}
@@ -204,7 +267,7 @@ export default function TaskModal({
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="unassigned">Sem responsável</SelectItem>
-                            {users.map((u) => (
+                            {employeeUsers.map((u: any) => (
                               <SelectItem key={u.id} value={u.id}>
                                 {u.name}
                               </SelectItem>
@@ -216,6 +279,7 @@ export default function TaskModal({
                     )}
                   />
                 )}
+
                 <div className="grid grid-cols-2 gap-4 items-end">
                   <FormField
                     control={form.control}

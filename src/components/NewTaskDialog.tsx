@@ -24,6 +24,13 @@ import { extractFieldErrors } from '@/lib/pocketbase/errors'
 import pb from '@/lib/pocketbase/client'
 import { Textarea } from '@/components/ui/textarea'
 
+const formatDateTimeLocal = (dateString?: string) => {
+  if (!dateString) return ''
+  const d = new Date(dateString)
+  if (isNaN(d.getTime())) return ''
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+}
+
 const schema = z.object({
   title: z.string().min(1, 'Obrigatório'),
   description: z.string().optional(),
@@ -31,6 +38,8 @@ const schema = z.object({
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
   delegated_to: z.string().optional(),
   points_reward: z.coerce.number().min(0).default(50),
+  due_date: z.string().optional(),
+  deadline_type: z.enum(['mandatory', 'optional']).default('optional'),
 })
 
 export default function NewTaskDialog({
@@ -52,6 +61,8 @@ export default function NewTaskDialog({
       points_reward: 50,
       title: '',
       description: '',
+      due_date: '',
+      deadline_type: 'optional',
     },
   })
 
@@ -61,7 +72,7 @@ export default function NewTaskDialog({
         ...values,
         created_by: pb.authStore.record?.id,
         delegated_to: isPrivateWorkspace
-          ? ''
+          ? pb.authStore.record?.id
           : values.delegated_to === 'unassigned'
             ? ''
             : values.delegated_to,
@@ -75,9 +86,13 @@ export default function NewTaskDialog({
     }
   }
 
+  const employeeUsers = users.filter(
+    (u: any) => u.role?.toLowerCase() === 'employee' || u.role === 'EMPLOYEE',
+  )
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar">
         <DialogHeader>
           <DialogTitle>{isPrivateWorkspace ? 'Nova Tarefa Pessoal' : 'Nova Tarefa'}</DialogTitle>
         </DialogHeader>
@@ -153,6 +168,50 @@ export default function NewTaskDialog({
                 )}
               />
             </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="due_date"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Prazo (Opcional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="datetime-local"
+                        value={field.value ? formatDateTimeLocal(field.value) : ''}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          if (!val) field.onChange('')
+                          else field.onChange(new Date(val).toISOString())
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="deadline_type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de Prazo</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="optional">Opcional</SelectItem>
+                        <SelectItem value="mandatory">Obrigatório</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             {!isPrivateWorkspace && (
               <FormField
                 control={form.control}
@@ -169,7 +228,7 @@ export default function NewTaskDialog({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="unassigned">Sem responsável</SelectItem>
-                        {users.map((u: any) => (
+                        {employeeUsers.map((u: any) => (
                           <SelectItem key={u.id} value={u.id}>
                             {u.name}
                           </SelectItem>
