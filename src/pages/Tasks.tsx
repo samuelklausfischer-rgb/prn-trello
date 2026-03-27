@@ -71,7 +71,6 @@ export default function Tasks() {
   const filteredTasks = tasks.filter((t) => {
     const matchSearch = t.title.toLowerCase().includes(search.toLowerCase())
 
-    // In team view, archived tasks are hidden to keep focus
     const effectiveShowArchived = isAdmin && activeTab === 'team' ? false : showArchived
     const matchArchive = effectiveShowArchived ? true : !t.is_archived
 
@@ -117,7 +116,7 @@ export default function Tasks() {
     setDraggedTaskId(null)
 
     try {
-      await updateTask(taskToUpdate.id, { status })
+      await updateTask(taskToUpdate.id, { status }, taskToUpdate.updated)
     } catch (error) {
       setTasks(previousTasks)
       toast({
@@ -129,10 +128,13 @@ export default function Tasks() {
   }
 
   const handleDelegate = async (taskId: string, userId: string) => {
+    const taskToUpdate = tasks.find((t) => t.id === taskId)
+    if (!taskToUpdate) return
+
     const previousTasks = [...tasks]
     setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, delegated_to: userId } : t)))
     try {
-      await updateTask(taskId, { delegated_to: userId })
+      await updateTask(taskId, { delegated_to: userId }, taskToUpdate.updated)
       toast({ title: 'Tarefa delegada com sucesso' })
     } catch (error) {
       setTasks(previousTasks)

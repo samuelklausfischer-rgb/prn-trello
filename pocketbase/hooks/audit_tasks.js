@@ -20,7 +20,15 @@ onRecordAfterUpdateSuccess((e) => {
       userId = e.record.get('created_by')
     }
 
-    const fieldsToWatch = ['priority', 'title', 'delegated_to', 'due_date']
+    const fieldsToWatch = [
+      'title',
+      'description',
+      'status',
+      'priority',
+      'due_date',
+      'deadline_type',
+      'delegated_to',
+    ]
     const historyCol = $app.findCollectionByNameOrId('task_history')
 
     fieldsToWatch.forEach((field) => {
@@ -28,13 +36,38 @@ onRecordAfterUpdateSuccess((e) => {
       const newVal = e.record.get(field)
 
       if (String(oldVal || '') !== String(newVal || '')) {
+        let action = `${field}_update`.toUpperCase()
+        if (field === 'status') action = 'UPDATE_STATUS'
+        if (field === 'due_date') action = 'CHANGE_DEADLINE'
+        if (field === 'delegated_to') action = 'REASSIGN'
+
+        let oldStr = String(oldVal || '')
+        let newStr = String(newVal || '')
+
+        if (field === 'status') {
+          const statuses = {
+            todo: 'A Fazer',
+            in_progress: 'Em Progresso',
+            review: 'Em Revisão',
+            done: 'Concluído',
+          }
+          oldStr = statuses[oldStr] || oldStr
+          newStr = statuses[newStr] || newStr
+        }
+
+        if (field === 'priority') {
+          const priorities = { low: 'Baixa', medium: 'Média', high: 'Alta', urgent: 'Urgente' }
+          oldStr = priorities[oldStr] || oldStr
+          newStr = priorities[newStr] || newStr
+        }
+
         try {
           const record = new Record(historyCol)
           record.set('task_id', e.record.id)
-          record.set('action', `${field}_update`.toUpperCase())
-          record.set('description', `Campo ${field} atualizado`)
-          record.set('old_value', String(oldVal || ''))
-          record.set('new_value', String(newVal || ''))
+          record.set('action', action)
+          record.set('description', `Alterou o campo ${field}`)
+          record.set('old_value', oldStr)
+          record.set('new_value', newStr)
           record.set('performed_by', userId)
 
           $app.saveNoValidate(record)

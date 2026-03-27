@@ -139,10 +139,18 @@ export default function TaskCard({
                 variant="destructive"
                 className="text-[10px] uppercase font-bold animate-pulse px-2 py-0.5"
               >
-                <AlertTriangle className="w-3 h-3 mr-1" /> Crítico
+                <AlertTriangle className="w-3 h-3 mr-1" /> Atrasada
               </Badge>
             )}
-            {isNearDeadline && (
+            {isOptionalOverdue && (
+              <Badge
+                variant="secondary"
+                className="bg-muted/80 text-muted-foreground border-transparent text-[10px] uppercase font-bold px-2 py-0.5"
+              >
+                <Clock className="w-3 h-3 mr-1" /> Expirada
+              </Badge>
+            )}
+            {isNearDeadline && !isCriticalOverdue && !isOptionalOverdue && (
               <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-[10px] uppercase font-bold shadow-[0_0_12px_rgba(245,158,11,0.5)] px-2 py-0.5 border-none">
                 <Clock className="w-3 h-3 mr-1" /> Vence em breve
               </Badge>
@@ -196,6 +204,11 @@ export default function TaskCard({
                   {task.deadline_type === 'mandatory' && !isDone && dueDate && (
                     <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-background/50 text-current">
                       Obrigatório
+                    </span>
+                  )}
+                  {task.deadline_type === 'optional' && !isDone && dueDate && (
+                    <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-background/50 text-current">
+                      Opcional
                     </span>
                   )}
                   {timeLabel && (

@@ -21,7 +21,8 @@ import {
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { updateTask, TaskRecord } from '@/services/tasks'
-import { extractFieldErrors } from '@/lib/pocketbase/errors'
+import { extractFieldErrors, getErrorMessage } from '@/lib/pocketbase/errors'
+import { useToast } from '@/hooks/use-toast'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -48,7 +49,7 @@ export default function TaskModal({
   open,
   onOpenChange,
   users,
-  isAdmin,
+  isAdmin = false,
 }: {
   task: TaskRecord | null
   open: boolean
@@ -56,6 +57,8 @@ export default function TaskModal({
   users: any[]
   isAdmin?: boolean
 }) {
+  const { toast } = useToast()
+
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -108,26 +111,44 @@ export default function TaskModal({
         finalDueDate = new Date(`${values.due_date_input}T${timeStr}`).toISOString()
       }
 
-      await updateTask(task.id, {
-        title: values.title,
-        description: values.description,
-        status: values.status,
-        priority: values.priority,
-        delegated_to: values.is_private
-          ? task.created_by
-          : values.delegated_to === 'unassigned'
-            ? ''
-            : values.delegated_to,
-        points_reward: values.points_reward,
-        is_archived: values.is_archived,
-        is_private: values.is_private,
-        due_date: finalDueDate,
-        deadline_type: values.deadline_type,
-      })
+      const payload: Partial<TaskRecord> = {}
+
+      if (values.title !== task.title) payload.title = values.title
+      if (values.description !== (task.description || '')) payload.description = values.description
+      if (values.status !== task.status) payload.status = values.status
+      if (values.priority !== task.priority) payload.priority = values.priority
+      if (values.deadline_type !== task.deadline_type) payload.deadline_type = values.deadline_type
+      if (values.points_reward !== task.points_reward) payload.points_reward = values.points_reward
+      if (values.is_archived !== task.is_archived) payload.is_archived = values.is_archived
+      if (values.is_private !== task.is_private) payload.is_private = values.is_private
+
+      const delegatedToVal = values.is_private
+        ? task.created_by
+        : values.delegated_to === 'unassigned'
+          ? ''
+          : values.delegated_to
+      if (delegatedToVal !== (task.delegated_to || '')) payload.delegated_to = delegatedToVal
+
+      if (finalDueDate !== (task.due_date || '')) payload.due_date = finalDueDate
+
+      if (Object.keys(payload).length === 0) {
+        onOpenChange(false)
+        return
+      }
+
+      await updateTask(task.id, payload, task.updated)
       onOpenChange(false)
-    } catch (e) {
+    } catch (e: any) {
       const errs = extractFieldErrors(e)
-      Object.entries(errs).forEach(([k, v]) => form.setError(k as any, { message: v }))
+      if (Object.keys(errs).length > 0) {
+        Object.entries(errs).forEach(([k, v]) => form.setError(k as any, { message: v }))
+      } else {
+        toast({
+          title: 'Não foi possível salvar',
+          description: getErrorMessage(e),
+          variant: 'destructive',
+        })
+      }
     }
   }
 
@@ -164,7 +185,7 @@ export default function TaskModal({
                     <FormItem>
                       <FormLabel>Título</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input {...field} disabled={!isAdmin} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -211,7 +232,11 @@ export default function TaskModal({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Prioridade</FormLabel>
-                        <Select value={field.value} onValueChange={field.onChange}>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          disabled={!isAdmin}
+                        >
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
@@ -236,7 +261,7 @@ export default function TaskModal({
                       <FormItem className="flex flex-col">
                         <FormLabel>Data de Prazo</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input type="date" {...field} disabled={!isAdmin} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -249,7 +274,7 @@ export default function TaskModal({
                       <FormItem className="flex flex-col">
                         <FormLabel>Hora (Opcional)</FormLabel>
                         <FormControl>
-                          <Input type="time" {...field} />
+                          <Input type="time" {...field} disabled={!isAdmin} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -263,7 +288,11 @@ export default function TaskModal({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tipo de Prazo</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={!isAdmin}
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -287,6 +316,7 @@ export default function TaskModal({
                         <Select
                           value={field.value || 'unassigned'}
                           onValueChange={(val) => field.onChange(val === 'unassigned' ? '' : val)}
+                          disabled={!isAdmin}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Sem responsável" />
@@ -314,7 +344,7 @@ export default function TaskModal({
                       <FormItem>
                         <FormLabel>Pontos (Recompensa)</FormLabel>
                         <FormControl>
-                          <Input type="number" {...field} />
+                          <Input type="number" {...field} disabled={!isAdmin} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -328,7 +358,11 @@ export default function TaskModal({
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-2 shadow-sm h-10">
                           <FormLabel className="mb-0 text-xs font-medium">Arquivada</FormLabel>
                           <FormControl>
-                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              disabled={!isAdmin}
+                            />
                           </FormControl>
                         </FormItem>
                       )}
@@ -358,7 +392,11 @@ export default function TaskModal({
                   </div>
                 )}
 
-                <Button type="submit" className="w-full mt-4">
+                <Button
+                  type="submit"
+                  className="w-full mt-4"
+                  disabled={form.formState.isSubmitting}
+                >
                   Salvar Alterações
                 </Button>
               </form>

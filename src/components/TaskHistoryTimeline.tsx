@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Activity, ArrowRightLeft, CheckCircle2, CheckSquare, Plus, UserPlus } from 'lucide-react'
+import {
+  Activity,
+  ArrowRightLeft,
+  CheckCircle2,
+  CheckSquare,
+  Plus,
+  UserPlus,
+  Clock,
+} from 'lucide-react'
 import pb from '@/lib/pocketbase/client'
 import { useRealtime } from '@/hooks/use-realtime'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -23,13 +31,17 @@ const getIcon = (action: string) => {
     case 'TASK_CREATED':
       return <Plus className="h-4 w-4 text-emerald-500" />
     case 'STATUS_CHANGED':
+    case 'UPDATE_STATUS':
       return <ArrowRightLeft className="h-4 w-4 text-blue-500" />
     case 'DELEGATED':
+    case 'REASSIGN':
       return <UserPlus className="h-4 w-4 text-purple-500" />
     case 'CHECKLIST_COMPLETED':
       return <CheckSquare className="h-4 w-4 text-orange-500" />
     case 'TASK_COMPLETED':
       return <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+    case 'CHANGE_DEADLINE':
+      return <Clock className="h-4 w-4 text-amber-500" />
     default:
       return <Activity className="h-4 w-4 text-muted-foreground" />
   }
