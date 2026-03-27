@@ -27,13 +27,7 @@ import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TaskChecklist } from './TaskChecklist'
 import { TaskHistoryTimeline } from './TaskHistoryTimeline'
-
-const formatDateTimeLocal = (dateString?: string) => {
-  if (!dateString) return ''
-  const d = new Date(dateString)
-  if (isNaN(d.getTime())) return ''
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
-}
+import { format } from 'date-fns'
 
 const schema = z.object({
   title: z.string().min(1, 'Obrigatório'),
@@ -44,7 +38,8 @@ const schema = z.object({
   points_reward: z.coerce.number().min(0),
   is_archived: z.boolean().default(false),
   is_private: z.boolean().default(false),
-  due_date: z.string().optional(),
+  due_date_input: z.string().optional(),
+  due_time_input: z.string().optional(),
   deadline_type: z.enum(['mandatory', 'optional']).default('optional'),
 })
 
@@ -71,13 +66,22 @@ export default function TaskModal({
       description: '',
       is_archived: false,
       is_private: false,
-      due_date: '',
+      due_date_input: '',
+      due_time_input: '',
       deadline_type: 'optional',
     },
   })
 
   useEffect(() => {
     if (task && open) {
+      let d = '',
+        t = ''
+      if (task.due_date) {
+        const dateObj = new Date(task.due_date)
+        d = format(dateObj, 'yyyy-MM-dd')
+        t = format(dateObj, 'HH:mm')
+      }
+
       form.reset({
         title: task.title,
         description: task.description || '',
@@ -87,7 +91,8 @@ export default function TaskModal({
         points_reward: task.points_reward || 0,
         is_archived: task.is_archived || false,
         is_private: task.is_private || false,
-        due_date: task.due_date || '',
+        due_date_input: d,
+        due_time_input: t,
         deadline_type: task.deadline_type || 'optional',
       })
     }
@@ -96,13 +101,28 @@ export default function TaskModal({
   const onSubmit = async (values: z.infer<typeof schema>) => {
     if (!task) return
     try {
+      let finalDueDate = ''
+      if (values.due_date_input) {
+        const time = values.due_time_input || '23:59:59'
+        const timeStr = time.length === 5 ? `${time}:59` : time
+        finalDueDate = new Date(`${values.due_date_input}T${timeStr}`).toISOString()
+      }
+
       await updateTask(task.id, {
-        ...values,
+        title: values.title,
+        description: values.description,
+        status: values.status,
+        priority: values.priority,
         delegated_to: values.is_private
           ? task.created_by
           : values.delegated_to === 'unassigned'
             ? ''
             : values.delegated_to,
+        points_reward: values.points_reward,
+        is_archived: values.is_archived,
+        is_private: values.is_private,
+        due_date: finalDueDate,
+        deadline_type: values.deadline_type,
       })
       onOpenChange(false)
     } catch (e) {
@@ -208,23 +228,15 @@ export default function TaskModal({
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-[1fr_1fr] gap-4">
                   <FormField
                     control={form.control}
-                    name="due_date"
+                    name="due_date_input"
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
-                        <FormLabel>Prazo (Opcional)</FormLabel>
+                        <FormLabel>Data de Prazo</FormLabel>
                         <FormControl>
-                          <Input
-                            type="datetime-local"
-                            value={field.value ? formatDateTimeLocal(field.value) : ''}
-                            onChange={(e) => {
-                              const val = e.target.value
-                              if (!val) field.onChange('')
-                              else field.onChange(new Date(val).toISOString())
-                            }}
-                          />
+                          <Input type="date" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -232,24 +244,38 @@ export default function TaskModal({
                   />
                   <FormField
                     control={form.control}
-                    name="deadline_type"
+                    name="due_time_input"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tipo de Prazo</FormLabel>
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="optional">Opcional</SelectItem>
-                            <SelectItem value="mandatory">Obrigatório</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Hora (Opcional)</FormLabel>
+                        <FormControl>
+                          <Input type="time" {...field} />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
+
+                <FormField
+                  control={form.control}
+                  name="deadline_type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Prazo</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="optional">Opcional (Soft Deadline)</SelectItem>
+                          <SelectItem value="mandatory">Obrigatório (Hard Deadline)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 {!isPrivateWatch && (
                   <FormField

@@ -56,7 +56,8 @@ export const createTask = async (data: Partial<TaskRecord>) => {
 export const updateTask = async (id: string, data: Partial<TaskRecord>) => {
   if (!id) throw new Error('Task ID is required for update')
 
-  // Strictly define fields that can be updated, excluding system fields like id, created, updated, and expand
+  const existing = await pb.collection('tasks').getOne<TaskRecord>(id)
+
   const allowedFields: (keyof TaskRecord)[] = [
     'status',
     'priority',
@@ -78,10 +79,8 @@ export const updateTask = async (id: string, data: Partial<TaskRecord>) => {
 
   const payload: Record<string, any> = {}
 
-  // Filter payload to avoid sending read-only system fields and causing 400 Bad Request
   for (const key of allowedFields) {
     if (key in data && data[key] !== undefined) {
-      // Data Integrity: Relation fields must be sent as string IDs, never as full objects
       if (key === 'created_by' || key === 'delegated_to') {
         const val = data[key]
         if (val && typeof val === 'object' && 'id' in val) {
@@ -95,13 +94,21 @@ export const updateTask = async (id: string, data: Partial<TaskRecord>) => {
     }
   }
 
-  // If no valid fields are provided to update, return the original task safely
-  if (Object.keys(payload).length === 0) {
-    return await pb.collection('tasks').getOne<TaskRecord>(id)
+  // Handle status persistence automatically
+  if (payload.status === 'done' && existing.status !== 'done') {
+    payload.completed_at = new Date().toISOString()
+  } else if (payload.status && payload.status !== 'done' && existing.status === 'done') {
+    payload.completed_at = ''
   }
 
-  // Just push the update; all history tracking, date calculations, and gamification
-  // side-effects are securely handled by isolated backend hooks to guarantee atomicity.
+  if (payload.status === 'in_progress' && existing.status === 'todo' && !existing.started_at) {
+    payload.started_at = new Date().toISOString()
+  }
+
+  if (Object.keys(payload).length === 0) {
+    return existing
+  }
+
   return await pb.collection('tasks').update<TaskRecord>(id, payload)
 }
 

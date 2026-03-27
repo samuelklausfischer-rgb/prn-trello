@@ -24,13 +24,6 @@ import { extractFieldErrors } from '@/lib/pocketbase/errors'
 import pb from '@/lib/pocketbase/client'
 import { Textarea } from '@/components/ui/textarea'
 
-const formatDateTimeLocal = (dateString?: string) => {
-  if (!dateString) return ''
-  const d = new Date(dateString)
-  if (isNaN(d.getTime())) return ''
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
-}
-
 const schema = z.object({
   title: z.string().min(1, 'Obrigatório'),
   description: z.string().optional(),
@@ -38,7 +31,8 @@ const schema = z.object({
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
   delegated_to: z.string().optional(),
   points_reward: z.coerce.number().min(0).default(50),
-  due_date: z.string().optional(),
+  due_date_input: z.string().optional(),
+  due_time_input: z.string().optional(),
   deadline_type: z.enum(['mandatory', 'optional']).default('optional'),
 })
 
@@ -61,21 +55,35 @@ export default function NewTaskDialog({
       points_reward: 50,
       title: '',
       description: '',
-      due_date: '',
+      due_date_input: '',
+      due_time_input: '',
       deadline_type: 'optional',
     },
   })
 
   const onSubmit = async (values: z.infer<typeof schema>) => {
     try {
+      let finalDueDate = ''
+      if (values.due_date_input) {
+        const time = values.due_time_input || '23:59:59'
+        const timeStr = time.length === 5 ? `${time}:59` : time
+        finalDueDate = new Date(`${values.due_date_input}T${timeStr}`).toISOString()
+      }
+
       await createTask({
-        ...values,
-        created_by: pb.authStore.record?.id,
+        title: values.title,
+        description: values.description,
+        status: values.status,
+        priority: values.priority,
         delegated_to: isPrivateWorkspace
           ? pb.authStore.record?.id
           : values.delegated_to === 'unassigned'
             ? ''
             : values.delegated_to,
+        points_reward: values.points_reward,
+        due_date: finalDueDate,
+        deadline_type: values.deadline_type,
+        created_by: pb.authStore.record?.id,
         is_private: !!isPrivateWorkspace,
       })
       onOpenChange(false)
@@ -169,23 +177,15 @@ export default function NewTaskDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-[1fr_1fr] gap-4">
               <FormField
                 control={form.control}
-                name="due_date"
+                name="due_date_input"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Prazo (Opcional)</FormLabel>
+                    <FormLabel>Data de Prazo</FormLabel>
                     <FormControl>
-                      <Input
-                        type="datetime-local"
-                        value={field.value ? formatDateTimeLocal(field.value) : ''}
-                        onChange={(e) => {
-                          const val = e.target.value
-                          if (!val) field.onChange('')
-                          else field.onChange(new Date(val).toISOString())
-                        }}
-                      />
+                      <Input type="date" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -193,24 +193,38 @@ export default function NewTaskDialog({
               />
               <FormField
                 control={form.control}
-                name="deadline_type"
+                name="due_time_input"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo de Prazo</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="optional">Opcional</SelectItem>
-                        <SelectItem value="mandatory">Obrigatório</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Hora (Opcional)</FormLabel>
+                    <FormControl>
+                      <Input type="time" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="deadline_type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo de Prazo</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="optional">Opcional (Soft Deadline)</SelectItem>
+                      <SelectItem value="mandatory">Obrigatório (Hard Deadline)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {!isPrivateWorkspace && (
               <FormField
