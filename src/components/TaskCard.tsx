@@ -1,5 +1,5 @@
 import { TaskRecord } from '@/services/tasks'
-import { ChecklistRecord } from '@/services/checklists'
+import { ChecklistRecord, updateChecklist } from '@/services/checklists'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -8,11 +8,10 @@ import {
   Network,
   Zap,
   FileText,
-  CheckCircle2,
-  Circle,
   ChevronDown,
   Clock,
   AlertTriangle,
+  Pencil,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -23,9 +22,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 import { isPast, differenceInHours, differenceInDays, format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { useState, useEffect } from 'react'
+import pb from '@/lib/pocketbase/client'
+import { useRealtime } from '@/hooks/use-realtime'
 
 export default function TaskCard({
   task,
@@ -48,6 +51,59 @@ export default function TaskCard({
   users?: any[]
   onDelegate?: (taskId: string, userId: string) => void
 }) {
+  const [localChecklists, setLocalChecklists] = useState<ChecklistRecord[]>(checklists)
+
+  useEffect(() => {
+    setLocalChecklists(checklists)
+  }, [checklists])
+
+  useRealtime('checklists', (e) => {
+    if (e.record.task_id === task.id) {
+      if (e.action === 'update') {
+        setLocalChecklists((prev) =>
+          prev.map((c) => (c.id === e.record.id ? { ...c, ...(e.record as any) } : c)),
+        )
+      } else if (e.action === 'create') {
+        setLocalChecklists((prev) => {
+          if (prev.some((c) => c.id === e.record.id)) return prev
+          return [...prev, e.record as any].sort((a, b) => a.order - b.order)
+        })
+      } else if (e.action === 'delete') {
+        setLocalChecklists((prev) => prev.filter((c) => c.id !== e.record.id))
+      }
+    }
+  })
+
+  const handleToggleChecklist = async (item: ChecklistRecord) => {
+    const isCompleted = !item.is_completed
+    const userId = pb.authStore.record?.id
+
+    // Optimistic update
+    setLocalChecklists((prev) =>
+      prev.map((c) =>
+        c.id === item.id
+          ? {
+              ...c,
+              is_completed: isCompleted,
+              completed_at: isCompleted ? new Date().toISOString() : undefined,
+              completed_by: isCompleted ? userId : undefined,
+            }
+          : c,
+      ),
+    )
+
+    try {
+      await updateChecklist(item.id, {
+        is_completed: isCompleted,
+        completed_at: isCompleted ? new Date().toISOString() : '',
+        completed_by: isCompleted ? userId : '',
+      })
+    } catch (err) {
+      // Revert on error
+      setLocalChecklists(checklists)
+    }
+  }
+
   const priorityColors: Record<string, string> = {
     low: 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30',
     medium:
@@ -115,9 +171,8 @@ export default function TaskCard({
       draggable
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      onClick={onClick}
       className={cn(
-        'cursor-pointer hover-3d premium-task-card !rounded-3xl relative w-full',
+        'cursor-grab active:cursor-grabbing hover-3d premium-task-card !rounded-3xl relative w-full',
         isDragging && 'opacity-50 scale-95 shadow-none',
         task.is_archived && 'opacity-60 bg-muted/30 grayscale-[0.3]',
       )}
@@ -224,18 +279,28 @@ export default function TaskCard({
           </div>
         </div>
 
-        {checklists.length > 0 && (
+        {localChecklists.length > 0 && (
           <div className="flex flex-col gap-1.5 mt-1 bg-black/5 dark:bg-white/5 p-3 rounded-2xl border border-border/40">
-            {checklists.slice(0, 3).map((item) => (
-              <div key={item.id} className="flex items-start gap-2">
-                {item.is_completed ? (
-                  <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-[2px] drop-shadow-[0_0_5px_rgba(0,212,255,0.5)]" />
-                ) : (
-                  <Circle className="w-4 h-4 text-muted-foreground/50 shrink-0 mt-[2px]" />
-                )}
+            {localChecklists.slice(0, 3).map((item) => (
+              <div
+                key={item.id}
+                className="flex items-start gap-2 cursor-pointer group"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleToggleChecklist(item)
+                }}
+              >
+                <Checkbox
+                  checked={item.is_completed}
+                  className={cn(
+                    'mt-[2px] transition-all pointer-events-none',
+                    item.is_completed &&
+                      'data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground drop-shadow-[0_0_5px_rgba(0,212,255,0.5)]',
+                  )}
+                />
                 <span
                   className={cn(
-                    'text-xs leading-tight text-muted-foreground',
+                    'text-xs leading-tight text-muted-foreground select-none group-hover:text-foreground transition-colors',
                     item.is_completed && 'line-through opacity-60',
                   )}
                 >
@@ -243,10 +308,16 @@ export default function TaskCard({
                 </span>
               </div>
             ))}
-            {checklists.length > 3 && (
+            {localChecklists.length > 3 && (
               <div className="mt-2 flex justify-center">
-                <div className="text-[10px] font-extrabold uppercase tracking-wider text-accent bg-accent/10 border border-accent/30 px-3 py-1 rounded-full flex items-center gap-1 shadow-[0_0_10px_rgba(161,0,255,0.2)] transition-transform hover:scale-105">
-                  Mostrar mais (+{checklists.length - 3}) <ChevronDown className="w-3 h-3" />
+                <div
+                  className="text-[10px] font-extrabold uppercase tracking-wider text-accent bg-accent/10 border border-accent/30 px-3 py-1 rounded-full flex items-center gap-1 shadow-[0_0_10px_rgba(161,0,255,0.2)] transition-transform hover:scale-105 cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onClick()
+                  }}
+                >
+                  Mostrar mais (+{localChecklists.length - 3}) <ChevronDown className="w-3 h-3" />
                 </div>
               </div>
             )}
@@ -261,50 +332,63 @@ export default function TaskCard({
               </Badge>
             )}
           </div>
-          {isAdmin && !task.is_private ? (
-            <div onClick={(e) => e.stopPropagation()}>
-              <DropdownMenu>
-                <DropdownMenuTrigger className="outline-none focus-visible:ring-2 ring-primary rounded-full hover:scale-110 transition-transform">
-                  <AssigneeAvatar />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="w-48 glass-card border-white/10 rounded-xl p-1"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <DropdownMenuLabel className="text-xs text-muted-foreground font-semibold px-2">
-                    Delegação Ágil
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-border/50" />
-                  <DropdownMenuItem
-                    onClick={() => onDelegate?.(task.id, '')}
-                    className="cursor-pointer text-xs font-medium focus:bg-primary/20 rounded-md"
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                onClick()
+              }}
+              className="h-7 w-7 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors outline-none focus-visible:ring-2 ring-primary flex-shrink-0"
+              title="Editar Tarefa"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+            {isAdmin && !task.is_private ? (
+              <div onClick={(e) => e.stopPropagation()}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="outline-none focus-visible:ring-2 ring-primary rounded-full hover:scale-110 transition-transform">
+                    <AssigneeAvatar />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-48 glass-card border-white/10 rounded-xl p-1"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <User className="w-3.5 h-3.5 mr-2 text-muted-foreground" /> Sem responsável
-                  </DropdownMenuItem>
-                  {users
-                    ?.filter((u) => u.role?.toLowerCase() === 'employee')
-                    .map((u) => (
-                      <DropdownMenuItem
-                        key={u.id}
-                        onClick={() => onDelegate?.(task.id, u.id)}
-                        className="cursor-pointer text-xs font-medium focus:bg-primary/20 rounded-md"
-                      >
-                        <Avatar className="w-4 h-4 mr-2 border border-border">
-                          <AvatarImage src={u.avatar} />
-                          <AvatarFallback className="text-[8px] bg-primary text-white font-bold">
-                            {u.name.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="truncate">{u.name}</span>
-                      </DropdownMenuItem>
-                    ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          ) : (
-            <AssigneeAvatar />
-          )}
+                    <DropdownMenuLabel className="text-xs text-muted-foreground font-semibold px-2">
+                      Delegação Ágil
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator className="bg-border/50" />
+                    <DropdownMenuItem
+                      onClick={() => onDelegate?.(task.id, '')}
+                      className="cursor-pointer text-xs font-medium focus:bg-primary/20 rounded-md"
+                    >
+                      <User className="w-3.5 h-3.5 mr-2 text-muted-foreground" /> Sem responsável
+                    </DropdownMenuItem>
+                    {users
+                      ?.filter((u) => u.role?.toLowerCase() === 'employee')
+                      .map((u) => (
+                        <DropdownMenuItem
+                          key={u.id}
+                          onClick={() => onDelegate?.(task.id, u.id)}
+                          className="cursor-pointer text-xs font-medium focus:bg-primary/20 rounded-md"
+                        >
+                          <Avatar className="w-4 h-4 mr-2 border border-border">
+                            <AvatarImage src={u.avatar} />
+                            <AvatarFallback className="text-[8px] bg-primary text-white font-bold">
+                              {u.name.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="truncate">{u.name}</span>
+                        </DropdownMenuItem>
+                      ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ) : (
+              <AssigneeAvatar />
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
