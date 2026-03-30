@@ -38,6 +38,9 @@ export function UserCard({ user, isAdmin, onNotify }: UserCardProps) {
               {user.name || 'Sem nome'}
               {isAdmin && <Shield className="w-3.5 h-3.5 text-primary" />}
             </h3>
+            {user.job_title && (
+              <p className="text-xs text-muted-foreground font-medium mt-0.5">{user.job_title}</p>
+            )}
             {user.department && (
               <Badge variant={isAdmin ? 'default' : 'secondary'} className="mt-1 text-xs">
                 {user.department}

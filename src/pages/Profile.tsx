@@ -48,6 +48,7 @@ export default function Profile() {
     bio: '',
     phone: '',
     role: '',
+    job_title: '',
   })
 
   useEffect(() => {
@@ -57,6 +58,7 @@ export default function Profile() {
         bio: user.bio || '',
         phone: user.phone || '',
         role: user.role || 'EMPLOYEE',
+        job_title: user.job_title || '',
       })
     }
   }, [user, isEditing])
@@ -94,6 +96,7 @@ export default function Profile() {
         name: formData.name,
         bio: formData.bio,
         phone: formData.phone,
+        job_title: formData.job_title,
         role: formData.role.toLowerCase(), // Trigger RLS validation if self-promoting
       }
 
@@ -163,6 +166,9 @@ export default function Profile() {
                   </AvatarFallback>
                 </Avatar>
                 <h2 className="text-xl font-bold mt-4 text-foreground">{user.name}</h2>
+                {user.job_title && (
+                  <p className="text-sm font-semibold text-primary mt-1">{user.job_title}</p>
+                )}
                 <p className="text-sm text-muted-foreground font-medium">{user.email}</p>
 
                 {user.phone && <p className="text-xs text-muted-foreground mt-1">{user.phone}</p>}
@@ -305,6 +311,18 @@ export default function Profile() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="job_title" className="text-right">
+                  Cargo
+                </Label>
+                <Input
+                  id="job_title"
+                  value={formData.job_title}
+                  onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
+                  className="col-span-3"
+                  placeholder="Ex: Engenheiro de IA"
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">

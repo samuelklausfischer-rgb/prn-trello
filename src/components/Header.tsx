@@ -322,6 +322,9 @@ export default function Header() {
             >
               <div className="px-3 py-3 border-b border-border/50 mb-1 bg-background/50 rounded-t-xl">
                 <p className="font-extrabold text-sm text-foreground truncate">{user.name}</p>
+                {user.job_title && (
+                  <p className="text-xs font-semibold text-primary truncate">{user.job_title}</p>
+                )}
                 <p className="text-xs font-medium text-muted-foreground truncate">{user.email}</p>
               </div>
 

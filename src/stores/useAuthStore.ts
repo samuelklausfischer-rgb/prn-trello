@@ -16,6 +16,7 @@ export type User = {
   bio?: string
   phone?: string
   department?: string
+  job_title?: string
 }
 
 export const SYSTEM_USERS: User[] = [
@@ -65,6 +66,7 @@ const mapRecordToUser = (record: any): User | null => {
     bio: record.bio || '',
     phone: record.phone || '',
     department: record.department || '',
+    job_title: record.job_title || '',
   }
 }
 
