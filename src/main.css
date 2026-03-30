@@ -131,7 +131,12 @@
       0 8px 32px -4px rgba(0, 0, 0, 0.5),
       inset 0 1px 1px rgba(255, 255, 255, 0.05);
   }
-  .premium-task-card:hover {
+  .premium-task-card.holding {
+    transform: scale(0.98);
+    box-shadow: none;
+    opacity: 0.9;
+  }
+  .premium-task-card:not(.holding):hover {
     @apply border-accent/40;
     box-shadow:
       0 12px 40px -8px rgba(161, 0, 255, 0.25),
@@ -139,7 +144,7 @@
       inset 0 1px 1px rgba(255, 255, 255, 0.5);
     transform: translateY(-2px);
   }
-  .dark .premium-task-card:hover {
+  .dark .premium-task-card:not(.holding):hover {
     box-shadow:
       0 12px 40px -8px rgba(161, 0, 255, 0.35),
       0 0 20px -5px rgba(0, 212, 255, 0.25),
@@ -270,7 +275,8 @@
       animation: none !important;
     }
 
-    .premium-task-card:hover {
+    .premium-task-card:hover,
+    .premium-task-card.holding {
       transform: none !important;
     }
   }

@@ -6,6 +6,7 @@ import { useRealtime } from '@/hooks/use-realtime'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuthHooks'
 import { getErrorMessage } from '@/lib/pocketbase/errors'
+import { usePointerDnD } from '@/hooks/use-pointer-dnd'
 import TaskCard from '@/components/TaskCard'
 import TaskModal from '@/components/TaskModal'
 import NewTaskDialog from '@/components/NewTaskDialog'
@@ -40,9 +41,33 @@ export default function Tasks() {
 
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [isNewTaskOpen, setIsNewTaskOpen] = useState(false)
-  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null)
 
   const { toast } = useToast()
+
+  const handlePointerDrop = async (taskId: string, columnId: string) => {
+    const taskToUpdate = tasks.find((t) => t.id === taskId)
+    const targetStatus = columnId as TaskRecord['status']
+
+    if (!taskToUpdate || taskToUpdate.status === targetStatus) return
+
+    const previousTasks = [...tasks]
+    setTasks((prev) =>
+      prev.map((t) => (t.id === taskToUpdate.id ? { ...t, status: targetStatus } : t)),
+    )
+
+    try {
+      await updateTask(taskToUpdate.id, { status: targetStatus }, taskToUpdate.updated)
+    } catch (error) {
+      setTasks(previousTasks)
+      toast({
+        title: 'Erro ao mover tarefa',
+        description: getErrorMessage(error) || 'A tarefa retornou para a sua posição original.',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const { handlePointerDown, dragState } = usePointerDnD({ onDrop: handlePointerDrop })
 
   const loadData = async () => {
     try {
@@ -109,41 +134,6 @@ export default function Tasks() {
     return matchSearch && matchArchive && matchView
   })
 
-  const handleDragStart = (e: React.DragEvent, id: string) => {
-    setDraggedTaskId(id)
-    e.dataTransfer.setData('text/plain', id)
-  }
-
-  const handleDrop = async (e: React.DragEvent, status: TaskRecord['status']) => {
-    e.preventDefault()
-    const draggedId = e.dataTransfer.getData('text/plain')?.trim()
-    if (!draggedId) {
-      setDraggedTaskId(null)
-      return
-    }
-
-    const taskToUpdate = tasks.find((t) => t.id === draggedId)
-    if (!taskToUpdate || taskToUpdate.status === status) {
-      setDraggedTaskId(null)
-      return
-    }
-
-    const previousTasks = [...tasks]
-    setTasks((prev) => prev.map((t) => (t.id === taskToUpdate.id ? { ...t, status } : t)))
-    setDraggedTaskId(null)
-
-    try {
-      await updateTask(taskToUpdate.id, { status }, taskToUpdate.updated)
-    } catch (error) {
-      setTasks(previousTasks)
-      toast({
-        title: 'Erro ao mover tarefa',
-        description: getErrorMessage(error) || 'A tarefa retornou para a sua posição original.',
-        variant: 'destructive',
-      })
-    }
-  }
-
   const handleDelegate = async (taskId: string, userId: string) => {
     const taskToUpdate = tasks.find((t) => t.id === taskId)
     if (!taskToUpdate) return
@@ -167,16 +157,23 @@ export default function Tasks() {
 
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) || null
 
+  const draggedTask = dragState?.isDragging ? tasks.find((t) => t.id === dragState.taskId) : null
+
   const boardContent = (
-    <div className="flex-1 flex gap-5 overflow-x-auto overflow-y-hidden items-stretch px-1 pb-4 custom-scrollbar min-h-0 snap-x snap-mandatory">
+    <div className="flex-1 flex gap-5 overflow-x-auto overflow-y-hidden items-stretch px-1 pb-4 custom-scrollbar min-h-0 snap-x snap-mandatory relative">
       {statuses.map((col, index) => {
         const colTasks = filteredTasks.filter((t) => t.status === col.id)
+        const isHovered = dragState?.hoveredColumn === col.id
         return (
           <div
             key={col.id}
-            className={`snap-center shrink-0 stagger-item stagger-${(index % 5) + 2} flex flex-col glass-card rounded-3xl p-4 md:p-5 w-[310px] md:w-[330px] h-full transition-all hover:bg-white/40 dark:hover:bg-slate-900/40 border border-border/50 shadow-sm`}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => handleDrop(e, col.id)}
+            data-column={col.id}
+            className={cn(
+              `snap-center shrink-0 stagger-item stagger-${(index % 5) + 2} flex flex-col glass-card rounded-3xl p-4 md:p-5 w-[310px] md:w-[330px] h-full transition-all border border-border/50 shadow-sm`,
+              isHovered
+                ? 'bg-primary/5 border-primary/40 ring-2 ring-primary/20 scale-[1.01]'
+                : 'hover:bg-white/40 dark:hover:bg-slate-900/40',
+            )}
           >
             <div className="flex-shrink-0 flex flex-col gap-3 mb-3">
               <div className="flex items-center justify-between px-1">
@@ -195,20 +192,23 @@ export default function Tasks() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 custom-scrollbar px-2 -mx-2 pt-1 pb-4 space-y-3.5">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 custom-scrollbar px-2 -mx-2 pt-1 pb-4 space-y-3.5 touch-pan-y">
               {colTasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  checklists={checklists.filter((c) => c.task_id === task.id)}
-                  onClick={() => setSelectedTaskId(task.id)}
-                  onDragStart={(e: React.DragEvent) => handleDragStart(e, task.id)}
-                  onDragEnd={() => setDraggedTaskId(null)}
-                  isDragging={draggedTaskId === task.id}
-                  isAdmin={isAdmin}
-                  users={users}
-                  onDelegate={handleDelegate}
-                />
+                <div key={task.id} data-task-id={task.id} className="relative">
+                  <TaskCard
+                    task={task}
+                    checklists={checklists.filter((c) => c.task_id === task.id)}
+                    onClick={() => {
+                      if (dragState?.isDragging) return
+                      setSelectedTaskId(task.id)
+                    }}
+                    onPointerDown={(e) => handlePointerDown(e, task.id)}
+                    isDragging={dragState?.taskId === task.id}
+                    isAdmin={isAdmin}
+                    users={users}
+                    onDelegate={handleDelegate}
+                  />
+                </div>
               ))}
               {colTasks.length === 0 && (
                 <div className="h-28 border-2 border-dashed border-border/60 rounded-3xl flex items-center justify-center text-sm text-muted-foreground font-medium bg-background/20 backdrop-blur-sm m-1">
@@ -318,6 +318,35 @@ export default function Tasks() {
             </div>
           )}
         </div>
+
+        {dragState?.isDragging && draggedTask && (
+          <div
+            style={{
+              position: 'fixed',
+              left: 0,
+              top: 0,
+              width: dragState.elementPos.width,
+              height: dragState.elementPos.height,
+              transform: `translate(${
+                dragState.currentPos.x - (dragState.initialPos.x - dragState.elementPos.x)
+              }px, ${
+                dragState.currentPos.y - (dragState.initialPos.y - dragState.elementPos.y)
+              }px) rotate(3deg)`,
+              pointerEvents: 'none',
+              zIndex: 9999,
+              transition: 'transform 0.05s ease-out',
+            }}
+            className="opacity-95 drop-shadow-2xl scale-105 pointer-events-none [&_*]:pointer-events-none"
+          >
+            <TaskCard
+              task={draggedTask}
+              checklists={checklists.filter((c) => c.task_id === draggedTask.id)}
+              onClick={() => {}}
+              isAdmin={isAdmin}
+              users={users}
+            />
+          </div>
+        )}
 
         {isAdmin ? (
           <Tabs value={activeTab} className="flex-1 flex flex-col min-h-0 w-full overflow-hidden">

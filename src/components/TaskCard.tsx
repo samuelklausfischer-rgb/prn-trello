@@ -34,8 +34,7 @@ export default function TaskCard({
   task,
   checklists = [],
   onClick,
-  onDragStart,
-  onDragEnd,
+  onPointerDown,
   isDragging,
   isAdmin,
   users = [],
@@ -44,8 +43,7 @@ export default function TaskCard({
   task: TaskRecord
   checklists?: ChecklistRecord[]
   onClick: () => void
-  onDragStart: (e: React.DragEvent) => void
-  onDragEnd: (e: React.DragEvent) => void
+  onPointerDown?: (e: React.PointerEvent<HTMLElement>) => void
   isDragging?: boolean
   isAdmin?: boolean
   users?: any[]
@@ -168,14 +166,18 @@ export default function TaskCard({
 
   return (
     <Card
-      draggable
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
+      onPointerDown={onPointerDown}
+      onClick={onClick}
       className={cn(
-        'cursor-grab active:cursor-grabbing hover-3d premium-task-card !rounded-3xl relative w-full',
-        isDragging && 'opacity-50 scale-95 shadow-none',
+        'cursor-grab active:cursor-grabbing hover-3d premium-task-card !rounded-3xl relative w-full touch-pan-y',
+        isDragging &&
+          'opacity-50 scale-[0.98] shadow-none ring-2 ring-primary ring-offset-2 ring-offset-background',
         task.is_archived && 'opacity-60 bg-muted/30 grayscale-[0.3]',
       )}
+      style={{
+        WebkitUserSelect: isDragging ? 'none' : 'auto',
+        userSelect: isDragging ? 'none' : 'auto',
+      }}
     >
       <CardContent className="p-5 flex flex-col gap-3.5">
         <div className="flex justify-between items-start gap-2">
@@ -289,6 +291,7 @@ export default function TaskCard({
                   e.stopPropagation()
                   handleToggleChecklist(item)
                 }}
+                onPointerDown={(e) => e.stopPropagation()}
               >
                 <Checkbox
                   checked={item.is_completed}
@@ -316,6 +319,7 @@ export default function TaskCard({
                     e.stopPropagation()
                     onClick()
                   }}
+                  onPointerDown={(e) => e.stopPropagation()}
                 >
                   Mostrar mais (+{localChecklists.length - 3}) <ChevronDown className="w-3 h-3" />
                 </div>
@@ -339,13 +343,14 @@ export default function TaskCard({
                 e.stopPropagation()
                 onClick()
               }}
+              onPointerDown={(e) => e.stopPropagation()}
               className="h-7 w-7 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors outline-none focus-visible:ring-2 ring-primary flex-shrink-0"
               title="Editar Tarefa"
             >
               <Pencil className="w-3.5 h-3.5" />
             </button>
             {isAdmin && !task.is_private ? (
-              <div onClick={(e) => e.stopPropagation()}>
+              <div onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
                 <DropdownMenu>
                   <DropdownMenuTrigger className="outline-none focus-visible:ring-2 ring-primary rounded-full hover:scale-110 transition-transform">
                     <AssigneeAvatar />
