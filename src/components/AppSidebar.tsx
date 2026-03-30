@@ -7,6 +7,7 @@ import {
   Activity,
   Medal,
   Zap,
+  Users,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -33,6 +34,7 @@ export default function AppSidebar() {
 
   if (role === 'ADMIN') {
     navItems.push({ title: 'Dashboard Analítico', path: '/admin/dashboard', icon: Activity })
+    navItems.push({ title: 'Funcionários', path: '/admin/employees', icon: Users })
     navItems.push({ title: 'Painel Admin', path: '/admin', icon: ShieldCheck })
   }
 

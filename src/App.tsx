@@ -10,6 +10,7 @@ import Team from './pages/Team'
 import Admin from './pages/Admin'
 import Dashboard from './pages/Dashboard'
 import AdminDashboard from './pages/AdminDashboard'
+import AdminEmployees from './pages/AdminEmployees'
 import Achievements from './pages/Achievements'
 import Profile from './pages/Profile'
 import { AppProviders } from './stores/providers'
@@ -39,6 +40,7 @@ const App = () => (
               <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                <Route path="/admin/employees" element={<AdminEmployees />} />
               </Route>
             </Route>
           </Route>
