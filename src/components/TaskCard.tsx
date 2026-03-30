@@ -117,7 +117,7 @@ export default function TaskCard({
       onDragEnd={onDragEnd}
       onClick={onClick}
       className={cn(
-        'cursor-pointer hover-3d premium-task-card !rounded-3xl relative',
+        'cursor-pointer hover-3d premium-task-card !rounded-3xl relative w-full',
         isDragging && 'opacity-50 scale-95 shadow-none',
         task.is_archived && 'opacity-60 bg-muted/30 grayscale-[0.3]',
       )}

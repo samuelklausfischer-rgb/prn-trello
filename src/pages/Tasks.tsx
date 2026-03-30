@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Plus, LayoutDashboard, Search, Archive, Users, Lock } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export default function Tasks() {
   const { user, role } = useAuth()
@@ -61,11 +62,27 @@ export default function Tasks() {
   useRealtime('tasks', () => loadData())
   useRealtime('checklists', () => loadData())
 
-  const statuses: { id: TaskRecord['status']; label: string }[] = [
-    { id: 'todo', label: 'A Fazer' },
-    { id: 'in_progress', label: 'Em Progresso' },
-    { id: 'review', label: 'Em Revisão' },
-    { id: 'done', label: 'Concluído' },
+  const statuses: { id: TaskRecord['status']; label: string; colorClass: string }[] = [
+    {
+      id: 'todo',
+      label: 'A Fazer',
+      colorClass: 'bg-slate-400 dark:bg-slate-500 shadow-[0_0_10px_rgba(148,163,184,0.5)]',
+    },
+    {
+      id: 'in_progress',
+      label: 'Em Progresso',
+      colorClass: 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)]',
+    },
+    {
+      id: 'review',
+      label: 'Em Revisão',
+      colorClass: 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.6)]',
+    },
+    {
+      id: 'done',
+      label: 'Concluído',
+      colorClass: 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]',
+    },
   ]
 
   const filteredTasks = tasks.filter((t) => {
@@ -151,25 +168,34 @@ export default function Tasks() {
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) || null
 
   const boardContent = (
-    <div className="flex-1 flex gap-5 overflow-x-auto pb-4 items-start px-1 custom-scrollbar">
+    <div className="flex-1 flex gap-5 overflow-x-auto overflow-y-hidden items-stretch px-1 pb-4 custom-scrollbar min-h-0 snap-x snap-mandatory">
       {statuses.map((col, index) => {
         const colTasks = filteredTasks.filter((t) => t.status === col.id)
         return (
           <div
             key={col.id}
-            className={`stagger-item stagger-${(index % 5) + 2} flex flex-col glass-card rounded-[2rem] p-4 min-w-[340px] w-[340px] h-full transition-colors hover:bg-white/50 dark:hover:bg-slate-900/50`}
+            className={`snap-center shrink-0 stagger-item stagger-${(index % 5) + 2} flex flex-col glass-card rounded-3xl p-4 md:p-5 w-[310px] md:w-[330px] h-full transition-all hover:bg-white/40 dark:hover:bg-slate-900/40 border border-border/50 shadow-sm`}
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => handleDrop(e, col.id)}
           >
-            <div className="flex items-center justify-between mb-4 px-2">
-              <h3 className="font-extrabold text-[13px] uppercase tracking-widest flex items-center gap-2 text-foreground/80">
-                {col.label}{' '}
-                <span className="bg-background/90 backdrop-blur-md border border-border/50 px-2.5 py-0.5 rounded-full text-xs shadow-sm text-foreground">
+            <div className="flex-shrink-0 flex flex-col gap-3 mb-3">
+              <div className="flex items-center justify-between px-1">
+                <h3 className="font-extrabold text-[14px] uppercase tracking-wider flex items-center gap-2 text-foreground/90">
+                  {col.label}
+                </h3>
+                <span className="bg-background/90 backdrop-blur-md border border-border/50 px-2.5 py-0.5 rounded-full text-[11px] shadow-sm font-bold text-foreground">
                   {colTasks.length}
                 </span>
-              </h3>
+              </div>
+              <div className="h-[3px] w-full rounded-full bg-border/40 overflow-hidden">
+                <div
+                  className={cn('h-full rounded-full', col.colorClass)}
+                  style={{ width: '100%' }}
+                />
+              </div>
             </div>
-            <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar min-h-[150px]">
+
+            <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 custom-scrollbar px-2 -mx-2 pt-1 pb-4 space-y-3.5">
               {colTasks.map((task) => (
                 <TaskCard
                   key={task.id}
@@ -185,7 +211,7 @@ export default function Tasks() {
                 />
               ))}
               {colTasks.length === 0 && (
-                <div className="h-28 border-2 border-dashed border-border/60 rounded-3xl flex items-center justify-center text-sm text-muted-foreground font-medium bg-background/20 backdrop-blur-sm">
+                <div className="h-28 border-2 border-dashed border-border/60 rounded-3xl flex items-center justify-center text-sm text-muted-foreground font-medium bg-background/20 backdrop-blur-sm m-1">
                   Solte as tarefas aqui
                 </div>
               )}
@@ -198,18 +224,18 @@ export default function Tasks() {
 
   return (
     <PageTransition>
-      <div className="h-full flex flex-col pb-4">
-        <div className="flex flex-col mb-6 glass-card p-6 rounded-3xl gap-4 stagger-item stagger-1">
+      <div className="h-full flex flex-col min-h-0 overflow-hidden gap-4">
+        <div className="flex-shrink-0 flex flex-col glass-card p-5 md:p-6 rounded-3xl gap-4 stagger-item stagger-1">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl hidden md:flex backdrop-blur-md shadow-sm border border-white/10">
                 <LayoutDashboard className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h1 className="text-3xl font-extrabold tracking-tight">
+                <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
                   {isAdmin ? 'Tarefas Funcionário' : 'Quadro de Tarefas'}
                 </h1>
-                <p className="text-sm font-medium text-muted-foreground mt-1">
+                <p className="text-xs md:text-sm font-medium text-muted-foreground mt-1">
                   Gerencie suas atividades e ganhe pontos no PRN Organizador.
                 </p>
               </div>
@@ -294,22 +320,22 @@ export default function Tasks() {
         </div>
 
         {isAdmin ? (
-          <Tabs value={activeTab} className="flex-1 flex flex-col overflow-hidden">
+          <Tabs value={activeTab} className="flex-1 flex flex-col min-h-0 w-full overflow-hidden">
             <TabsContent
               value="private"
-              className="flex-1 mt-0 outline-none overflow-hidden h-full flex flex-col"
+              className="flex-1 mt-0 outline-none data-[state=active]:flex flex-col min-h-0 overflow-hidden p-0 border-none w-full"
             >
               {boardContent}
             </TabsContent>
             <TabsContent
               value="team"
-              className="flex-1 mt-0 outline-none overflow-hidden h-full flex flex-col"
+              className="flex-1 mt-0 outline-none data-[state=active]:flex flex-col min-h-0 overflow-hidden p-0 border-none w-full"
             >
               {boardContent}
             </TabsContent>
           </Tabs>
         ) : (
-          boardContent
+          <div className="flex-1 flex flex-col min-h-0 w-full overflow-hidden">{boardContent}</div>
         )}
 
         <TaskModal

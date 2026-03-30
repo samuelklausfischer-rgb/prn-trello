@@ -62,11 +62,11 @@ export default function Layout() {
         <main
           ref={mainRef}
           id="main-content"
-          className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto overflow-x-hidden outline-none"
+          className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto overflow-x-hidden outline-none flex flex-col min-h-0"
           tabIndex={-1}
           onScroll={handleScroll}
         >
-          <div className="max-w-[1600px] mx-auto h-full">
+          <div className="max-w-[1600px] w-full mx-auto flex-1 flex flex-col min-h-0">
             <Outlet />
           </div>
         </main>
