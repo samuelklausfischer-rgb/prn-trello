@@ -1,12 +1,10 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Search, Bell, Medal, Flame, Star, Send } from 'lucide-react'
+import { Search, Send } from 'lucide-react'
 import { getUsers } from '@/services/users'
 import { createAlert } from '@/services/alerts'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useAuth } from '@/hooks/useAuthHooks'
-import pb from '@/lib/pocketbase/client'
-import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserCard } from '@/components/UserCard'
 import {
   Dialog,
   DialogContent,
@@ -60,6 +58,9 @@ export default function AdminEmployees() {
     })
   }, [users, search, department])
 
+  const admins = useMemo(() => filteredUsers.filter((u) => u.role === 'admin'), [filteredUsers])
+  const employees = useMemo(() => filteredUsers.filter((u) => u.role !== 'admin'), [filteredUsers])
+
   const handleOpenNotification = (user: any) => {
     setSelectedUser(user)
     setNotifyTitle('')
@@ -90,11 +91,13 @@ export default function AdminEmployees() {
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-8 space-y-6 max-w-7xl animate-fade-in-up">
+    <div className="container mx-auto p-4 md:p-8 space-y-8 max-w-7xl animate-fade-in-up">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Funcionários</h1>
-          <p className="text-muted-foreground mt-1">Gerencie e acompanhe o desempenho da equipe</p>
+          <h1 className="text-3xl font-bold tracking-tight">Equipe</h1>
+          <p className="text-muted-foreground mt-1">
+            Gerencie e acompanhe o desempenho de todos os usuários
+          </p>
         </div>
       </div>
 
@@ -123,62 +126,40 @@ export default function AdminEmployees() {
         </select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredUsers.map((user) => (
-          <div
-            key={user.id}
-            className="glass-panel p-5 rounded-xl border border-border/50 flex flex-col gap-4 hover-3d transition-all bg-card text-card-foreground shadow-sm"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-12 w-12 border-2 border-primary/20">
-                  <AvatarImage src={user.avatar ? pb.files.getURL(user, user.avatar) : undefined} />
-                  <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                    {user.name?.charAt(0)?.toUpperCase() || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h3 className="font-semibold line-clamp-1">{user.name || 'Sem nome'}</h3>
-                  {user.department && (
-                    <Badge variant="secondary" className="mt-1 text-xs">
-                      {user.department}
-                    </Badge>
-                  )}
-                </div>
-              </div>
+      <div className="space-y-10">
+        {admins.length > 0 && (
+          <section className="space-y-4 animate-fade-in">
+            <h2 className="text-xl font-bold flex items-center gap-2 border-b pb-2">
+              Usuários Admin{' '}
+              <span className="text-muted-foreground text-base font-medium">({admins.length})</span>
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {admins.map((user) => (
+                <UserCard key={user.id} user={user} isAdmin onNotify={handleOpenNotification} />
+              ))}
             </div>
+          </section>
+        )}
 
-            <div className="grid grid-cols-3 gap-2 py-3 border-y border-border/50">
-              <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-background/50">
-                <Star className="h-4 w-4 text-yellow-500 mb-1" />
-                <span className="text-xs text-muted-foreground">Nível</span>
-                <span className="font-bold">{user.level || 1}</span>
-              </div>
-              <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-background/50">
-                <Medal className="h-4 w-4 text-blue-500 mb-1" />
-                <span className="text-xs text-muted-foreground">XP</span>
-                <span className="font-bold">{user.xp || 0}</span>
-              </div>
-              <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-background/50">
-                <Flame className="h-4 w-4 text-orange-500 mb-1" />
-                <span className="text-xs text-muted-foreground">Dias</span>
-                <span className="font-bold">{user.streak_days || 0}</span>
-              </div>
+        {employees.length > 0 && (
+          <section className="space-y-4 animate-fade-in">
+            <h2 className="text-xl font-bold flex items-center gap-2 border-b pb-2">
+              Funcionários{' '}
+              <span className="text-muted-foreground text-base font-medium">
+                ({employees.length})
+              </span>
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {employees.map((user) => (
+                <UserCard key={user.id} user={user} onNotify={handleOpenNotification} />
+              ))}
             </div>
-
-            <button
-              onClick={() => handleOpenNotification(user)}
-              className="mt-auto inline-flex w-full items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-primary hover:text-primary-foreground h-10 px-4 py-2 gap-2 group"
-            >
-              <Bell className="h-4 w-4 group-hover:animate-shake" />
-              Notificar
-            </button>
-          </div>
-        ))}
+          </section>
+        )}
 
         {filteredUsers.length === 0 && (
-          <div className="col-span-full py-12 text-center text-muted-foreground">
-            Nenhum funcionário encontrado com os filtros atuais.
+          <div className="py-12 text-center text-muted-foreground bg-card rounded-xl border border-border/50">
+            Nenhum usuário encontrado com os filtros atuais.
           </div>
         )}
       </div>
