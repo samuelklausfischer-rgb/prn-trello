@@ -6,6 +6,13 @@ export const getUsers = async () => {
   })
 }
 
+export const getEmployees = async () => {
+  return await pb.collection('users').getFullList({
+    filter: 'role != "admin"',
+    sort: '-points,-xp,name',
+  })
+}
+
 export const updateUser = async (id: string, data: any) => {
   return await pb.collection('users').update(id, data)
 }
