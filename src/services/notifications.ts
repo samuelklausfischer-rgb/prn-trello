@@ -13,3 +13,24 @@ export const markNotificationAsRead = async (id: string) => {
     read_at: new Date().toISOString(),
   })
 }
+
+export const getNotifications = async (userId: string) => {
+  return await pb.collection('notifications').getFullList({
+    filter: `user = '${userId}'`,
+    sort: '-created',
+  })
+}
+
+export const markAllNotificationsAsRead = async (userId: string) => {
+  const unreadNotifications = await getUnreadNotifications(userId)
+  const now = new Date().toISOString()
+
+  const updatePromises = unreadNotifications.map((notif) =>
+    pb.collection('notifications').update(notif.id, {
+      is_read: true,
+      read_at: now,
+    }),
+  )
+
+  await Promise.all(updatePromises)
+}
