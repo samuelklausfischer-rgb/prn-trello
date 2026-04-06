@@ -80,6 +80,7 @@ export default function AdminEmployees() {
         title: notifyTitle,
         message: notifyMessage,
         created_by: currentUser?.id,
+        is_sent: true,
       })
       toast.success('Notificação enviada com sucesso!')
       setIsDialogOpen(false)

@@ -69,12 +69,17 @@ export function CommunicationTab({ alerts, users, onRefresh }: CommunicationTabP
     }
 
     try {
-      const payload = {
+      const payload: Record<string, any> = {
         ...formData,
         created_by: pb.authStore.record?.id,
-        target_role: recipientType === 'role' ? selectedRole : '',
-        target_user: recipientType === 'user' ? selectedUser : '',
         is_sent: true,
+      }
+
+      if (recipientType === 'role' && selectedRole) {
+        payload.target_role = selectedRole
+      }
+      if (recipientType === 'user' && selectedUser) {
+        payload.target_user = selectedUser
       }
 
       await createAlert(payload)
