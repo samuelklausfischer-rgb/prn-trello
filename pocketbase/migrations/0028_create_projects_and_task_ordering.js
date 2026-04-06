@@ -48,8 +48,8 @@ migrate(
       changed = true
     }
 
-    tasks.addIndex('idx_tasks_project_id', false, 'project_id', '')
-    tasks.addIndex('idx_tasks_order', false, 'order', '')
+    tasks.addIndex('idx_tasks_project_id', false, '`project_id`', '')
+    tasks.addIndex('idx_tasks_order', false, '`order`', '')
 
     if (changed || true) {
       app.save(tasks)
