@@ -8,7 +8,7 @@ export const getUsers = async () => {
 
 export const getEmployees = async () => {
   return await pb.collection('users').getFullList({
-    filter: 'role != "admin"',
+    filter: 'role != "admin" && is_active = true',
     sort: '-points,-xp,name',
   })
 }

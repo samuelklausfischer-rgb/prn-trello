@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import {
   Table,
   TableBody,
@@ -7,13 +8,29 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Edit2 } from 'lucide-react'
+import { EditUserDialog } from './EditUserDialog'
 
 interface UsersTabProps {
   users: any[]
+  onUsersChange?: () => void
 }
 
-export function UsersTab({ users }: UsersTabProps) {
+export function UsersTab({ users: initialUsers, onUsersChange }: UsersTabProps) {
+  const [editingUser, setEditingUser] = useState<any>(null)
+  const [localUsers, setLocalUsers] = useState<any[]>(initialUsers)
+
+  useEffect(() => {
+    setLocalUsers(initialUsers)
+  }, [initialUsers])
+
+  const handleSuccess = (updatedUser: any) => {
+    setLocalUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)))
+    if (onUsersChange) onUsersChange()
+  }
+
   return (
     <Card className="border-border/60 shadow-sm glass-card">
       <CardHeader>
@@ -31,10 +48,11 @@ export function UsersTab({ users }: UsersTabProps) {
               <TableHead className="font-semibold text-foreground">Cargo</TableHead>
               <TableHead className="font-semibold text-foreground">Função</TableHead>
               <TableHead className="font-semibold text-foreground">Status</TableHead>
+              <TableHead className="font-semibold text-foreground text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((u) => (
+            {localUsers.map((u) => (
               <TableRow key={u.id} className="hover:bg-muted/30 transition-colors">
                 <TableCell className="font-medium text-foreground">
                   {u.name || 'Sem nome'}
@@ -61,11 +79,28 @@ export function UsersTab({ users }: UsersTabProps) {
                     {u.is_active ? 'Ativo' : 'Inativo'}
                   </Badge>
                 </TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setEditingUser(u)}
+                    title="Editar usuário"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </CardContent>
+
+      <EditUserDialog
+        user={editingUser}
+        open={!!editingUser}
+        onOpenChange={(open) => !open && setEditingUser(null)}
+        onSuccess={handleSuccess}
+      />
     </Card>
   )
 }
