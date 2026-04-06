@@ -32,12 +32,10 @@ export interface TaskRecord {
 }
 
 export const getTasks = () =>
-  pb
-    .collection('tasks')
-    .getFullList<TaskRecord>({
-      sort: 'order,-created',
-      expand: 'created_by,delegated_to,project_id',
-    })
+  pb.collection('tasks').getFullList<TaskRecord>({
+    sort: 'order,-created',
+    expand: 'created_by,delegated_to,project_id',
+  })
 
 export const getTask = (id: string) =>
   pb.collection('tasks').getOne<TaskRecord>(id, { expand: 'created_by,delegated_to,project_id' })
