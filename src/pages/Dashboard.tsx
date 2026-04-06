@@ -8,9 +8,12 @@ import { EmployeeCharts } from '@/components/dashboard/EmployeeCharts'
 import { EmployeeFeeds } from '@/components/dashboard/EmployeeFeeds'
 import { TeamRankingWidget, RankingItem } from '@/components/dashboard/TeamRankingWidget'
 import { AchievementsWidget, AchievementItem } from '@/components/dashboard/AchievementsWidget'
+import { NotificationsWidget } from '@/components/dashboard/NotificationsWidget'
+import { getUnreadNotifications } from '@/services/notifications'
 import DashboardSkeleton from '@/components/DashboardSkeleton'
 import PageTransition from '@/components/PageTransition'
 import { Target, CheckCircle, Trophy, BarChart3 } from 'lucide-react'
+import { toast } from 'sonner'
 import { getRanking, getUserStats } from '@/services/views'
 import { getAchievements, getUserAchievements } from '@/services/achievements'
 import { getLevels } from '@/services/gamification'
@@ -31,6 +34,7 @@ interface DashboardData {
   ranking: RankingItem[]
   achievements: AchievementItem[]
   levelInfo: { level: number; minXp: number; maxXp: number } | null
+  unreadNotifications: any[]
 }
 
 const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
@@ -58,6 +62,7 @@ export default function Dashboard() {
         userAchievements,
         levelsList,
         userStats,
+        unreadNotifications,
       ] = await Promise.all([
         pb.collection('tasks').getFullList({
           filter: `created_by = '${user.id}' || delegated_to = '${user.id}'`,
@@ -69,6 +74,7 @@ export default function Dashboard() {
         getUserAchievements(user.id).catch(() => []),
         getLevels().catch(() => []),
         getUserStats(user.id).catch(() => null),
+        getUnreadNotifications(user.id).catch(() => []),
       ])
 
       const completedTasks = tasks.filter((t) => t.status === 'done')
@@ -192,6 +198,7 @@ export default function Dashboard() {
           minXp: currentLevelObj.min_xp,
           maxXp: currentLevelObj.max_xp,
         },
+        unreadNotifications,
       })
     } catch (error) {
       console.error('Failed to load dashboard data', error)
@@ -219,6 +226,14 @@ export default function Dashboard() {
   })
   useRealtime('user_achievements', () => {
     loadData()
+  })
+  useRealtime('notifications', (e) => {
+    if (e.record.user === user?.id) {
+      if (e.action === 'create' && !e.record.is_read) {
+        toast.info(e.record.title, { description: e.record.message })
+      }
+      loadData()
+    }
   })
 
   if (!user) return null
@@ -296,6 +311,7 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="space-y-6 lg:col-span-1 h-full flex flex-col">
+            <NotificationsWidget notifications={data.unreadNotifications} onRefresh={loadData} />
             <div className="flex-1 min-h-[400px]">
               <TeamRankingWidget ranking={data.ranking} />
             </div>

@@ -8,7 +8,11 @@ onRecordCreate((e) => {
 
       let userIds = []
       if (targetUser) {
-        userIds.push(targetUser)
+        if (Array.isArray(targetUser)) {
+          userIds.push(...targetUser)
+        } else {
+          userIds.push(targetUser)
+        }
       } else if (targetRole) {
         const users = $app.findRecordsByFilter(
           'users',
@@ -27,6 +31,8 @@ onRecordCreate((e) => {
       if (userIds.length === 0) {
         throw new Error('Nenhum usuário encontrado para o público alvo selecionado.')
       }
+
+      userIds = [...new Set(userIds)]
 
       userIds.forEach((uid) => {
         const notif = new Record(notifCol)
@@ -58,7 +64,11 @@ onRecordUpdate((e) => {
 
       let userIds = []
       if (targetUser) {
-        userIds.push(targetUser)
+        if (Array.isArray(targetUser)) {
+          userIds.push(...targetUser)
+        } else {
+          userIds.push(targetUser)
+        }
       } else if (targetRole) {
         const users = $app.findRecordsByFilter(
           'users',
@@ -73,6 +83,8 @@ onRecordUpdate((e) => {
         const users = $app.findRecordsByFilter('users', 'is_active = true', '-created', 1000, 0)
         users.forEach((u) => userIds.push(u.id))
       }
+
+      userIds = [...new Set(userIds)]
 
       userIds.forEach((uid) => {
         const notif = new Record(notifCol)
