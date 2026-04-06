@@ -28,8 +28,8 @@ migrate(
 
     app.save(tasks)
 
-    tasks.addIndex('idx_tasks_order', false, 'order', '')
-    tasks.addIndex('idx_tasks_project_id', false, 'project_id', '')
+    tasks.addIndex('CREATE INDEX idx_tasks_order ON tasks (`order`)')
+    tasks.addIndex('CREATE INDEX idx_tasks_project_id ON tasks (project_id)')
     app.save(tasks)
   },
   (app) => {
