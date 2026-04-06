@@ -1,8 +1,9 @@
 import pb from '@/lib/pocketbase/client'
 
-export const getNotifications = async () => {
+export const getNotifications = async (userId?: string) => {
   return await pb.collection('notifications').getFullList({
     sort: '-created',
+    filter: userId ? `user = "${userId}"` : '',
   })
 }
 

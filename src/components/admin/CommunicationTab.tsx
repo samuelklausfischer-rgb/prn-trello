@@ -74,6 +74,7 @@ export function CommunicationTab({ alerts, users, onRefresh }: CommunicationTabP
         created_by: pb.authStore.record?.id,
         target_role: recipientType === 'role' ? selectedRole : '',
         target_user: recipientType === 'user' ? selectedUser : '',
+        is_sent: true,
       }
 
       await createAlert(payload)
@@ -88,9 +89,11 @@ export function CommunicationTab({ alerts, users, onRefresh }: CommunicationTabP
       setSelectedRole('employee')
       setSelectedUser('')
       onRefresh()
-    } catch (err) {
+    } catch (err: any) {
       setErrors(extractFieldErrors(err))
-      toast.error('Erro ao criar alerta. Verifique os campos que falharam na validação.')
+      const errorMessage =
+        err?.response?.message || err?.message || 'Erro de conexão ou restrição no banco de dados.'
+      toast.error(`Falha ao despachar alerta: ${errorMessage}`)
     } finally {
       setLoading(false)
     }

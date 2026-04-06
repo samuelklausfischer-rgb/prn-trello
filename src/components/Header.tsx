@@ -69,7 +69,7 @@ export default function Header() {
   const loadNotifications = async () => {
     if (!user) return
     try {
-      const data = await getNotifications()
+      const data = await getNotifications(user.id)
       setNotifications(data)
     } catch (e) {
       console.error('Failed to load notifications', e)
@@ -80,8 +80,10 @@ export default function Header() {
     loadNotifications()
   }, [user])
 
-  useRealtime('notifications', () => {
-    loadNotifications()
+  useRealtime('notifications', (e) => {
+    if (e.record && e.record.user === user?.id) {
+      loadNotifications()
+    }
   })
 
   if (!user) return null
