@@ -100,9 +100,10 @@ export function CommunicationTab({ alerts, users, onRefresh }: CommunicationTabP
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="system">Sistema</SelectItem>
-                    <SelectItem value="task_deadline">Prazo de Tarefa</SelectItem>
-                    <SelectItem value="performance">Desempenho</SelectItem>
+                    <SelectItem value="system">Anúncio Global (Sistema)</SelectItem>
+                    <SelectItem value="custom">Mensagem Personalizada</SelectItem>
+                    <SelectItem value="performance">Feedback de Desempenho</SelectItem>
+                    <SelectItem value="bottleneck">Alerta Urgente</SelectItem>
                   </SelectContent>
                 </Select>
                 {errors.type && <p className="text-xs text-destructive">{errors.type}</p>}

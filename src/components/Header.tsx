@@ -12,6 +12,9 @@ import {
   Info,
   AlertTriangle,
   CheckCheck,
+  TrendingUp,
+  UserPlus,
+  Star,
 } from 'lucide-react'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import {
@@ -141,8 +144,16 @@ export default function Header() {
         return <AlertTriangle className="w-4 h-4 text-orange-500" />
       case 'achievement':
         return <Trophy className="w-4 h-4 text-accent" />
+      case 'level_up':
+        return <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+      case 'delegation':
+        return <UserPlus className="w-4 h-4 text-blue-400" />
       case 'performance':
-        return <Activity className="w-4 h-4 text-primary" />
+        return <TrendingUp className="w-4 h-4 text-green-400" />
+      case 'bottleneck':
+        return <AlertTriangle className="w-4 h-4 text-destructive" />
+      case 'system':
+      case 'custom':
       default:
         return <Info className="w-4 h-4 text-primary" />
     }
