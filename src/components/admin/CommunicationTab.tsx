@@ -207,32 +207,34 @@ export function CommunicationTab({ alerts, users, onRefresh }: CommunicationTabP
                         <CommandList>
                           <CommandEmpty>Nenhum colaborador encontrado.</CommandEmpty>
                           <CommandGroup>
-                            {users.map((user) => (
-                              <CommandItem
-                                key={user.id}
-                                value={`${user.name || ''} ${user.email || ''}`}
-                                onSelect={() => {
-                                  setSelectedUser(user.id)
-                                  setOpenUserCombo(false)
-                                  setErrors((prev) => ({ ...prev, target_user: '' }))
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    'mr-2 h-4 w-4',
-                                    selectedUser === user.id ? 'opacity-100' : 'opacity-0',
-                                  )}
-                                />
-                                <div className="flex flex-col">
-                                  <span>{user.name || 'Sem nome'}</span>
-                                  {user.email && (
-                                    <span className="text-xs text-muted-foreground">
-                                      {user.email}
-                                    </span>
-                                  )}
-                                </div>
-                              </CommandItem>
-                            ))}
+                            {users
+                              .filter((u) => u.is_active)
+                              .map((user) => (
+                                <CommandItem
+                                  key={user.id}
+                                  value={`${user.name || ''} ${user.email || ''}`}
+                                  onSelect={() => {
+                                    setSelectedUser(user.id)
+                                    setOpenUserCombo(false)
+                                    setErrors((prev) => ({ ...prev, target_user: '' }))
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      'mr-2 h-4 w-4',
+                                      selectedUser === user.id ? 'opacity-100' : 'opacity-0',
+                                    )}
+                                  />
+                                  <div className="flex flex-col">
+                                    <span>{user.name || 'Sem nome'}</span>
+                                    {user.email && (
+                                      <span className="text-xs text-muted-foreground">
+                                        {user.email}
+                                      </span>
+                                    )}
+                                  </div>
+                                </CommandItem>
+                              ))}
                           </CommandGroup>
                         </CommandList>
                       </Command>

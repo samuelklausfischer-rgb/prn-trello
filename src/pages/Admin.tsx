@@ -9,6 +9,8 @@ import { getAlerts } from '@/services/alerts'
 import { UsersTab } from '@/components/admin/UsersTab'
 import { CommunicationTab } from '@/components/admin/CommunicationTab'
 import { ActivityTab } from '@/components/admin/ActivityTab'
+import { useRealtime } from '@/hooks/use-realtime'
+import { toast } from 'sonner'
 
 export default function Admin() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -25,6 +27,7 @@ export default function Admin() {
       setAlerts(a)
     } catch (err) {
       console.error('Error loading admin data:', err)
+      toast.error('Erro ao carregar os dados. Verifique a conexão com o servidor.')
     } finally {
       setLoading(false)
     }
@@ -33,6 +36,14 @@ export default function Admin() {
   useEffect(() => {
     loadData()
   }, [])
+
+  useRealtime('users', () => {
+    loadData()
+  })
+
+  useRealtime('alerts', () => {
+    loadData()
+  })
 
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value })
