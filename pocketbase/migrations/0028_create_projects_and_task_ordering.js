@@ -48,6 +48,21 @@ migrate(
       changed = true
     }
 
+    if (!tasks.fields.getByName('board_group')) {
+      tasks.fields.add(new TextField({ name: 'board_group' }))
+      changed = true
+    }
+
+    if (!tasks.fields.getByName('is_blocked')) {
+      tasks.fields.add(new BoolField({ name: 'is_blocked' }))
+      changed = true
+    }
+
+    if (!tasks.fields.getByName('block_reason')) {
+      tasks.fields.add(new TextField({ name: 'block_reason' }))
+      changed = true
+    }
+
     tasks.addIndex('idx_tasks_project_id', false, '`project_id`', '')
     tasks.addIndex('idx_tasks_order', false, '`order`', '')
 
@@ -66,6 +81,15 @@ migrate(
       }
       if (tasks.fields.getByName('order')) {
         tasks.fields.removeByName('order')
+      }
+      if (tasks.fields.getByName('board_group')) {
+        tasks.fields.removeByName('board_group')
+      }
+      if (tasks.fields.getByName('is_blocked')) {
+        tasks.fields.removeByName('is_blocked')
+      }
+      if (tasks.fields.getByName('block_reason')) {
+        tasks.fields.removeByName('block_reason')
       }
       app.save(tasks)
     } catch (e) {}

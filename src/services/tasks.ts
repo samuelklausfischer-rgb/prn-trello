@@ -19,6 +19,7 @@ export interface TaskRecord {
   points_reward: number
   points_awarded: boolean
   project_id?: string
+  board_group?: string
   order?: number
   is_blocked?: boolean
   block_reason?: string
@@ -93,6 +94,7 @@ export const updateTask = async (
     'is_private',
     'points_reward',
     'project_id',
+    'board_group',
     'order',
     'is_blocked',
     'block_reason',

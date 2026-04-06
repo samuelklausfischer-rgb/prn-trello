@@ -23,6 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import { Plus, LayoutDashboard, Search, Archive, Users, Lock, Filter, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -573,17 +575,17 @@ export default function Tasks() {
                 </Select>
               )}
 
-              <Button
-                variant={myTasksOnly ? 'default' : 'outline'}
-                size="sm"
-                className={cn(
-                  'rounded-lg h-9 text-xs',
-                  myTasksOnly && 'shadow-[0_0_10px_rgba(0,212,255,0.3)]',
-                )}
-                onClick={() => setMyTasksOnly(!myTasksOnly)}
-              >
-                Minhas Tarefas
-              </Button>
+              <div className="flex items-center gap-2 bg-background/50 border border-border/50 px-3 py-1.5 rounded-lg h-9">
+                <Switch
+                  id="focus-mode"
+                  checked={myTasksOnly}
+                  onCheckedChange={setMyTasksOnly}
+                  className="data-[state=checked]:bg-primary shadow-[0_0_10px_rgba(0,212,255,0.3)]"
+                />
+                <Label htmlFor="focus-mode" className="text-xs font-semibold cursor-pointer">
+                  Modo Foco
+                </Label>
+              </div>
 
               {activeFiltersCount > 0 && (
                 <Button
@@ -664,6 +666,14 @@ export default function Tasks() {
           users={users}
           isPrivateWorkspace={isAdmin && activeTab === 'private'}
         />
+
+        <Button
+          size="icon"
+          className="md:hidden fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-[0_4px_20px_rgba(0,212,255,0.5)] z-50 bg-primary hover:bg-primary/90 transition-transform active:scale-95"
+          onClick={() => setIsNewTaskOpen(true)}
+        >
+          <Plus className="h-6 w-6 text-primary-foreground" />
+        </Button>
       </div>
     </PageTransition>
   )

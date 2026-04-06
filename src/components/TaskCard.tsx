@@ -2,6 +2,9 @@ import { TaskRecord } from '@/services/tasks'
 import { ChecklistRecord, updateChecklist } from '@/services/checklists'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Button } from '@/components/ui/button'
+import { updateTask } from '@/services/tasks'
 import {
   User,
   MessageCircle,
@@ -12,6 +15,8 @@ import {
   Clock,
   AlertTriangle,
   Pencil,
+  MoreVertical,
+  Unlock,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -149,6 +154,31 @@ export default function TaskCard({
   const isNearDeadline =
     dueDate && !isPastDue && !isDone && hoursToDeadline !== null && hoursToDeadline <= 24
 
+  const totalChecklists = localChecklists.length
+  const completedChecklists = localChecklists.filter((c) => c.is_completed).length
+  const progressPercentage = totalChecklists > 0 ? (completedChecklists / totalChecklists) * 100 : 0
+
+  const handleToggleBlocked = async (e: React.MouseEvent | Event) => {
+    e.stopPropagation()
+    try {
+      await updateTask(task.id, {
+        is_blocked: !task.is_blocked,
+        block_reason: !task.is_blocked ? 'Bloqueado via ação rápida' : '',
+      })
+    } catch (err) {
+      console.error('Error toggling blocked status', err)
+    }
+  }
+
+  const handleSetPriority = async (e: React.MouseEvent | Event, newPriority: string) => {
+    e.stopPropagation()
+    try {
+      await updateTask(task.id, { priority: newPriority as any })
+    } catch (err) {
+      console.error('Error updating priority', err)
+    }
+  }
+
   let timeLabel = ''
   if (dueDate && !isDone) {
     const diffDays = Math.abs(differenceInDays(now, dueDate))
@@ -171,7 +201,7 @@ export default function TaskCard({
       onPointerDown={onPointerDown}
       onClick={onClick}
       className={cn(
-        'cursor-grab active:cursor-grabbing hover-3d premium-task-card !rounded-3xl relative w-full touch-pan-y transition-transform',
+        'group/card cursor-grab active:cursor-grabbing hover-3d premium-task-card !rounded-3xl relative w-full touch-pan-y transition-transform',
         isDragging &&
           'opacity-80 scale-[1.02] shadow-xl ring-2 ring-primary ring-offset-2 ring-offset-background rotate-2',
         task.is_archived && 'opacity-60 bg-muted/30 grayscale-[0.3]',
@@ -197,7 +227,54 @@ export default function TaskCard({
       <CardContent
         className={cn('p-5 flex flex-col gap-3.5 relative', task.is_blocked && 'opacity-70')}
       >
-        <div className="flex justify-between items-start gap-2">
+        <div className="absolute top-3 right-3 opacity-0 group-hover/card:opacity-100 transition-opacity z-20 hidden md:block">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 bg-background/80 backdrop-blur-sm border border-border/50 hover:bg-muted"
+                onClick={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+              >
+                <MoreVertical className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 z-50">
+              <DropdownMenuLabel>Ações Rápidas</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleToggleBlocked}>
+                {task.is_blocked ? (
+                  <>
+                    <Unlock className="w-4 h-4 mr-2" /> Desbloquear
+                  </>
+                ) : (
+                  <>
+                    <Ban className="w-4 h-4 mr-2" /> Marcar como Bloqueada
+                  </>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                Prioridade
+              </DropdownMenuLabel>
+              <DropdownMenuItem onClick={(e) => handleSetPriority(e, 'low')}>
+                Baixa
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => handleSetPriority(e, 'medium')}>
+                Média
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => handleSetPriority(e, 'high')}>
+                Alta
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => handleSetPriority(e, 'urgent')}>
+                Urgente
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <div className="flex justify-between items-start gap-2 pr-6">
           <div className="flex gap-1.5 flex-wrap">
             <Badge
               variant="outline"
@@ -309,6 +386,20 @@ export default function TaskCard({
             </div>
           </div>
         </div>
+
+        {totalChecklists > 0 && (
+          <div className="mt-1 space-y-1.5">
+            <div className="flex items-center justify-between text-xs text-muted-foreground font-medium">
+              <span className="flex items-center gap-1.5">
+                <FileText className="w-3 h-3" /> Progresso
+              </span>
+              <span>
+                {completedChecklists}/{totalChecklists} ({Math.round(progressPercentage)}%)
+              </span>
+            </div>
+            <Progress value={progressPercentage} className="h-1.5" />
+          </div>
+        )}
 
         {localChecklists.length > 0 && (
           <div className="flex flex-col gap-1.5 mt-1 bg-black/5 dark:bg-white/5 p-3 rounded-2xl border border-border/40">
