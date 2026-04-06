@@ -19,11 +19,22 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { createAlert } from '@/services/alerts'
 import { extractFieldErrors } from '@/lib/pocketbase/errors'
 import { toast } from 'sonner'
 import pb from '@/lib/pocketbase/client'
 import { format } from 'date-fns'
+import { Check, ChevronsUpDown } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface CommunicationTabProps {
   alerts: any[]
@@ -34,36 +45,52 @@ interface CommunicationTabProps {
 export function CommunicationTab({ alerts, users, onRefresh }: CommunicationTabProps) {
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+
   const [formData, setFormData] = useState({
     title: '',
     message: '',
-    type: 'system',
-    target_role: 'none',
-    target_user: 'none',
+    type: 'custom',
   })
+
+  const [recipientType, setRecipientType] = useState<'global' | 'role' | 'user'>('global')
+  const [selectedRole, setSelectedRole] = useState('employee')
+  const [selectedUser, setSelectedUser] = useState('')
+  const [openUserCombo, setOpenUserCombo] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setErrors({})
+
+    if (recipientType === 'user' && !selectedUser) {
+      setErrors({ target_user: 'Por favor, selecione um colaborador.' })
+      setLoading(false)
+      return
+    }
+
     try {
-      const payload: any = { ...formData, created_by: pb.authStore.record?.id }
-      if (payload.target_role === 'none') delete payload.target_role
-      if (payload.target_user === 'none') delete payload.target_user
+      const payload = {
+        ...formData,
+        created_by: pb.authStore.record?.id,
+        target_role: recipientType === 'role' ? selectedRole : '',
+        target_user: recipientType === 'user' ? selectedUser : '',
+      }
 
       await createAlert(payload)
       toast.success('Alerta criado com sucesso!')
+
       setFormData({
         title: '',
         message: '',
-        type: 'system',
-        target_role: 'none',
-        target_user: 'none',
+        type: 'custom',
       })
+      setRecipientType('global')
+      setSelectedRole('employee')
+      setSelectedUser('')
       onRefresh()
     } catch (err) {
       setErrors(extractFieldErrors(err))
-      toast.error('Erro ao criar alerta. Verifique os campos.')
+      toast.error('Erro ao criar alerta. Verifique os campos que falharam na validação.')
     } finally {
       setLoading(false)
     }
@@ -82,16 +109,18 @@ export function CommunicationTab({ alerts, users, onRefresh }: CommunicationTabP
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Título do Alerta</Label>
+                <Label>Título do Alerta *</Label>
                 <Input
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   required
+                  placeholder="Ex: Atualização Importante"
                 />
                 {errors.title && <p className="text-xs text-destructive">{errors.title}</p>}
               </div>
+
               <div className="space-y-2">
-                <Label>Tipo</Label>
+                <Label>Tipo de Alerta *</Label>
                 <Select
                   value={formData.type}
                   onValueChange={(v) => setFormData({ ...formData, type: v })}
@@ -100,69 +129,137 @@ export function CommunicationTab({ alerts, users, onRefresh }: CommunicationTabP
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="system">Anúncio Global (Sistema)</SelectItem>
                     <SelectItem value="custom">Mensagem Personalizada</SelectItem>
+                    <SelectItem value="system">Anúncio Global (Sistema)</SelectItem>
                     <SelectItem value="performance">Feedback de Desempenho</SelectItem>
                     <SelectItem value="bottleneck">Alerta Urgente</SelectItem>
                   </SelectContent>
                 </Select>
                 {errors.type && <p className="text-xs text-destructive">{errors.type}</p>}
               </div>
+
               <div className="space-y-2">
-                <Label>Usuário Específico</Label>
+                <Label>Público Alvo *</Label>
                 <Select
-                  value={formData.target_user}
-                  onValueChange={(v) => setFormData({ ...formData, target_user: v })}
+                  value={recipientType}
+                  onValueChange={(v: 'global' | 'role' | 'user') => {
+                    setRecipientType(v)
+                    setErrors((prev) => ({ ...prev, target_user: '', target_role: '' }))
+                  }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Todos os usuários" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Todos (Padrão)</SelectItem>
-                    {users.map((u) => (
-                      <SelectItem key={u.id} value={u.id}>
-                        {u.name}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="global">Todos os Usuários</SelectItem>
+                    <SelectItem value="role">Por Cargo</SelectItem>
+                    <SelectItem value="user">Colaborador Específico</SelectItem>
                   </SelectContent>
                 </Select>
-                {errors.target_user && (
-                  <p className="text-xs text-destructive">{errors.target_user}</p>
-                )}
               </div>
-              <div className="space-y-2">
-                <Label>Filtrar por Cargo</Label>
-                <Select
-                  value={formData.target_role}
-                  onValueChange={(v) => setFormData({ ...formData, target_role: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Qualquer cargo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Qualquer Cargo (Padrão)</SelectItem>
-                    <SelectItem value="admin">Administrador</SelectItem>
-                    <SelectItem value="employee">Colaborador</SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.target_role && (
-                  <p className="text-xs text-destructive">{errors.target_role}</p>
-                )}
-              </div>
+
+              {recipientType === 'role' && (
+                <div className="space-y-2 animate-fade-in-up">
+                  <Label>Selecione o Cargo *</Label>
+                  <Select value={selectedRole} onValueChange={setSelectedRole}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Administrador</SelectItem>
+                      <SelectItem value="employee">Colaborador</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.target_role && (
+                    <p className="text-xs text-destructive">{errors.target_role}</p>
+                  )}
+                </div>
+              )}
+
+              {recipientType === 'user' && (
+                <div className="space-y-2 animate-fade-in-up flex flex-col">
+                  <Label>Selecione o Colaborador *</Label>
+                  <Popover open={openUserCombo} onOpenChange={setOpenUserCombo}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openUserCombo}
+                        className={cn(
+                          'w-full justify-between font-normal',
+                          !selectedUser && 'text-muted-foreground',
+                        )}
+                      >
+                        {selectedUser
+                          ? users.find((u) => u.id === selectedUser)?.name ||
+                            users.find((u) => u.id === selectedUser)?.email ||
+                            'Usuário selecionado'
+                          : 'Buscar colaborador...'}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-[var(--radix-popover-trigger-width)] p-0"
+                      align="start"
+                    >
+                      <Command>
+                        <CommandInput placeholder="Buscar por nome ou email..." />
+                        <CommandList>
+                          <CommandEmpty>Nenhum colaborador encontrado.</CommandEmpty>
+                          <CommandGroup>
+                            {users.map((user) => (
+                              <CommandItem
+                                key={user.id}
+                                value={`${user.name || ''} ${user.email || ''}`}
+                                onSelect={() => {
+                                  setSelectedUser(user.id)
+                                  setOpenUserCombo(false)
+                                  setErrors((prev) => ({ ...prev, target_user: '' }))
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    'mr-2 h-4 w-4',
+                                    selectedUser === user.id ? 'opacity-100' : 'opacity-0',
+                                  )}
+                                />
+                                <div className="flex flex-col">
+                                  <span>{user.name || 'Sem nome'}</span>
+                                  {user.email && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {user.email}
+                                    </span>
+                                  )}
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {errors.target_user && (
+                    <p className="text-xs text-destructive">{errors.target_user}</p>
+                  )}
+                </div>
+              )}
+
               <div className="space-y-2 md:col-span-2">
-                <Label>Mensagem</Label>
+                <Label>Mensagem *</Label>
                 <Textarea
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   required
                   rows={3}
+                  placeholder="Digite a mensagem do alerta..."
                 />
                 {errors.message && <p className="text-xs text-destructive">{errors.message}</p>}
               </div>
             </div>
+
             <div className="flex justify-end pt-2">
               <Button type="submit" disabled={loading}>
-                Publicar Alerta
+                {loading ? 'Publicando...' : 'Publicar Alerta'}
               </Button>
             </div>
           </form>
@@ -179,6 +276,7 @@ export function CommunicationTab({ alerts, users, onRefresh }: CommunicationTabP
               <TableRow>
                 <TableHead>Título</TableHead>
                 <TableHead>Tipo</TableHead>
+                <TableHead>Público Alvo</TableHead>
                 <TableHead>Criado em</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
@@ -189,6 +287,13 @@ export function CommunicationTab({ alerts, users, onRefresh }: CommunicationTabP
                   <TableCell className="font-medium text-foreground">{a.title}</TableCell>
                   <TableCell className="text-muted-foreground capitalize">
                     {a.type.replace('_', ' ')}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {a.target_user
+                      ? 'Usuário Específico'
+                      : a.target_role
+                        ? `Cargo: ${a.target_role === 'admin' ? 'Administrador' : 'Colaborador'}`
+                        : 'Global'}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {a.created ? format(new Date(a.created), 'dd/MM/yyyy HH:mm') : '-'}
@@ -208,7 +313,7 @@ export function CommunicationTab({ alerts, users, onRefresh }: CommunicationTabP
               ))}
               {alerts.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
                     Nenhum alerta encontrado.
                   </TableCell>
                 </TableRow>
