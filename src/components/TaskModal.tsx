@@ -28,6 +28,7 @@ import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TaskChecklist } from './TaskChecklist'
 import { TaskHistoryTimeline } from './TaskHistoryTimeline'
+import { TaskComments } from './TaskComments'
 import { format } from 'date-fns'
 import { getProjects, ProjectRecord } from '@/services/projects'
 import { useState } from 'react'
@@ -190,8 +191,9 @@ export default function TaskModal({
         </DialogHeader>
 
         <Tabs defaultValue="details" className="w-full mt-2">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="details">Detalhes</TabsTrigger>
+            <TabsTrigger value="comments">Comentários</TabsTrigger>
             <TabsTrigger value="history">Histórico</TabsTrigger>
           </TabsList>
 
@@ -497,6 +499,13 @@ export default function TaskModal({
                 </Button>
               </form>
             </Form>
+          </TabsContent>
+
+          <TabsContent
+            value="comments"
+            className="mt-4 focus-visible:outline-none focus-visible:ring-0 min-h-[300px]"
+          >
+            <TaskComments taskId={task.id} />
           </TabsContent>
 
           <TabsContent

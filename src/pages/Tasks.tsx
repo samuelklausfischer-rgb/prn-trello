@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { getTasks, updateTask, TaskRecord } from '@/services/tasks'
+import { getTasks, updateTask, updateTaskOrder, TaskRecord } from '@/services/tasks'
 import { getUsers } from '@/services/users'
 import { getChecklists, ChecklistRecord } from '@/services/checklists'
 import { getProjects, ProjectRecord } from '@/services/projects'
@@ -26,6 +26,7 @@ import {
 import { Plus, LayoutDashboard, Search, Archive, Users, Lock, Filter, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { isPast, isSameDay, isSameWeek } from 'date-fns'
 
 export default function Tasks() {
   const { user, role } = useAuth()
@@ -47,6 +48,8 @@ export default function Tasks() {
   const [priorityFilter, setPriorityFilter] = useState('all')
   const [projectFilter, setProjectFilter] = useState('all')
   const [areaFilter, setAreaFilter] = useState('all')
+  const [deadlineFilter, setDeadlineFilter] = useState('all')
+  const [groupBy, setGroupBy] = useState<'status' | 'project'>('status')
   const [myTasksOnly, setMyTasksOnly] = useState(false)
 
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
@@ -58,10 +61,22 @@ export default function Tasks() {
     const taskToUpdate = tasks.find((t) => t.id === taskId)
     if (!taskToUpdate) return
 
-    const targetStatus = columnId as TaskRecord['status']
+    let targetStatus = taskToUpdate.status
+    let targetProject = taskToUpdate.project_id || ''
+
+    if (groupBy === 'status') {
+      targetStatus = columnId as TaskRecord['status']
+    } else {
+      targetProject = columnId === 'none' ? '' : columnId
+    }
+
     const colTasks = tasks
-      .filter((t) => t.status === targetStatus)
+      .filter((t) => {
+        if (groupBy === 'status') return t.status === targetStatus
+        return (t.project_id || 'none') === (targetProject || 'none')
+      })
       .sort((a, b) => (a.order || 0) - (b.order || 0))
+
     const otherTasks = colTasks.filter((t) => t.id !== taskId)
 
     let newOrder = 0
@@ -78,24 +93,33 @@ export default function Tasks() {
     }
 
     if (
-      taskToUpdate.status === targetStatus &&
-      Math.abs((taskToUpdate.order || 0) - newOrder) < 0.001
+      (groupBy === 'status' &&
+        taskToUpdate.status === targetStatus &&
+        Math.abs((taskToUpdate.order || 0) - newOrder) < 0.001) ||
+      (groupBy === 'project' &&
+        (taskToUpdate.project_id || '') === targetProject &&
+        Math.abs((taskToUpdate.order || 0) - newOrder) < 0.001)
     )
       return
 
     const previousTasks = [...tasks]
     setTasks((prev) =>
       prev.map((t) =>
-        t.id === taskToUpdate.id ? { ...t, status: targetStatus, order: newOrder } : t,
+        t.id === taskToUpdate.id
+          ? { ...t, status: targetStatus, project_id: targetProject, order: newOrder }
+          : t,
       ),
     )
 
     try {
-      await updateTask(
-        taskToUpdate.id,
-        { status: targetStatus, order: newOrder },
-        taskToUpdate.updated,
-      )
+      await updateTaskOrder([
+        {
+          id: taskToUpdate.id,
+          order: newOrder,
+          status: targetStatus,
+          project_id: targetProject,
+        },
+      ])
     } catch (error) {
       setTasks(previousTasks)
       toast({
@@ -133,7 +157,7 @@ export default function Tasks() {
   useRealtime('checklists', () => loadData())
   useRealtime('projects', () => loadData())
 
-  const statuses: { id: TaskRecord['status']; label: string; colorClass: string }[] = [
+  const statuses = [
     {
       id: 'todo',
       label: 'A Fazer',
@@ -188,6 +212,19 @@ export default function Tasks() {
           ? t.delegated_to === user?.id || t.created_by === user?.id
           : true
 
+        let matchDeadline = true
+        if (deadlineFilter !== 'all') {
+          if (!t.due_date) matchDeadline = false
+          else {
+            const due = new Date(t.due_date)
+            const now = new Date()
+            if (deadlineFilter === 'overdue') matchDeadline = t.status !== 'done' && isPast(due)
+            else if (deadlineFilter === 'today') matchDeadline = isSameDay(due, now)
+            else if (deadlineFilter === 'week')
+              matchDeadline = isSameWeek(due, now, { weekStartsOn: 1 })
+          }
+        }
+
         return (
           matchSearch &&
           matchArchive &&
@@ -195,7 +232,8 @@ export default function Tasks() {
           matchPriority &&
           matchProject &&
           matchArea &&
-          matchMyTasks
+          matchMyTasks &&
+          matchDeadline
         )
       })
       .sort((a, b) => (a.order || 0) - (b.order || 0))
@@ -209,6 +247,7 @@ export default function Tasks() {
     projectFilter,
     areaFilter,
     myTasksOnly,
+    deadlineFilter,
     isAdmin,
     user?.id,
   ])
@@ -232,6 +271,33 @@ export default function Tasks() {
     }
   }
 
+  const columns = useMemo(() => {
+    if (groupBy === 'status') {
+      return statuses.map((s) => ({
+        id: s.id,
+        label: s.label,
+        colorClass: s.colorClass,
+        filterFn: (t: TaskRecord) => t.status === s.id,
+      }))
+    } else {
+      return [
+        {
+          id: 'none',
+          label: 'Sem Projeto',
+          colorClass: 'bg-muted shadow-sm',
+          filterFn: (t: TaskRecord) => !t.project_id,
+        },
+        ...projects.map((p) => ({
+          id: p.id,
+          label: p.name,
+          colorClass: 'shadow-sm border border-border/50',
+          colorStyle: p.color || '#888',
+          filterFn: (t: TaskRecord) => t.project_id === p.id,
+        })),
+      ]
+    }
+  }, [groupBy, projects])
+
   if (loading) return <BoardSkeleton />
 
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) || null
@@ -239,22 +305,21 @@ export default function Tasks() {
 
   const boardContent = (
     <div className="flex-1 flex gap-5 overflow-x-auto overflow-y-hidden items-stretch px-1 pb-4 custom-scrollbar min-h-0 snap-x snap-mandatory relative">
-      {statuses.map((col, index) => {
-        const colTasks = filteredTasks.filter((t) => t.status === col.id)
+      {columns.map((col, index) => {
+        const colTasks = filteredTasks.filter(col.filterFn)
         const isHovered = dragState?.hoveredColumn === col.id
-
-        let displayTasks = colTasks
 
         return (
           <div
             key={col.id}
             data-column={col.id}
             className={cn(
-              `snap-center shrink-0 stagger-item stagger-${(index % 5) + 2} flex flex-col glass-card rounded-3xl p-4 md:p-5 w-[310px] md:w-[330px] h-full transition-all border border-border/50 shadow-sm relative`,
+              `snap-center shrink-0 stagger-item flex flex-col glass-card rounded-3xl p-4 md:p-5 w-[310px] md:w-[330px] h-full transition-all border border-border/50 shadow-sm relative`,
               isHovered
                 ? 'bg-primary/5 border-primary/40 ring-2 ring-primary/20 scale-[1.01]'
                 : 'hover:bg-white/40 dark:hover:bg-slate-900/40',
             )}
+            style={{ animationDelay: `${index * 50}ms` }}
           >
             <div className="flex-shrink-0 flex flex-col gap-3 mb-3">
               <div className="flex items-center justify-between px-1">
@@ -262,19 +327,19 @@ export default function Tasks() {
                   {col.label}
                 </h3>
                 <span className="bg-background/90 backdrop-blur-md border border-border/50 px-2.5 py-0.5 rounded-full text-[11px] shadow-sm font-bold text-foreground">
-                  {displayTasks.length}
+                  {colTasks.length}
                 </span>
               </div>
               <div className="h-[3px] w-full rounded-full bg-border/40 overflow-hidden">
                 <div
                   className={cn('h-full rounded-full', col.colorClass)}
-                  style={{ width: '100%' }}
+                  style={{ width: '100%', backgroundColor: (col as any).colorStyle }}
                 />
               </div>
             </div>
 
             <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 custom-scrollbar px-2 -mx-2 pt-1 pb-24 space-y-3.5 touch-pan-y relative">
-              {displayTasks.map((task, i) => {
+              {colTasks.map((task, i) => {
                 const isBeingDragged = dragState?.taskId === task.id
 
                 return (
@@ -293,8 +358,8 @@ export default function Tasks() {
                       marginBottom:
                         dragState?.isDragging &&
                         isHovered &&
-                        dragState.dropIndex === displayTasks.length &&
-                        i === displayTasks.length - 1 &&
+                        dragState.dropIndex === colTasks.length &&
+                        i === colTasks.length - 1 &&
                         !isBeingDragged
                           ? `${dragState.elementPos.height}px`
                           : undefined,
@@ -317,7 +382,7 @@ export default function Tasks() {
                 )
               })}
 
-              {displayTasks.length === 0 && (
+              {colTasks.length === 0 && (
                 <div className="h-28 border-2 border-dashed border-border/60 rounded-3xl flex items-center justify-center text-sm text-muted-foreground font-medium bg-background/20 backdrop-blur-sm m-1">
                   Solte as tarefas aqui
                 </div>
@@ -334,6 +399,7 @@ export default function Tasks() {
     (priorityFilter !== 'all' ? 1 : 0) +
     (projectFilter !== 'all' ? 1 : 0) +
     (areaFilter !== 'all' ? 1 : 0) +
+    (deadlineFilter !== 'all' ? 1 : 0) +
     (myTasksOnly ? 1 : 0)
 
   return (
@@ -409,8 +475,8 @@ export default function Tasks() {
               </Tabs>
             )}
 
-            <div className="flex items-center gap-3 flex-wrap w-full xl:w-auto bg-background/30 p-1.5 rounded-2xl border border-border/40 flex-1 xl:flex-none justify-end">
-              <div className="flex items-center gap-2 px-2 text-sm font-semibold text-muted-foreground">
+            <div className="flex items-center gap-2 flex-wrap w-full xl:w-auto bg-background/30 p-1.5 rounded-2xl border border-border/40 flex-1 xl:flex-none justify-end">
+              <div className="flex items-center gap-2 px-2 text-sm font-semibold text-muted-foreground whitespace-nowrap">
                 <Filter className="w-4 h-4" /> Filtros
                 {activeFiltersCount > 0 && (
                   <Badge
@@ -422,20 +488,30 @@ export default function Tasks() {
                 )}
               </div>
 
-              <Button
-                variant={myTasksOnly ? 'default' : 'outline'}
-                size="sm"
-                className={cn(
-                  'rounded-lg h-9',
-                  myTasksOnly && 'shadow-[0_0_10px_rgba(0,212,255,0.3)]',
-                )}
-                onClick={() => setMyTasksOnly(!myTasksOnly)}
-              >
-                Minhas Tarefas
-              </Button>
+              <Select value={groupBy} onValueChange={(v) => setGroupBy(v as any)}>
+                <SelectTrigger className="w-[120px] h-9 bg-background/50 border-border/50 rounded-lg text-xs">
+                  <SelectValue placeholder="Agrupar" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="status">Por Status</SelectItem>
+                  <SelectItem value="project">Por Projeto</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={deadlineFilter} onValueChange={setDeadlineFilter}>
+                <SelectTrigger className="w-[110px] h-9 bg-background/50 border-border/50 rounded-lg text-xs">
+                  <SelectValue placeholder="Prazo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Qualquer Prazo</SelectItem>
+                  <SelectItem value="today">Hoje</SelectItem>
+                  <SelectItem value="week">Esta Semana</SelectItem>
+                  <SelectItem value="overdue">Atrasado</SelectItem>
+                </SelectContent>
+              </Select>
 
               <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                <SelectTrigger className="w-[130px] h-9 bg-background/50 border-border/50 rounded-lg">
+                <SelectTrigger className="w-[110px] h-9 bg-background/50 border-border/50 rounded-lg text-xs">
                   <SelectValue placeholder="Prioridade" />
                 </SelectTrigger>
                 <SelectContent>
@@ -447,23 +523,25 @@ export default function Tasks() {
                 </SelectContent>
               </Select>
 
-              <Select value={projectFilter} onValueChange={setProjectFilter}>
-                <SelectTrigger className="w-[140px] h-9 bg-background/50 border-border/50 rounded-lg">
-                  <SelectValue placeholder="Projeto" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os Projetos</SelectItem>
-                  {projects.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {groupBy !== 'project' && (
+                <Select value={projectFilter} onValueChange={setProjectFilter}>
+                  <SelectTrigger className="w-[110px] h-9 bg-background/50 border-border/50 rounded-lg text-xs">
+                    <SelectValue placeholder="Projeto" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {projects.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
 
               {areas.length > 0 && (
                 <Select value={areaFilter} onValueChange={setAreaFilter}>
-                  <SelectTrigger className="w-[140px] h-9 bg-background/50 border-border/50 rounded-lg">
+                  <SelectTrigger className="w-[110px] h-9 bg-background/50 border-border/50 rounded-lg text-xs">
                     <SelectValue placeholder="Área" />
                   </SelectTrigger>
                   <SelectContent>
@@ -479,7 +557,7 @@ export default function Tasks() {
 
               {isAdmin && activeTab === 'team' && (
                 <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
-                  <SelectTrigger className="w-[140px] h-9 bg-background/50 border-border/50 rounded-lg">
+                  <SelectTrigger className="w-[120px] h-9 bg-background/50 border-border/50 rounded-lg text-xs">
                     <SelectValue placeholder="Responsável" />
                   </SelectTrigger>
                   <SelectContent>
@@ -495,6 +573,18 @@ export default function Tasks() {
                 </Select>
               )}
 
+              <Button
+                variant={myTasksOnly ? 'default' : 'outline'}
+                size="sm"
+                className={cn(
+                  'rounded-lg h-9 text-xs',
+                  myTasksOnly && 'shadow-[0_0_10px_rgba(0,212,255,0.3)]',
+                )}
+                onClick={() => setMyTasksOnly(!myTasksOnly)}
+              >
+                Minhas Tarefas
+              </Button>
+
               {activeFiltersCount > 0 && (
                 <Button
                   variant="ghost"
@@ -506,6 +596,8 @@ export default function Tasks() {
                     setProjectFilter('all')
                     setAreaFilter('all')
                     setEmployeeFilter('all')
+                    setDeadlineFilter('all')
+                    setGroupBy('status')
                   }}
                   title="Limpar filtros"
                 >
@@ -524,11 +616,7 @@ export default function Tasks() {
               top: 0,
               width: dragState.elementPos.width,
               height: dragState.elementPos.height,
-              transform: `translate(${
-                dragState.currentPos.x - (dragState.initialPos.x - dragState.elementPos.x)
-              }px, ${
-                dragState.currentPos.y - (dragState.initialPos.y - dragState.elementPos.y)
-              }px) rotate(3deg)`,
+              transform: `translate(${dragState.currentPos.x - (dragState.initialPos.x - dragState.elementPos.x)}px, ${dragState.currentPos.y - (dragState.initialPos.y - dragState.elementPos.y)}px) rotate(3deg)`,
               pointerEvents: 'none',
               zIndex: 9999,
             }}

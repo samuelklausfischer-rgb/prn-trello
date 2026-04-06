@@ -59,6 +59,19 @@ export const createTask = async (data: Partial<TaskRecord>) => {
   return task
 }
 
+export const updateTaskOrder = async (
+  updates: { id: string; order: number; status?: string; project_id?: string }[],
+) => {
+  return Promise.all(
+    updates.map((u) => {
+      const payload: Partial<TaskRecord> = { order: u.order }
+      if (u.status) payload.status = u.status as any
+      if (u.project_id !== undefined) payload.project_id = u.project_id
+      return pb.collection('tasks').update(u.id, payload)
+    }),
+  )
+}
+
 export const updateTask = async (
   id: string,
   data: Partial<TaskRecord>,

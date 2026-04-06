@@ -78,8 +78,8 @@ export function usePointerDnD({
           scrolled = true
         }
 
-        // Horizontal container scroll
-        const scrollContainers = document.querySelectorAll('.overflow-x-auto')
+        // Container scroll
+        const scrollContainers = document.querySelectorAll('.overflow-x-auto, .overflow-y-auto')
         scrollContainers.forEach((container) => {
           const rect = container.getBoundingClientRect()
           if (
@@ -88,12 +88,31 @@ export function usePointerDnD({
             lastClientX >= rect.left &&
             lastClientX <= rect.right
           ) {
-            if (lastClientX - rect.left < EDGE_THRESHOLD) {
-              container.scrollBy(-SCROLL_SPEED, 0)
-              scrolled = true
-            } else if (rect.right - lastClientX < EDGE_THRESHOLD) {
-              container.scrollBy(SCROLL_SPEED, 0)
-              scrolled = true
+            // Horizontal
+            if (
+              container.classList.contains('overflow-x-auto') ||
+              container.classList.contains('custom-scrollbar')
+            ) {
+              if (lastClientX - rect.left < EDGE_THRESHOLD) {
+                container.scrollBy(-SCROLL_SPEED, 0)
+                scrolled = true
+              } else if (rect.right - lastClientX < EDGE_THRESHOLD) {
+                container.scrollBy(SCROLL_SPEED, 0)
+                scrolled = true
+              }
+            }
+            // Vertical
+            if (
+              container.classList.contains('overflow-y-auto') ||
+              container.classList.contains('custom-scrollbar')
+            ) {
+              if (lastClientY - rect.top < EDGE_THRESHOLD) {
+                container.scrollBy(0, -SCROLL_SPEED)
+                scrolled = true
+              } else if (rect.bottom - lastClientY < EDGE_THRESHOLD) {
+                container.scrollBy(0, SCROLL_SPEED)
+                scrolled = true
+              }
             }
           }
         })

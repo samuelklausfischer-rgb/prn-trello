@@ -176,6 +176,10 @@ export default function TaskCard({
           'opacity-80 scale-[1.02] shadow-xl ring-2 ring-primary ring-offset-2 ring-offset-background rotate-2',
         task.is_archived && 'opacity-60 bg-muted/30 grayscale-[0.3]',
         task.is_blocked && 'opacity-90 grayscale-[0.5] bg-muted/20 border-destructive/30',
+        isCriticalOverdue &&
+          !task.is_blocked &&
+          !task.is_archived &&
+          'border-destructive/80 shadow-[0_0_12px_rgba(239,68,68,0.2)]',
       )}
       style={{
         WebkitUserSelect: isDragging ? 'none' : 'auto',
