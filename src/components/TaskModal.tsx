@@ -29,6 +29,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TaskChecklist } from './TaskChecklist'
 import { TaskHistoryTimeline } from './TaskHistoryTimeline'
 import { format } from 'date-fns'
+import { getProjects, ProjectRecord } from '@/services/projects'
+import { useState } from 'react'
 
 const schema = z.object({
   title: z.string().min(1, 'Obrigatório'),
@@ -36,9 +38,12 @@ const schema = z.object({
   status: z.enum(['todo', 'in_progress', 'review', 'done']),
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
   delegated_to: z.string().optional(),
+  project_id: z.string().optional(),
   points_reward: z.coerce.number().min(0),
   is_archived: z.boolean().default(false),
   is_private: z.boolean().default(false),
+  is_blocked: z.boolean().default(false),
+  block_reason: z.string().optional(),
   due_date_input: z.string().optional(),
   due_time_input: z.string().optional(),
   deadline_type: z.enum(['mandatory', 'optional']).default('optional'),
@@ -58,6 +63,13 @@ export default function TaskModal({
   isAdmin?: boolean
 }) {
   const { toast } = useToast()
+  const [projects, setProjects] = useState<ProjectRecord[]>([])
+
+  useEffect(() => {
+    if (open) {
+      getProjects().then(setProjects).catch(console.error)
+    }
+  }, [open])
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -91,9 +103,12 @@ export default function TaskModal({
         status: task.status,
         priority: task.priority,
         delegated_to: task.delegated_to || '',
+        project_id: task.project_id || '',
         points_reward: task.points_reward || 0,
         is_archived: task.is_archived || false,
         is_private: task.is_private || false,
+        is_blocked: task.is_blocked || false,
+        block_reason: task.block_reason || '',
         due_date_input: d,
         due_time_input: t,
         deadline_type: task.deadline_type || 'optional',
@@ -121,6 +136,12 @@ export default function TaskModal({
       if (values.points_reward !== task.points_reward) payload.points_reward = values.points_reward
       if (values.is_archived !== task.is_archived) payload.is_archived = values.is_archived
       if (values.is_private !== task.is_private) payload.is_private = values.is_private
+      if (values.is_blocked !== task.is_blocked) payload.is_blocked = values.is_blocked
+      if (values.block_reason !== (task.block_reason || ''))
+        payload.block_reason = values.block_reason
+
+      const projectVal = values.project_id === 'none' ? '' : values.project_id
+      if (projectVal !== (task.project_id || '')) payload.project_id = projectVal
 
       const delegatedToVal = values.is_private
         ? task.created_by
@@ -158,6 +179,8 @@ export default function TaskModal({
   const employeeUsers = users.filter(
     (u: any) => u.role?.toLowerCase() === 'employee' || u.role === 'EMPLOYEE',
   )
+
+  const isBlockedWatch = form.watch('is_blocked')
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -253,6 +276,40 @@ export default function TaskModal({
                   />
                 </div>
 
+                <FormField
+                  control={form.control}
+                  name="project_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Projeto</FormLabel>
+                      <Select
+                        value={field.value || 'none'}
+                        onValueChange={(val) => field.onChange(val === 'none' ? '' : val)}
+                        disabled={!isAdmin && !task.is_private}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Nenhum projeto" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Nenhum projeto</SelectItem>
+                          {projects.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="w-2 h-2 rounded-full"
+                                  style={{ backgroundColor: p.color || '#ccc' }}
+                                />
+                                {p.name}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <div className="grid grid-cols-[1fr_1fr] gap-4">
                   <FormField
                     control={form.control}
@@ -335,6 +392,45 @@ export default function TaskModal({
                     )}
                   />
                 )}
+
+                <div className="space-y-4 bg-muted/30 p-3 rounded-xl border border-border/50">
+                  <FormField
+                    control={form.control}
+                    name="is_blocked"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border border-destructive/30 bg-destructive/5 p-3 shadow-sm">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-sm font-medium text-destructive">
+                            Tarefa Bloqueada
+                          </FormLabel>
+                        </div>
+                        <FormControl>
+                          <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  {isBlockedWatch && (
+                    <FormField
+                      control={form.control}
+                      name="block_reason"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Motivo do Bloqueio</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              className="resize-none border-destructive/30 focus-visible:ring-destructive"
+                              placeholder="Descreva por que esta tarefa está bloqueada..."
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                </div>
 
                 <div className="grid grid-cols-2 gap-4 items-end">
                   <FormField

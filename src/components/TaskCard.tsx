@@ -30,6 +30,8 @@ import { useState, useEffect } from 'react'
 import pb from '@/lib/pocketbase/client'
 import { useRealtime } from '@/hooks/use-realtime'
 
+import { Ban } from 'lucide-react'
+
 export default function TaskCard({
   task,
   checklists = [],
@@ -106,9 +108,9 @@ export default function TaskCard({
     low: 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30',
     medium:
       'bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-500/50 shadow-[0_0_12px_rgba(234,179,8,0.4)]',
-    high: 'bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-500/50 shadow-[0_0_12px_rgba(249,115,22,0.4)]',
+    high: 'bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-500/50 shadow-[0_0_12px_rgba(249,115,22,0.4)] ring-1 ring-orange-500/50',
     urgent:
-      'bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.5)]',
+      'bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.5)] ring-2 ring-red-500',
   }
 
   const assignee = task.expand?.delegated_to
@@ -169,17 +171,28 @@ export default function TaskCard({
       onPointerDown={onPointerDown}
       onClick={onClick}
       className={cn(
-        'cursor-grab active:cursor-grabbing hover-3d premium-task-card !rounded-3xl relative w-full touch-pan-y',
+        'cursor-grab active:cursor-grabbing hover-3d premium-task-card !rounded-3xl relative w-full touch-pan-y transition-transform',
         isDragging &&
-          'opacity-50 scale-[0.98] shadow-none ring-2 ring-primary ring-offset-2 ring-offset-background',
+          'opacity-80 scale-[1.02] shadow-xl ring-2 ring-primary ring-offset-2 ring-offset-background rotate-2',
         task.is_archived && 'opacity-60 bg-muted/30 grayscale-[0.3]',
+        task.is_blocked && 'opacity-90 grayscale-[0.5] bg-muted/20 border-destructive/30',
       )}
       style={{
         WebkitUserSelect: isDragging ? 'none' : 'auto',
         userSelect: isDragging ? 'none' : 'auto',
       }}
     >
-      <CardContent className="p-5 flex flex-col gap-3.5">
+      {task.is_blocked && (
+        <div className="absolute inset-0 bg-background/40 backdrop-blur-[1px] rounded-3xl z-10 pointer-events-none border-2 border-destructive/20 flex items-center justify-center">
+          <div className="bg-destructive/90 text-destructive-foreground px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg max-w-[80%] text-center">
+            <Ban className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">{task.block_reason || 'Bloqueada'}</span>
+          </div>
+        </div>
+      )}
+      <CardContent
+        className={cn('p-5 flex flex-col gap-3.5 relative', task.is_blocked && 'opacity-70')}
+      >
         <div className="flex justify-between items-start gap-2">
           <div className="flex gap-1.5 flex-wrap">
             <Badge
@@ -213,7 +226,19 @@ export default function TaskCard({
               </Badge>
             )}
           </div>
-          <div className="flex gap-1.5 items-center">
+          <div className="flex gap-1.5 items-center flex-wrap justify-end">
+            {task.expand?.project_id && (
+              <span
+                className="text-[9px] font-bold px-1.5 py-0.5 rounded-md border"
+                style={{
+                  backgroundColor: `${task.expand.project_id.color}20`,
+                  color: task.expand.project_id.color,
+                  borderColor: `${task.expand.project_id.color}40`,
+                }}
+              >
+                {task.expand.project_id.name.toUpperCase()}
+              </span>
+            )}
             {task.is_private && (
               <span className="text-[9px] font-bold text-muted-foreground bg-muted border border-border/50 px-1.5 py-0.5 rounded-md">
                 PRIVADA

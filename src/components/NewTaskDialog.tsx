@@ -23,6 +23,8 @@ import { createTask } from '@/services/tasks'
 import { extractFieldErrors } from '@/lib/pocketbase/errors'
 import pb from '@/lib/pocketbase/client'
 import { Textarea } from '@/components/ui/textarea'
+import { getProjects, ProjectRecord } from '@/services/projects'
+import { useState, useEffect } from 'react'
 
 const schema = z.object({
   title: z.string().min(1, 'Obrigatório'),
@@ -30,6 +32,7 @@ const schema = z.object({
   status: z.enum(['todo', 'in_progress', 'review', 'done']),
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
   delegated_to: z.string().optional(),
+  project_id: z.string().optional(),
   points_reward: z.coerce.number().min(0).default(50),
   due_date_input: z.string().optional(),
   due_time_input: z.string().optional(),
@@ -47,6 +50,14 @@ export default function NewTaskDialog({
   users: any[]
   isPrivateWorkspace?: boolean
 }) {
+  const [projects, setProjects] = useState<ProjectRecord[]>([])
+
+  useEffect(() => {
+    if (open) {
+      getProjects().then(setProjects).catch(console.error)
+    }
+  }, [open])
+
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -83,8 +94,10 @@ export default function NewTaskDialog({
         points_reward: values.points_reward,
         due_date: finalDueDate,
         deadline_type: values.deadline_type,
+        project_id: values.project_id === 'none' ? '' : values.project_id,
         created_by: pb.authStore.record?.id,
         is_private: !!isPrivateWorkspace,
+        order: 0,
       })
       onOpenChange(false)
       form.reset()
@@ -132,6 +145,39 @@ export default function NewTaskDialog({
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="project_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Projeto (Opcional)</FormLabel>
+                  <Select
+                    value={field.value || 'none'}
+                    onValueChange={(val) => field.onChange(val === 'none' ? '' : val)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Nenhum projeto" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nenhum projeto</SelectItem>
+                      {projects.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: p.color || '#ccc' }}
+                            />
+                            {p.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}

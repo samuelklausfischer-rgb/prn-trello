@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { getTasks, updateTask, TaskRecord } from '@/services/tasks'
 import { getUsers } from '@/services/users'
 import { getChecklists, ChecklistRecord } from '@/services/checklists'
+import { getProjects, ProjectRecord } from '@/services/projects'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuthHooks'
@@ -22,8 +23,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Plus, LayoutDashboard, Search, Archive, Users, Lock } from 'lucide-react'
+import { Plus, LayoutDashboard, Search, Archive, Users, Lock, Filter, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 
 export default function Tasks() {
   const { user, role } = useAuth()
@@ -32,31 +34,68 @@ export default function Tasks() {
   const [tasks, setTasks] = useState<TaskRecord[]>([])
   const [users, setUsers] = useState<any[]>([])
   const [checklists, setChecklists] = useState<ChecklistRecord[]>([])
+  const [projects, setProjects] = useState<ProjectRecord[]>([])
   const [loading, setLoading] = useState(true)
+
   const [search, setSearch] = useState('')
   const [showArchived, setShowArchived] = useState(false)
 
   const [activeTab, setActiveTab] = useState<'team' | 'private'>('private')
+
+  // Filters
   const [employeeFilter, setEmployeeFilter] = useState('all')
+  const [priorityFilter, setPriorityFilter] = useState('all')
+  const [projectFilter, setProjectFilter] = useState('all')
+  const [areaFilter, setAreaFilter] = useState('all')
+  const [myTasksOnly, setMyTasksOnly] = useState(false)
 
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [isNewTaskOpen, setIsNewTaskOpen] = useState(false)
 
   const { toast } = useToast()
 
-  const handlePointerDrop = async (taskId: string, columnId: string) => {
+  const handlePointerDrop = async (taskId: string, columnId: string, dropIndex: number) => {
     const taskToUpdate = tasks.find((t) => t.id === taskId)
-    const targetStatus = columnId as TaskRecord['status']
+    if (!taskToUpdate) return
 
-    if (!taskToUpdate || taskToUpdate.status === targetStatus) return
+    const targetStatus = columnId as TaskRecord['status']
+    const colTasks = tasks
+      .filter((t) => t.status === targetStatus)
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+    const otherTasks = colTasks.filter((t) => t.id !== taskId)
+
+    let newOrder = 0
+    if (otherTasks.length === 0) {
+      newOrder = 1024
+    } else if (dropIndex <= 0) {
+      newOrder = (otherTasks[0].order || 1024) - 1024
+    } else if (dropIndex >= otherTasks.length) {
+      newOrder = (otherTasks[otherTasks.length - 1].order || 0) + 1024
+    } else {
+      const prevOrder = otherTasks[dropIndex - 1].order || 0
+      const nextOrder = otherTasks[dropIndex].order || 0
+      newOrder = (prevOrder + nextOrder) / 2
+    }
+
+    if (
+      taskToUpdate.status === targetStatus &&
+      Math.abs((taskToUpdate.order || 0) - newOrder) < 0.001
+    )
+      return
 
     const previousTasks = [...tasks]
     setTasks((prev) =>
-      prev.map((t) => (t.id === taskToUpdate.id ? { ...t, status: targetStatus } : t)),
+      prev.map((t) =>
+        t.id === taskToUpdate.id ? { ...t, status: targetStatus, order: newOrder } : t,
+      ),
     )
 
     try {
-      await updateTask(taskToUpdate.id, { status: targetStatus }, taskToUpdate.updated)
+      await updateTask(
+        taskToUpdate.id,
+        { status: targetStatus, order: newOrder },
+        taskToUpdate.updated,
+      )
     } catch (error) {
       setTasks(previousTasks)
       toast({
@@ -71,10 +110,16 @@ export default function Tasks() {
 
   const loadData = async () => {
     try {
-      const [tData, uData, cData] = await Promise.all([getTasks(), getUsers(), getChecklists()])
+      const [tData, uData, cData, pData] = await Promise.all([
+        getTasks(),
+        getUsers(),
+        getChecklists(),
+        getProjects(),
+      ])
       setTasks(tData)
       setUsers(uData)
       setChecklists(cData)
+      setProjects(pData)
     } finally {
       setLoading(false)
     }
@@ -86,6 +131,7 @@ export default function Tasks() {
 
   useRealtime('tasks', () => loadData())
   useRealtime('checklists', () => loadData())
+  useRealtime('projects', () => loadData())
 
   const statuses: { id: TaskRecord['status']; label: string; colorClass: string }[] = [
     {
@@ -110,29 +156,62 @@ export default function Tasks() {
     },
   ]
 
-  const filteredTasks = tasks.filter((t) => {
-    const matchSearch = t.title.toLowerCase().includes(search.toLowerCase())
+  const areas = Array.from(new Set(tasks.map((t) => t.department).filter(Boolean)))
 
-    const effectiveShowArchived = isAdmin && activeTab === 'team' ? false : showArchived
-    const matchArchive = effectiveShowArchived ? true : !t.is_archived
+  const filteredTasks = useMemo(() => {
+    return tasks
+      .filter((t) => {
+        const matchSearch = t.title.toLowerCase().includes(search.toLowerCase())
 
-    let matchView = true
+        const effectiveShowArchived = isAdmin && activeTab === 'team' ? false : showArchived
+        const matchArchive = effectiveShowArchived ? true : !t.is_archived
 
-    if (isAdmin) {
-      if (activeTab === 'private') {
-        matchView = !!t.is_private && t.created_by === user?.id
-      } else {
-        matchView = !t.is_private
-        if (employeeFilter !== 'all') {
-          matchView = matchView && t.delegated_to === employeeFilter
+        let matchView = true
+
+        if (isAdmin) {
+          if (activeTab === 'private') {
+            matchView = !!t.is_private && t.created_by === user?.id
+          } else {
+            matchView = !t.is_private
+            if (employeeFilter !== 'all') {
+              matchView = matchView && t.delegated_to === employeeFilter
+            }
+          }
+        } else {
+          matchView = !t.is_private
         }
-      }
-    } else {
-      matchView = !t.is_private
-    }
 
-    return matchSearch && matchArchive && matchView
-  })
+        const matchPriority = priorityFilter === 'all' ? true : t.priority === priorityFilter
+        const matchProject = projectFilter === 'all' ? true : t.project_id === projectFilter
+        const matchArea = areaFilter === 'all' ? true : t.department === areaFilter
+        const matchMyTasks = myTasksOnly
+          ? t.delegated_to === user?.id || t.created_by === user?.id
+          : true
+
+        return (
+          matchSearch &&
+          matchArchive &&
+          matchView &&
+          matchPriority &&
+          matchProject &&
+          matchArea &&
+          matchMyTasks
+        )
+      })
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+  }, [
+    tasks,
+    search,
+    showArchived,
+    activeTab,
+    employeeFilter,
+    priorityFilter,
+    projectFilter,
+    areaFilter,
+    myTasksOnly,
+    isAdmin,
+    user?.id,
+  ])
 
   const handleDelegate = async (taskId: string, userId: string) => {
     const taskToUpdate = tasks.find((t) => t.id === taskId)
@@ -156,7 +235,6 @@ export default function Tasks() {
   if (loading) return <BoardSkeleton />
 
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) || null
-
   const draggedTask = dragState?.isDragging ? tasks.find((t) => t.id === dragState.taskId) : null
 
   const boardContent = (
@@ -164,12 +242,15 @@ export default function Tasks() {
       {statuses.map((col, index) => {
         const colTasks = filteredTasks.filter((t) => t.status === col.id)
         const isHovered = dragState?.hoveredColumn === col.id
+
+        let displayTasks = colTasks
+
         return (
           <div
             key={col.id}
             data-column={col.id}
             className={cn(
-              `snap-center shrink-0 stagger-item stagger-${(index % 5) + 2} flex flex-col glass-card rounded-3xl p-4 md:p-5 w-[310px] md:w-[330px] h-full transition-all border border-border/50 shadow-sm`,
+              `snap-center shrink-0 stagger-item stagger-${(index % 5) + 2} flex flex-col glass-card rounded-3xl p-4 md:p-5 w-[310px] md:w-[330px] h-full transition-all border border-border/50 shadow-sm relative`,
               isHovered
                 ? 'bg-primary/5 border-primary/40 ring-2 ring-primary/20 scale-[1.01]'
                 : 'hover:bg-white/40 dark:hover:bg-slate-900/40',
@@ -181,7 +262,7 @@ export default function Tasks() {
                   {col.label}
                 </h3>
                 <span className="bg-background/90 backdrop-blur-md border border-border/50 px-2.5 py-0.5 rounded-full text-[11px] shadow-sm font-bold text-foreground">
-                  {colTasks.length}
+                  {displayTasks.length}
                 </span>
               </div>
               <div className="h-[3px] w-full rounded-full bg-border/40 overflow-hidden">
@@ -192,25 +273,51 @@ export default function Tasks() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 custom-scrollbar px-2 -mx-2 pt-1 pb-4 space-y-3.5 touch-pan-y">
-              {colTasks.map((task) => (
-                <div key={task.id} data-task-id={task.id} className="relative">
-                  <TaskCard
-                    task={task}
-                    checklists={checklists.filter((c) => c.task_id === task.id)}
-                    onClick={() => {
-                      if (dragState?.isDragging) return
-                      setSelectedTaskId(task.id)
+            <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 custom-scrollbar px-2 -mx-2 pt-1 pb-24 space-y-3.5 touch-pan-y relative">
+              {displayTasks.map((task, i) => {
+                const isBeingDragged = dragState?.taskId === task.id
+
+                return (
+                  <div
+                    key={task.id}
+                    data-task-id={task.id}
+                    className="relative transition-all duration-200"
+                    style={{
+                      marginTop:
+                        dragState?.isDragging &&
+                        isHovered &&
+                        dragState.dropIndex === i &&
+                        !isBeingDragged
+                          ? `${dragState.elementPos.height}px`
+                          : undefined,
+                      marginBottom:
+                        dragState?.isDragging &&
+                        isHovered &&
+                        dragState.dropIndex === displayTasks.length &&
+                        i === displayTasks.length - 1 &&
+                        !isBeingDragged
+                          ? `${dragState.elementPos.height}px`
+                          : undefined,
                     }}
-                    onPointerDown={(e) => handlePointerDown(e, task.id)}
-                    isDragging={dragState?.taskId === task.id}
-                    isAdmin={isAdmin}
-                    users={users}
-                    onDelegate={handleDelegate}
-                  />
-                </div>
-              ))}
-              {colTasks.length === 0 && (
+                  >
+                    <TaskCard
+                      task={task}
+                      checklists={checklists.filter((c) => c.task_id === task.id)}
+                      onClick={() => {
+                        if (dragState?.isDragging) return
+                        setSelectedTaskId(task.id)
+                      }}
+                      onPointerDown={(e) => handlePointerDown(e, task.id)}
+                      isDragging={isBeingDragged}
+                      isAdmin={isAdmin}
+                      users={users}
+                      onDelegate={handleDelegate}
+                    />
+                  </div>
+                )
+              })}
+
+              {displayTasks.length === 0 && (
                 <div className="h-28 border-2 border-dashed border-border/60 rounded-3xl flex items-center justify-center text-sm text-muted-foreground font-medium bg-background/20 backdrop-blur-sm m-1">
                   Solte as tarefas aqui
                 </div>
@@ -222,10 +329,17 @@ export default function Tasks() {
     </div>
   )
 
+  const activeFiltersCount =
+    (employeeFilter !== 'all' ? 1 : 0) +
+    (priorityFilter !== 'all' ? 1 : 0) +
+    (projectFilter !== 'all' ? 1 : 0) +
+    (areaFilter !== 'all' ? 1 : 0) +
+    (myTasksOnly ? 1 : 0)
+
   return (
     <PageTransition>
       <div className="h-full flex flex-col min-h-0 overflow-hidden gap-4">
-        <div className="flex-shrink-0 flex flex-col glass-card p-5 md:p-6 rounded-3xl gap-4 stagger-item stagger-1">
+        <div className="flex-shrink-0 flex flex-col glass-card p-5 md:p-6 rounded-3xl gap-4 stagger-item stagger-1 z-20">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl hidden md:flex backdrop-blur-md shadow-sm border border-white/10">
@@ -236,7 +350,7 @@ export default function Tasks() {
                   {isAdmin ? 'Tarefas Funcionário' : 'Quadro de Tarefas'}
                 </h1>
                 <p className="text-xs md:text-sm font-medium text-muted-foreground mt-1">
-                  Gerencie suas atividades e ganhe pontos no PRN Organizador.
+                  Gerencie atividades com precisão. Arraste para reordenar.
                 </p>
               </div>
             </div>
@@ -274,12 +388,12 @@ export default function Tasks() {
             </div>
           </div>
 
-          {isAdmin && (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-2 pt-4 border-t border-border/40">
+          <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 mt-2 pt-4 border-t border-border/40">
+            {isAdmin && (
               <Tabs
                 value={activeTab}
                 onValueChange={(v) => setActiveTab(v as any)}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto shrink-0"
               >
                 <TabsList className="bg-background/50 border border-border/50 p-1 rounded-xl">
                   <TabsTrigger
@@ -293,30 +407,113 @@ export default function Tasks() {
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
-              {activeTab === 'team' && (
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                    Filtrar:
-                  </span>
-                  <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
-                    <SelectTrigger className="w-full sm:w-[200px] bg-background/50 border-border/50 rounded-xl">
-                      <SelectValue placeholder="Todos os funcionários" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      {users
-                        .filter((u) => u.role?.toLowerCase() === 'employee')
-                        .map((u) => (
-                          <SelectItem key={u.id} value={u.id}>
-                            {u.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+            )}
+
+            <div className="flex items-center gap-3 flex-wrap w-full xl:w-auto bg-background/30 p-1.5 rounded-2xl border border-border/40 flex-1 xl:flex-none justify-end">
+              <div className="flex items-center gap-2 px-2 text-sm font-semibold text-muted-foreground">
+                <Filter className="w-4 h-4" /> Filtros
+                {activeFiltersCount > 0 && (
+                  <Badge
+                    variant="secondary"
+                    className="ml-1 h-5 w-5 p-0 flex items-center justify-center rounded-full bg-primary/20 text-primary"
+                  >
+                    {activeFiltersCount}
+                  </Badge>
+                )}
+              </div>
+
+              <Button
+                variant={myTasksOnly ? 'default' : 'outline'}
+                size="sm"
+                className={cn(
+                  'rounded-lg h-9',
+                  myTasksOnly && 'shadow-[0_0_10px_rgba(0,212,255,0.3)]',
+                )}
+                onClick={() => setMyTasksOnly(!myTasksOnly)}
+              >
+                Minhas Tarefas
+              </Button>
+
+              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                <SelectTrigger className="w-[130px] h-9 bg-background/50 border-border/50 rounded-lg">
+                  <SelectValue placeholder="Prioridade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Qualquer</SelectItem>
+                  <SelectItem value="low">Baixa</SelectItem>
+                  <SelectItem value="medium">Média</SelectItem>
+                  <SelectItem value="high">Alta</SelectItem>
+                  <SelectItem value="urgent">Urgente</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={projectFilter} onValueChange={setProjectFilter}>
+                <SelectTrigger className="w-[140px] h-9 bg-background/50 border-border/50 rounded-lg">
+                  <SelectValue placeholder="Projeto" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Projetos</SelectItem>
+                  {projects.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {areas.length > 0 && (
+                <Select value={areaFilter} onValueChange={setAreaFilter}>
+                  <SelectTrigger className="w-[140px] h-9 bg-background/50 border-border/50 rounded-lg">
+                    <SelectValue placeholder="Área" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as Áreas</SelectItem>
+                    {areas.map((a: any) => (
+                      <SelectItem key={a} value={a}>
+                        {a}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {isAdmin && activeTab === 'team' && (
+                <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
+                  <SelectTrigger className="w-[140px] h-9 bg-background/50 border-border/50 rounded-lg">
+                    <SelectValue placeholder="Responsável" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {users
+                      .filter((u) => u.role?.toLowerCase() === 'employee')
+                      .map((u) => (
+                        <SelectItem key={u.id} value={u.id}>
+                          {u.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {activeFiltersCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 rounded-lg text-muted-foreground hover:text-destructive shrink-0"
+                  onClick={() => {
+                    setMyTasksOnly(false)
+                    setPriorityFilter('all')
+                    setProjectFilter('all')
+                    setAreaFilter('all')
+                    setEmployeeFilter('all')
+                  }}
+                  title="Limpar filtros"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               )}
             </div>
-          )}
+          </div>
         </div>
 
         {dragState?.isDragging && draggedTask && (
@@ -334,9 +531,8 @@ export default function Tasks() {
               }px) rotate(3deg)`,
               pointerEvents: 'none',
               zIndex: 9999,
-              transition: 'transform 0.05s ease-out',
             }}
-            className="opacity-95 drop-shadow-2xl scale-105 pointer-events-none [&_*]:pointer-events-none"
+            className="opacity-95 drop-shadow-2xl scale-105 pointer-events-none [&_*]:pointer-events-none transition-transform duration-75"
           >
             <TaskCard
               task={draggedTask}

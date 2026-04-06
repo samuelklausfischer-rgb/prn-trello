@@ -18,21 +18,29 @@ export interface TaskRecord {
   is_private: boolean
   points_reward: number
   points_awarded: boolean
+  project_id?: string
+  order?: number
+  is_blocked?: boolean
+  block_reason?: string
   created: string
   updated: string
   expand?: {
     created_by?: { id: string; name: string; avatar: string }
     delegated_to?: { id: string; name: string; avatar: string }
+    project_id?: { id: string; name: string; color: string }
   }
 }
 
 export const getTasks = () =>
   pb
     .collection('tasks')
-    .getFullList<TaskRecord>({ sort: '-created', expand: 'created_by,delegated_to' })
+    .getFullList<TaskRecord>({
+      sort: 'order,-created',
+      expand: 'created_by,delegated_to,project_id',
+    })
 
 export const getTask = (id: string) =>
-  pb.collection('tasks').getOne<TaskRecord>(id, { expand: 'created_by,delegated_to' })
+  pb.collection('tasks').getOne<TaskRecord>(id, { expand: 'created_by,delegated_to,project_id' })
 
 export const createTask = async (data: Partial<TaskRecord>) => {
   const task = await pb.collection('tasks').create<TaskRecord>(data)
@@ -73,6 +81,10 @@ export const updateTask = async (
     'is_archived',
     'is_private',
     'points_reward',
+    'project_id',
+    'order',
+    'is_blocked',
+    'block_reason',
   ]
 
   const payload: Record<string, any> = {}

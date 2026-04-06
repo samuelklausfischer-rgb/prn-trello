@@ -7,13 +7,19 @@ export interface PointerDragState {
   currentPos: { x: number; y: number }
   elementPos: { x: number; y: number; width: number; height: number }
   hoveredColumn: string | null
+  dropIndex: number | null
 }
 
-export function usePointerDnD({ onDrop }: { onDrop: (taskId: string, colId: string) => void }) {
+export function usePointerDnD({
+  onDrop,
+}: {
+  onDrop: (taskId: string, colId: string, dropIndex: number) => void
+}) {
   const [dragState, setDragState] = useState<PointerDragState | null>(null)
   const stateRef = useRef<PointerDragState | null>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const targetRef = useRef<HTMLElement | null>(null)
+  const scrollRafRef = useRef<number | null>(null)
 
   const startDrag = useCallback((taskId: string, x: number, y: number, el: HTMLElement) => {
     const rect = el.getBoundingClientRect()
@@ -24,6 +30,7 @@ export function usePointerDnD({ onDrop }: { onDrop: (taskId: string, colId: stri
       currentPos: { x, y },
       elementPos: { x: rect.left, y: rect.top, width: rect.width, height: rect.height },
       hoveredColumn: null,
+      dropIndex: null,
     }
     setDragState(newState)
     stateRef.current = newState
@@ -44,53 +51,111 @@ export function usePointerDnD({ onDrop }: { onDrop: (taskId: string, colId: stri
       el.style.userSelect = 'none'
       el.classList.add('holding')
 
-      // Set timeout to distinguish between tap/scroll and drag intent
       timerRef.current = setTimeout(
         () => {
           startDrag(taskId, startX, startY, el)
         },
-        e.pointerType === 'mouse' ? 150 : 350,
+        e.pointerType === 'mouse' ? 150 : 300,
       )
 
+      let lastClientX = startX
+      let lastClientY = startY
+
+      const autoScroll = () => {
+        if (!stateRef.current?.isDragging) return
+
+        const SCROLL_SPEED = 12
+        const EDGE_THRESHOLD = 80
+
+        let scrolled = false
+
+        // Vertical window scroll
+        if (lastClientY < EDGE_THRESHOLD) {
+          window.scrollBy(0, -SCROLL_SPEED)
+          scrolled = true
+        } else if (window.innerHeight - lastClientY < EDGE_THRESHOLD) {
+          window.scrollBy(0, SCROLL_SPEED)
+          scrolled = true
+        }
+
+        // Horizontal container scroll
+        const scrollContainers = document.querySelectorAll('.overflow-x-auto')
+        scrollContainers.forEach((container) => {
+          const rect = container.getBoundingClientRect()
+          if (
+            lastClientY >= rect.top &&
+            lastClientY <= rect.bottom &&
+            lastClientX >= rect.left &&
+            lastClientX <= rect.right
+          ) {
+            if (lastClientX - rect.left < EDGE_THRESHOLD) {
+              container.scrollBy(-SCROLL_SPEED, 0)
+              scrolled = true
+            } else if (rect.right - lastClientX < EDGE_THRESHOLD) {
+              container.scrollBy(SCROLL_SPEED, 0)
+              scrolled = true
+            }
+          }
+        })
+
+        if (scrolled) {
+          handleDragMove(lastClientX, lastClientY)
+        }
+
+        scrollRafRef.current = requestAnimationFrame(autoScroll)
+      }
+
+      const handleDragMove = (clientX: number, clientY: number) => {
+        const target = document.elementFromPoint(clientX, clientY)
+        const colElement = target?.closest('[data-column]')
+        const hoveredColumn = colElement ? colElement.getAttribute('data-column') : null
+
+        let dropIndex = 0
+        if (colElement) {
+          const taskElements = Array.from(colElement.querySelectorAll('[data-task-id]'))
+          dropIndex = taskElements.length
+          for (let i = 0; i < taskElements.length; i++) {
+            const rect = taskElements[i].getBoundingClientRect()
+            if (clientY < rect.top + rect.height / 2) {
+              dropIndex = i
+              break
+            }
+          }
+        }
+
+        const newState = {
+          ...stateRef.current!,
+          currentPos: { x: clientX, y: clientY },
+          hoveredColumn,
+          dropIndex,
+        }
+
+        setDragState(newState)
+        stateRef.current = newState
+      }
+
       const handleGlobalMove = (moveEvent: PointerEvent) => {
+        lastClientX = moveEvent.clientX
+        lastClientY = moveEvent.clientY
+
         if (!stateRef.current) {
           const dx = moveEvent.clientX - startX
           const dy = moveEvent.clientY - startY
 
           if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 10) {
-            // Primarily vertical movement -> user intends to scroll, cancel drag timer
             if (timerRef.current) clearTimeout(timerRef.current)
             cleanup()
           } else if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
-            // Primarily horizontal movement -> start drag immediately (cross-column intent)
             if (timerRef.current) clearTimeout(timerRef.current)
             startDrag(taskId, moveEvent.clientX, moveEvent.clientY, el)
+            scrollRafRef.current = requestAnimationFrame(autoScroll)
           }
         } else {
-          // Actively dragging
           moveEvent.preventDefault()
-
-          // Locate the column underneath the cursor
-          const target = document.elementFromPoint(moveEvent.clientX, moveEvent.clientY)
-          const colElement = target?.closest('[data-column]')
-          const hoveredColumn = colElement ? colElement.getAttribute('data-column') : null
-
-          setDragState((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  currentPos: { x: moveEvent.clientX, y: moveEvent.clientY },
-                  hoveredColumn,
-                }
-              : null,
-          )
-          if (stateRef.current) {
-            stateRef.current = {
-              ...stateRef.current,
-              currentPos: { x: moveEvent.clientX, y: moveEvent.clientY },
-              hoveredColumn,
-            }
+          if (!scrollRafRef.current) {
+            scrollRafRef.current = requestAnimationFrame(autoScroll)
           }
+          handleDragMove(moveEvent.clientX, moveEvent.clientY)
         }
       }
 
@@ -99,8 +164,8 @@ export function usePointerDnD({ onDrop }: { onDrop: (taskId: string, colId: stri
 
         const st = stateRef.current
         if (st && st.isDragging) {
-          if (st.hoveredColumn) {
-            onDrop(st.taskId, st.hoveredColumn)
+          if (st.hoveredColumn && st.dropIndex !== null) {
+            onDrop(st.taskId, st.hoveredColumn, st.dropIndex)
           }
           document.body.style.overflow = ''
         }
@@ -111,6 +176,10 @@ export function usePointerDnD({ onDrop }: { onDrop: (taskId: string, colId: stri
         document.removeEventListener('pointermove', handleGlobalMove)
         document.removeEventListener('pointerup', handleGlobalUp)
         document.removeEventListener('pointercancel', handleGlobalUp)
+        if (scrollRafRef.current) {
+          cancelAnimationFrame(scrollRafRef.current)
+          scrollRafRef.current = null
+        }
         setDragState(null)
         stateRef.current = null
         if (targetRef.current) {
