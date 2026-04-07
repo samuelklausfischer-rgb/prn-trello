@@ -42,7 +42,6 @@ export const getTasks = () => {
     .getFullList<TaskRecord>({
       sort: 'order,-created',
       expand: 'created_by,delegated_to,project_id',
-      headers: { Authorization: pb.authStore.token },
     })
     .catch((err) => {
       if (err.status === 401) pb.authStore.clear()
@@ -59,7 +58,6 @@ export const getTask = (id: string) => {
     .collection('tasks')
     .getOne<TaskRecord>(id, {
       expand: 'created_by,delegated_to,project_id',
-      headers: { Authorization: pb.authStore.token },
     })
     .catch((err) => {
       if (err.status === 401) pb.authStore.clear()
@@ -75,9 +73,7 @@ export const createTask = async (data: Partial<TaskRecord>) => {
 
   const task = await pb
     .collection('tasks')
-    .create<TaskRecord>(data, {
-      headers: { Authorization: pb.authStore.token },
-    })
+    .create<TaskRecord>(data)
     .catch((err) => {
       if (err.status === 401) pb.authStore.clear()
       throw err
@@ -88,17 +84,12 @@ export const createTask = async (data: Partial<TaskRecord>) => {
   if (authId) {
     await pb
       .collection('task_history')
-      .create(
-        {
-          task_id: task.id,
-          action: 'TASK_CREATED',
-          description: 'Tarefa criada',
-          performed_by: authId,
-        },
-        {
-          headers: { Authorization: pb.authStore.token },
-        },
-      )
+      .create({
+        task_id: task.id,
+        action: 'TASK_CREATED',
+        description: 'Tarefa criada',
+        performed_by: authId,
+      })
       .catch(console.error)
   }
 
@@ -124,9 +115,7 @@ export const updateTaskOrder = async (
       }
       return pb
         .collection('tasks')
-        .update(u.id, payload, {
-          headers: { Authorization: pb.authStore.token },
-        })
+        .update(u.id, payload)
         .catch((err) => {
           if (err.status === 401) pb.authStore.clear()
           throw err
@@ -186,12 +175,10 @@ export const updateTask = async (
     }
   }
 
-  const options: any = {
-    headers: { Authorization: pb.authStore.token },
-  }
+  const options: any = {}
 
   if (optimisticUpdated) {
-    options.headers['x-optimistic-updated'] = optimisticUpdated
+    options.headers = { 'x-optimistic-updated': optimisticUpdated }
   }
 
   if (Object.keys(payload).length === 0) {
@@ -221,9 +208,7 @@ export const deleteTask = async (id: string) => {
 
   return pb
     .collection('tasks')
-    .delete(id, {
-      headers: { Authorization: pb.authStore.token },
-    })
+    .delete(id)
     .catch((err) => {
       if (err.status === 401) pb.authStore.clear()
       throw err
