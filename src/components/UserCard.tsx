@@ -75,6 +75,7 @@ export function UserCard({ user, isAdmin, onNotify }: UserCardProps) {
 
       <button
         onClick={() => onNotify(user)}
+        data-tour="notify-button"
         className="mt-auto inline-flex w-full items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-primary hover:text-primary-foreground h-10 px-4 py-2 gap-2 group"
       >
         <Bell className="h-4 w-4 group-hover:animate-shake" />

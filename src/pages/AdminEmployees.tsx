@@ -33,27 +33,38 @@ export default function AdminEmployees() {
   const { open: tourOpen, closeTour, startTour } = useTour('employees_module')
   const tourSteps = [
     {
-      target: '[data-tour="employees-header"]',
-      title: 'Gestão de Equipe',
+      target: '[data-tour="notify-button"]',
+      title: 'O Ponto de Contato',
       content:
-        'Aqui você acompanha o desempenho geral e monitora a atividade de todos os colaboradores do sistema.',
+        'Clique aqui para iniciar uma comunicação direta. É o canal ideal para feedbacks rápidos ou instruções urgentes sem sair da plataforma.',
       placement: 'bottom' as const,
     },
     {
-      target: '[data-tour="employees-search"]',
-      title: 'Busca e Filtros',
+      target: '[data-tour="notify-form"]',
+      title: 'O Formulário de Impacto',
       content:
-        'Encontre colaboradores específicos rapidamente por nome ou departamento para analisar seus resultados.',
-      placement: 'bottom' as const,
-    },
-    {
-      target: '[data-tour="employees-list"]',
-      title: 'Comunicação e Alinhamento',
-      content:
-        'Use o botão de notificação nos cards para enviar alertas urgentes ou feedbacks diretos. A notificação aparecerá em tempo real na tela do funcionário.',
+        "Preencha o assunto e a mensagem. Seja claro para que o colaborador saiba exatamente o que é esperado dele. A comunicação inicial é salva na coleção 'alerts'.",
       placement: 'right' as const,
     },
+    {
+      target: '[data-tour="notify-send"]',
+      title: 'Entrega Instantânea',
+      content:
+        "Ao enviar, o sistema usa tecnologia em tempo real (Realtime). O colaborador verá um alerta na tela instantaneamente. O backend utiliza real-time hooks para entregar os dados para a coleção 'notifications', garantindo que nada passe despercebido.",
+      placement: 'top' as const,
+    },
   ]
+
+  const handleTourStepChange = (step: number) => {
+    if (step === 0) {
+      setIsDialogOpen(false)
+    } else if (step === 1 || step === 2) {
+      if (!isDialogOpen && filteredUsers.length > 0) {
+        setSelectedUser(filteredUsers[0])
+        setIsDialogOpen(true)
+      }
+    }
+  }
 
   const loadUsers = async () => {
     try {
@@ -215,7 +226,11 @@ export default function AdminEmployees() {
             <DialogTitle>Enviar Notificação</DialogTitle>
             <DialogDescription>Envie um alerta direto para {selectedUser?.name}.</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSendNotification} className="space-y-4 pt-4">
+          <form
+            onSubmit={handleSendNotification}
+            className="space-y-4 pt-4"
+            data-tour="notify-form"
+          >
             <div className="space-y-2">
               <Label htmlFor="title">Título</Label>
               <input
@@ -249,6 +264,7 @@ export default function AdminEmployees() {
               </button>
               <button
                 type="submit"
+                data-tour="notify-send"
                 disabled={isSending}
                 className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
               >
@@ -267,7 +283,15 @@ export default function AdminEmployees() {
       </Dialog>
 
       {currentUser?.role === 'admin' && (
-        <GuideTour steps={tourSteps} open={tourOpen} onClose={closeTour} />
+        <GuideTour
+          steps={tourSteps}
+          open={tourOpen}
+          onClose={() => {
+            closeTour()
+            setIsDialogOpen(false)
+          }}
+          onStepChange={handleTourStepChange}
+        />
       )}
     </div>
   )

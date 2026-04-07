@@ -15,10 +15,18 @@ interface GuideTourProps {
   steps: TourStep[]
   open: boolean
   onClose: () => void
+  onStepChange?: (step: number) => void
 }
 
-export function GuideTour({ steps, open, onClose }: GuideTourProps) {
+export function GuideTour({ steps, open, onClose, onStepChange }: GuideTourProps) {
   const [currentStep, setCurrentStep] = useState(0)
+
+  useEffect(() => {
+    if (open) {
+      setCurrentStep(0)
+      onStepChange?.(0)
+    }
+  }, [open, onStepChange])
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const observerRef = useRef<ResizeObserver | null>(null)
@@ -46,7 +54,11 @@ export function GuideTour({ steps, open, onClose }: GuideTourProps) {
       const target = document.querySelector(steps[currentStep].target)
       if (target) {
         setIsTransitioning(true)
-        target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+
+        const isInDialog = target.closest('[role="dialog"]')
+        if (!isInDialog) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
 
         setTimeout(() => {
           if (isMounted) {
@@ -56,7 +68,7 @@ export function GuideTour({ steps, open, onClose }: GuideTourProps) {
         }, 400)
 
         updateRect()
-      } else if (attempts < 10) {
+      } else if (attempts < 20) {
         setTimeout(() => tryFindTarget(attempts + 1), 50)
       } else {
         setTargetRect(null)
@@ -203,7 +215,11 @@ export function GuideTour({ steps, open, onClose }: GuideTourProps) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentStep((prev) => Math.max(0, prev - 1))}
+                onClick={() => {
+                  const next = Math.max(0, currentStep - 1)
+                  setCurrentStep(next)
+                  onStepChange?.(next)
+                }}
                 disabled={currentStep === 0}
                 className="h-8 px-2 rounded-lg"
               >
@@ -215,7 +231,9 @@ export function GuideTour({ steps, open, onClose }: GuideTourProps) {
                   if (currentStep === steps.length - 1) {
                     onClose()
                   } else {
-                    setCurrentStep((prev) => Math.min(steps.length - 1, prev + 1))
+                    const next = Math.min(steps.length - 1, currentStep + 1)
+                    setCurrentStep(next)
+                    onStepChange?.(next)
                   }
                 }}
                 className="h-8 px-4 rounded-lg"
