@@ -29,19 +29,22 @@ export default function AdminDashboard() {
     {
       target: '[data-tour="admin-dash-header"]',
       title: 'Dashboard Analítico',
-      content: 'Bem-vindo ao centro de análise de dados. Aqui você monitora em tempo real os indicadores de produtividade da empresa.',
+      content:
+        'Bem-vindo ao centro de análise de dados. Aqui você monitora em tempo real os indicadores de produtividade da empresa.',
       placement: 'bottom' as const,
     },
     {
       target: '[data-tour="admin-dash-filters"]',
       title: 'Filtros de Período',
-      content: 'Altere o período de análise para entender as tendências de produtividade, como tarefas concluídas e atrasos.',
+      content:
+        'Altere o período de análise para entender as tendências de produtividade, como tarefas concluídas e atrasos.',
       placement: 'bottom' as const,
     },
     {
       target: '[data-tour="admin-dash-kpis"]',
       title: 'KPIs Principais',
-      content: 'Acompanhe a taxa de conclusão e o volume de entregas. Use esses dados para identificar gargalos rapidamente.',
+      content:
+        'Acompanhe a taxa de conclusão e o volume de entregas. Use esses dados para identificar gargalos rapidamente.',
       placement: 'bottom' as const,
     },
   ]
@@ -236,19 +239,14 @@ export default function AdminDashboard() {
                 </SelectContent>
               </Select>
             </div>
-              <SelectTrigger aria-label="Filtrar por período" className="w-[180px] bg-card">
-                <SelectValue placeholder="Período" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="TODAY">Hoje</SelectItem>
-                <SelectItem value="WEEK">Esta Semana</SelectItem>
-                <SelectItem value="MONTH">Este Mês</SelectItem>
-                <SelectItem value="QUARTER">Este Trimestre</SelectItem>
             <ExportButtons />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" data-tour="admin-dash-kpis">
+        <div
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+          data-tour="admin-dash-kpis"
+        >
           <MetricCard
             title="Tarefas Totais"
             value={kpis.totalTasks}
