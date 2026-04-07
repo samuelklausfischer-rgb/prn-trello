@@ -30,7 +30,6 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
@@ -44,6 +43,26 @@ import { Plus, FolderKanban, Pencil, Trash2, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Badge } from '@/components/ui/badge'
+import { z } from 'zod'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+
+const projectSchema = z.object({
+  name: z.string().min(1, 'Nome obrigatório'),
+  description: z.string().optional(),
+  progress: z.coerce.number().min(0).max(100),
+  status: z.enum(['active', 'completed', 'on_hold']),
+})
+
+type ProjectFormValues = z.infer<typeof projectSchema>
 
 export default function Projects() {
   const { user, role } = useAuth()
@@ -52,12 +71,17 @@ export default function Projects() {
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editing, setEditing] = useState<ProjectRecord | null>(null)
-  const [form, setForm] = useState<{
-    name: string
-    description: string
-    progress: number
-    status: 'active' | 'completed' | 'on_hold'
-  }>({ name: '', description: '', progress: 0, status: 'active' })
+  const [isSaving, setIsSaving] = useState(false)
+
+  const form = useForm<ProjectFormValues>({
+    resolver: zodResolver(projectSchema),
+    defaultValues: {
+      name: '',
+      description: '',
+      progress: 0,
+      status: 'active',
+    },
+  })
 
   const loadData = async () => {
     try {
@@ -76,7 +100,7 @@ export default function Projects() {
 
   const openModal = (p?: ProjectRecord) => {
     setEditing(p || null)
-    setForm(
+    form.reset(
       p
         ? {
             name: p.name,
@@ -89,15 +113,16 @@ export default function Projects() {
     setIsModalOpen(true)
   }
 
-  const handleSave = async () => {
-    if (!form.name.trim()) return toast({ title: 'Nome obrigatório', variant: 'destructive' })
+  const onSubmit = async (values: ProjectFormValues) => {
     try {
+      setIsSaving(true)
       const userId = user?.id || pb.authStore.record?.id
+      if (!userId) throw new Error('Usuário não autenticado.')
+
       if (editing) {
-        await updateProject(editing.id, form)
+        await updateProject(editing.id, values)
       } else {
-        if (!userId) throw new Error('Usuário não autenticado.')
-        await createProject({ ...form, created_by: userId })
+        await createProject({ ...values, created_by: userId })
       }
       toast({ title: editing ? 'Projeto atualizado!' : 'Projeto criado!' })
       setIsModalOpen(false)
@@ -108,6 +133,8 @@ export default function Projects() {
         description: getErrorMessage(error),
         variant: 'destructive',
       })
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -231,66 +258,102 @@ export default function Projects() {
             <DialogHeader>
               <DialogTitle>{editing ? 'Editar Projeto' : 'Novo Projeto'}</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Nome</Label>
-                <Input
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="rounded-xl"
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nome do projeto" className="rounded-xl" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label>Descrição</Label>
-                <Textarea
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="rounded-xl h-20"
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descrição</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Descrição do projeto"
+                          className="rounded-xl h-20"
+                          {...field}
+                          value={field.value || ''}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select
-                  value={form.status}
-                  onValueChange={(v) =>
-                    setForm({ ...form, status: v as 'active' | 'completed' | 'on_hold' })
-                  }
-                >
-                  <SelectTrigger className="rounded-xl">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Em Andamento</SelectItem>
-                    <SelectItem value="completed">Concluído</SelectItem>
-                    <SelectItem value="on_hold">Pausado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-4 pt-2">
-                <div className="flex justify-between items-center">
-                  <Label>Progresso Manual</Label>
-                  <span className="font-bold text-primary">{form.progress}%</span>
-                </div>
-                <Slider
-                  value={[form.progress]}
-                  onValueChange={(v) => setForm({ ...form, progress: v[0] })}
-                  max={100}
-                  step={1}
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="rounded-xl">
+                            <SelectValue placeholder="Selecione o status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="active">Em Andamento</SelectItem>
+                          <SelectItem value="completed">Concluído</SelectItem>
+                          <SelectItem value="on_hold">Pausado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setIsModalOpen(false)}
-                className="rounded-xl"
-              >
-                Cancelar
-              </Button>
-              <Button onClick={handleSave} className="rounded-xl">
-                {editing ? 'Atualizar' : 'Criar'}
-              </Button>
-            </DialogFooter>
+                <FormField
+                  control={form.control}
+                  name="progress"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex justify-between items-center pb-2">
+                        <FormLabel>Progresso Manual</FormLabel>
+                        <span className="font-bold text-primary">{field.value}%</span>
+                      </div>
+                      <FormControl>
+                        <Slider
+                          value={[field.value]}
+                          onValueChange={(v) => field.onChange(v[0])}
+                          max={100}
+                          step={1}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter className="pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsModalOpen(false)}
+                    className="rounded-xl"
+                    disabled={isSaving}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit" className="rounded-xl" disabled={isSaving}>
+                    {isSaving ? 'Salvando...' : editing ? 'Atualizar' : 'Criar'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>
