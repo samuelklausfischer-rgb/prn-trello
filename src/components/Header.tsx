@@ -321,10 +321,10 @@ export default function Header() {
                             </p>
                             <div className="flex justify-between items-center mt-1.5">
                               <p className="text-[10px] text-muted-foreground/70 font-medium">
-                                Enviado por: {alert.expand?.sender?.name || 'Sistema'}
+                                Enviado por {alert.expand?.sender?.name || 'Sistema'}
                               </p>
                               <p className="text-[10px] text-muted-foreground/80 font-semibold">
-                                {format(parseISO(alert.created), 'HH:mm')}
+                                Enviado às {format(parseISO(alert.created), 'HH:mm')}
                               </p>
                             </div>
                           </div>

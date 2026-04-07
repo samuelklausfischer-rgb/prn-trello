@@ -47,6 +47,12 @@ onRecordCreate((e) => {
             notif.set('type', record.get('type') || 'system')
             notif.set('action_url', record.get('action_url'))
             notif.set('is_read', false)
+
+            const createdBy = record.get('created_by')
+            if (createdBy) {
+              notif.set('sender', createdBy)
+            }
+
             $app.saveNoValidate(notif)
           } catch (err) {
             console.log('Failed to create notification for user ' + uid + ': ' + err.message)
