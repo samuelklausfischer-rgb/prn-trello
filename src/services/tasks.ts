@@ -97,7 +97,7 @@ export const createTask = async (data: Partial<TaskRecord>) => {
 }
 
 export const updateTaskOrder = async (
-  updates: { id: string; order: number; status?: string; project_id?: string }[],
+  updates: { id: string; order?: number; status?: string; project_id?: string }[],
 ) => {
   if (!pb.authStore.isValid) {
     pb.authStore.clear()
@@ -106,13 +106,20 @@ export const updateTaskOrder = async (
 
   return Promise.all(
     updates.map((u) => {
-      const payload: Record<string, any> = {
-        order: typeof u.order === 'number' && !isNaN(u.order) ? u.order : 0,
+      const payload: Record<string, any> = {}
+
+      if (u.order !== undefined) {
+        payload.order = typeof u.order === 'number' && !isNaN(u.order) ? u.order : 0
       }
-      if (u.status) payload.status = String(u.status)
+
+      if (u.status !== undefined) {
+        payload.status = String(u.status)
+      }
+
       if (u.project_id !== undefined) {
-        payload.project_id = u.project_id === '' ? '' : String(u.project_id)
+        payload.project_id = u.project_id === '' ? null : String(u.project_id)
       }
+
       return pb
         .collection('tasks')
         .update(u.id, payload)

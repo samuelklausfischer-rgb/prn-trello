@@ -150,6 +150,9 @@ export default function Tasks() {
       })
     } finally {
       pendingUpdatesRef.current -= 1
+      if (pendingUpdatesRef.current === 0) {
+        loadData()
+      }
     }
   }
 
@@ -302,6 +305,9 @@ export default function Tasks() {
       })
     } finally {
       pendingUpdatesRef.current -= 1
+      if (pendingUpdatesRef.current === 0) {
+        loadData()
+      }
     }
   }
 
