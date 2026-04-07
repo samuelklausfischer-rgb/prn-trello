@@ -17,7 +17,7 @@ onRecordUpdate((e) => {
       if (newStatus === 'done') {
         e.record.set('completed_at', new Date().toISOString())
       } else if (newStatus !== 'done' && e.record.get('completed_at')) {
-        e.record.set('completed_at', '')
+        e.record.set('completed_at', null)
       }
     }
   } catch (err) {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { getTasks, updateTask, updateTaskOrder, TaskRecord } from '@/services/tasks'
 import { getUsers } from '@/services/users'
 import { getChecklists, ChecklistRecord } from '@/services/checklists'
@@ -64,6 +64,7 @@ export default function Tasks() {
 
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [isNewTaskOpen, setIsNewTaskOpen] = useState(false)
+  const isDraggingRef = useRef(false)
 
   const { toast } = useToast()
 
@@ -102,6 +103,10 @@ export default function Tasks() {
       newOrder = (prevOrder + nextOrder) / 2
     }
 
+    if (typeof newOrder !== 'number' || isNaN(newOrder)) {
+      newOrder = 0
+    }
+
     if (
       (groupBy === 'status' &&
         taskToUpdate.status === targetStatus &&
@@ -124,7 +129,7 @@ export default function Tasks() {
     try {
       const payload: any = {
         id: taskToUpdate.id,
-        order: newOrder,
+        order: Number(newOrder) || 0,
       }
 
       if (groupBy === 'status') {
@@ -146,6 +151,10 @@ export default function Tasks() {
 
   const { handlePointerDown, dragState } = usePointerDnD({ onDrop: handlePointerDrop })
 
+  useEffect(() => {
+    isDraggingRef.current = !!dragState?.isDragging
+  }, [dragState?.isDragging])
+
   const loadData = async () => {
     try {
       const [tData, uData, cData, pData] = await Promise.all([
@@ -154,7 +163,12 @@ export default function Tasks() {
         getChecklists(),
         getProjects(),
       ])
-      setTasks(tData)
+
+      // Only apply full state updates if not currently dragging a card
+      // to avoid visual jumps mid-drag.
+      if (!isDraggingRef.current) {
+        setTasks(tData)
+      }
       setUsers(uData)
       setChecklists(cData)
       setProjects(pData)

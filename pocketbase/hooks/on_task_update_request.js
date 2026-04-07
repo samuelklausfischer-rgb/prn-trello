@@ -8,7 +8,7 @@ onRecordUpdateRequest((e) => {
   const body = e.requestInfo().body
 
   const headers = e.requestInfo().headers
-  const clientUpdated = headers['x_optimistic_updated']
+  const clientUpdated = headers['x_optimistic_updated'] || headers['x-optimistic-updated']
 
   if (clientUpdated) {
     const dbUpdated = e.record.get('updated')
