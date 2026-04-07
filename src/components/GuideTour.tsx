@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, ChevronRight, ChevronLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -20,45 +20,92 @@ interface GuideTourProps {
 export function GuideTour({ steps, open, onClose }: GuideTourProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null)
-  const [windowSize, setWindowSize] = useState({ w: window.innerWidth, h: window.innerHeight })
+  const [isTransitioning, setIsTransitioning] = useState(false)
+  const observerRef = useRef<ResizeObserver | null>(null)
 
   const updateRect = useCallback(() => {
     if (!open || !steps[currentStep]) return
+
     const target = document.querySelector(steps[currentStep].target)
     if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      setTimeout(() => {
-        const newRect = target.getBoundingClientRect()
-        setTargetRect(newRect)
-      }, 300)
-      setTargetRect(target.getBoundingClientRect())
+      const rect = target.getBoundingClientRect()
+      setTargetRect(rect)
     } else {
       setTargetRect(null)
     }
   }, [open, currentStep, steps])
 
   useEffect(() => {
-    if (open) {
-      setCurrentStep(0)
-      updateRect()
-    }
-  }, [open, updateRect])
+    if (!open || !steps[currentStep]) return
 
-  useEffect(() => {
-    updateRect()
-  }, [currentStep, updateRect, windowSize])
+    let isMounted = true
 
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowSize({ w: window.innerWidth, h: window.innerHeight })
+    const tryFindTarget = (attempts = 0) => {
+      if (!isMounted) return
+
+      const target = document.querySelector(steps[currentStep].target)
+      if (target) {
+        setIsTransitioning(true)
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+
+        setTimeout(() => {
+          if (isMounted) {
+            updateRect()
+            setIsTransitioning(false)
+          }
+        }, 400)
+
+        updateRect()
+      } else if (attempts < 10) {
+        setTimeout(() => tryFindTarget(attempts + 1), 50)
+      } else {
+        setTargetRect(null)
+      }
     }
-    window.addEventListener('resize', handleResize)
-    window.addEventListener('scroll', updateRect, { passive: true })
+
+    tryFindTarget()
+
     return () => {
-      window.removeEventListener('resize', handleResize)
-      window.removeEventListener('scroll', updateRect)
+      isMounted = false
     }
-  }, [updateRect])
+  }, [open, currentStep, steps, updateRect])
+
+  useEffect(() => {
+    if (!open) return
+
+    const handleScrollOrResize = () => {
+      if (!isTransitioning) {
+        updateRect()
+      }
+    }
+
+    window.addEventListener('resize', handleScrollOrResize)
+    window.addEventListener('scroll', handleScrollOrResize, { passive: true })
+
+    return () => {
+      window.removeEventListener('resize', handleScrollOrResize)
+      window.removeEventListener('scroll', handleScrollOrResize)
+    }
+  }, [open, isTransitioning, updateRect])
+
+  useEffect(() => {
+    if (!open || !steps[currentStep]) return
+
+    const target = document.querySelector(steps[currentStep].target)
+    if (!target) return
+
+    observerRef.current = new ResizeObserver(() => {
+      if (!isTransitioning) updateRect()
+    })
+
+    observerRef.current.observe(target)
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect()
+      }
+    }
+  }, [open, currentStep, steps, isTransitioning, updateRect])
 
   if (!open) return null
 
@@ -71,7 +118,7 @@ export function GuideTour({ steps, open, onClose }: GuideTourProps) {
   }
 
   if (targetRect) {
-    const spacing = 20
+    const spacing = 24
     const placement = step.placement || 'bottom'
 
     if (placement === 'bottom') {
@@ -103,14 +150,11 @@ export function GuideTour({ steps, open, onClose }: GuideTourProps) {
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] pointer-events-auto">
-      <div
-        className="absolute inset-0 bg-background/80 backdrop-blur-sm transition-all duration-500"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 z-0 bg-transparent" onClick={onClose} />
 
-      {targetRect && (
+      {targetRect ? (
         <div
-          className="absolute transition-all duration-500 ease-in-out border-2 border-primary shadow-[0_0_0_9999px_rgba(0,0,0,0.6),0_0_30px_rgba(0,212,255,0.3)] rounded-xl pointer-events-none z-10"
+          className="absolute transition-all duration-500 ease-in-out border-2 border-primary shadow-[0_0_0_9999px_rgba(0,0,0,0.4),0_0_30px_rgba(0,212,255,0.3)] rounded-xl pointer-events-none z-10"
           style={{
             top: targetRect.top - 8,
             left: targetRect.left - 8,
@@ -120,16 +164,18 @@ export function GuideTour({ steps, open, onClose }: GuideTourProps) {
         >
           <div className="absolute inset-0 animate-pulse opacity-20 bg-primary rounded-xl" />
         </div>
+      ) : (
+        <div className="absolute inset-0 z-10 shadow-[0_0_0_9999px_rgba(0,0,0,0.4)] pointer-events-none" />
       )}
 
       <div
         className={cn(
-          'absolute z-20 w-[320px] max-w-[calc(100vw-32px)] glass-card rounded-2xl shadow-2xl border border-primary/40 transition-all duration-500 ease-in-out',
+          'absolute z-20 w-[340px] max-w-[calc(100vw-32px)] bg-card/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-primary/40 transition-all duration-500 ease-in-out',
           !targetRect && 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
         )}
         style={targetRect ? popoverStyle : undefined}
       >
-        <div className="p-5 flex flex-col gap-3 relative overflow-hidden rounded-2xl bg-background/95">
+        <div className="p-5 flex flex-col gap-3 relative overflow-hidden rounded-2xl">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-muted">
             <div
               className="h-full bg-primary transition-all duration-300"
@@ -141,7 +187,7 @@ export function GuideTour({ steps, open, onClose }: GuideTourProps) {
             <h3 className="font-bold text-lg leading-tight text-foreground">{step.title}</h3>
             <button
               onClick={onClose}
-              className="text-muted-foreground hover:text-foreground transition-colors p-1 shrink-0 rounded-full hover:bg-white/10"
+              className="text-muted-foreground hover:text-foreground transition-colors p-1 shrink-0 rounded-full hover:bg-muted"
             >
               <X className="w-4 h-4" />
             </button>

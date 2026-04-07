@@ -84,23 +84,23 @@ export default function Projects() {
   const tourSteps = [
     {
       target: '[data-tour="projects-header"]',
-      title: 'Trabalhos e Projetos',
+      title: 'Visão Macro de Projetos',
       content:
-        'Acompanhe o progresso macro das iniciativas. Aqui você gerencia o andamento geral das entregas.',
+        'Acompanhe o progresso geral das iniciativas da sua empresa. Os projetos agrupam tarefas e fornecem uma visão clara do andamento.',
       placement: 'bottom' as const,
     },
     {
       target: '[data-tour="projects-tabs"]',
-      title: 'Projetos da Equipe',
+      title: 'Acompanhamento da Equipe',
       content:
-        'Alterne entre os seus projetos e os da equipe. É possível filtrar por colaborador específico na aba "Trabalhos da Equipe".',
+        'Alterne entre seus projetos e os da equipe. Use os filtros para visualizar projetos atribuídos a colaboradores específicos em tempo real.',
       placement: 'bottom' as const,
     },
     {
       target: '[data-tour="projects-new"]',
-      title: 'Novo Projeto',
+      title: 'Determinar e Atribuir',
       content:
-        'Crie projetos que poderão ser vinculados a tarefas. Os colaboradores poderão organizar seu trabalho por projeto.',
+        'Crie novos projetos estratégicos. Ao criar um projeto, ele ficará disponível para ser vinculado às tarefas dos funcionários correspondentes.',
       placement: 'left' as const,
     },
   ]

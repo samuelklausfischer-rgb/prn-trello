@@ -34,22 +34,23 @@ export default function AdminEmployees() {
   const tourSteps = [
     {
       target: '[data-tour="employees-header"]',
-      title: 'Equipe e Comunicação',
-      content: 'Aqui você monitora o desempenho de todos e envia comunicados para sua equipe.',
+      title: 'Gestão de Equipe',
+      content:
+        'Aqui você acompanha o desempenho geral e monitora a atividade de todos os colaboradores do sistema.',
       placement: 'bottom' as const,
     },
     {
       target: '[data-tour="employees-search"]',
       title: 'Busca e Filtros',
       content:
-        'Use a busca ou o filtro de departamentos para encontrar colaboradores específicos rapidamente.',
+        'Encontre colaboradores específicos rapidamente por nome ou departamento para analisar seus resultados.',
       placement: 'bottom' as const,
     },
     {
-      target: 'section .grid > div',
-      title: 'Ações do Colaborador',
+      target: '[data-tour="employees-list"]',
+      title: 'Comunicação e Alinhamento',
       content:
-        'Nos cards dos usuários você encontra o botão para enviar notificações. Use para mandar alertas em tempo real direto para a tela do colaborador!',
+        'Use o botão de notificação nos cards para enviar alertas urgentes ou feedbacks diretos. A notificação aparecerá em tempo real na tela do funcionário.',
       placement: 'right' as const,
     },
   ]
@@ -171,7 +172,10 @@ export default function AdminEmployees() {
               Usuários Admin{' '}
               <span className="text-muted-foreground text-base font-medium">({admins.length})</span>
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+              data-tour="employees-list"
+            >
               {admins.map((user) => (
                 <UserCard key={user.id} user={user} isAdmin onNotify={handleOpenNotification} />
               ))}
@@ -187,7 +191,10 @@ export default function AdminEmployees() {
                 ({employees.length})
               </span>
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+              data-tour={admins.length === 0 ? 'employees-list' : undefined}
+            >
               {employees.map((user) => (
                 <UserCard key={user.id} user={user} onNotify={handleOpenNotification} />
               ))}

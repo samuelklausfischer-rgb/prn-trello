@@ -454,21 +454,21 @@ export default function Tasks() {
       target: '[data-tour="tasks-header"]',
       title: 'Quadro de Tarefas',
       content:
-        'Bem-vindo! Este é o seu centro de controle. As atualizações feitas pela equipe são sincronizadas em tempo real.',
+        'Bem-vindo ao seu centro de controle. As atualizações feitas pela equipe são sincronizadas em tempo real, permitindo o acompanhamento de todo o progresso sem interrupções.',
       placement: 'bottom' as const,
     },
     {
       target: '[data-tour="tasks-tabs"]',
       title: 'Meu Espaço vs Visão Equipe',
       content:
-        'No "Meu Espaço", gerencie suas tarefas privadas. Na "Visão Equipe", gerencie o trabalho delegado a todos os colaboradores.',
+        'Em "Meu Espaço", você gerencia suas tarefas privadas. Na "Visão Equipe", você tem uma visão ampla de todo o trabalho delegado aos colaboradores.',
       placement: 'bottom' as const,
     },
     {
       target: '[data-tour="tasks-new-btn"]',
-      title: 'Criar e Delegar',
+      title: 'Criar e Delegar com Autonomia',
       content:
-        'Ao criar ou editar uma tarefa, você pode delegá-la escolhendo o responsável no campo "Atribuir a".',
+        'Crie tarefas e atribua aos responsáveis de forma direta. A equipe será notificada em tempo real para iniciar o trabalho.',
       placement: 'left' as const,
     },
   ]

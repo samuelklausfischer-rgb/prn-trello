@@ -7,6 +7,8 @@ import { AdminCharts } from '@/components/dashboard/AdminCharts'
 import { AdminTable } from '@/components/dashboard/AdminTable'
 import DashboardSkeleton from '@/components/DashboardSkeleton'
 import PageTransition from '@/components/PageTransition'
+import { GuideTour, useTour } from '@/components/GuideTour'
+import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -14,13 +16,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { CheckCircle, Clock, Target, Trophy, Activity, AlertCircle } from 'lucide-react'
+import { CheckCircle, Clock, Target, Trophy, Activity, AlertCircle, Info } from 'lucide-react'
 
 export default function AdminDashboard() {
   const [tasks, setTasks] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
   const [timeframe, setTimeframe] = useState('WEEK')
   const [loading, setLoading] = useState(true)
+
+  const { open: tourOpen, closeTour, startTour } = useTour('admin_dashboard')
+  const tourSteps = [
+    {
+      target: '[data-tour="admin-dash-header"]',
+      title: 'Dashboard Analítico',
+      content: 'Bem-vindo ao centro de análise de dados. Aqui você monitora em tempo real os indicadores de produtividade da empresa.',
+      placement: 'bottom' as const,
+    },
+    {
+      target: '[data-tour="admin-dash-filters"]',
+      title: 'Filtros de Período',
+      content: 'Altere o período de análise para entender as tendências de produtividade, como tarefas concluídas e atrasos.',
+      placement: 'bottom' as const,
+    },
+    {
+      target: '[data-tour="admin-dash-kpis"]',
+      title: 'KPIs Principais',
+      content: 'Acompanhe a taxa de conclusão e o volume de entregas. Use esses dados para identificar gargalos rapidamente.',
+      placement: 'bottom' as const,
+    },
+  ]
 
   useEffect(() => {
     let mounted = true
@@ -176,7 +200,7 @@ export default function AdminDashboard() {
     <PageTransition>
       <div className="space-y-8 pb-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3" data-tour="admin-dash-header">
             <div className="p-3 bg-primary/10 rounded-2xl">
               <Activity className="w-8 h-8 text-primary" />
             </div>
@@ -191,7 +215,27 @@ export default function AdminDashboard() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <Select value={timeframe} onValueChange={setTimeframe}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={startTour}
+              className="rounded-xl border-primary/50 text-primary hover:bg-primary/10 h-10 px-3 hidden sm:flex"
+            >
+              <Info className="w-4 h-4 mr-2" /> Como funciona
+            </Button>
+            <div data-tour="admin-dash-filters">
+              <Select value={timeframe} onValueChange={setTimeframe}>
+                <SelectTrigger aria-label="Filtrar por período" className="w-[180px] bg-card">
+                  <SelectValue placeholder="Período" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TODAY">Hoje</SelectItem>
+                  <SelectItem value="WEEK">Esta Semana</SelectItem>
+                  <SelectItem value="MONTH">Este Mês</SelectItem>
+                  <SelectItem value="QUARTER">Este Trimestre</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
               <SelectTrigger aria-label="Filtrar por período" className="w-[180px] bg-card">
                 <SelectValue placeholder="Período" />
               </SelectTrigger>
@@ -200,13 +244,11 @@ export default function AdminDashboard() {
                 <SelectItem value="WEEK">Esta Semana</SelectItem>
                 <SelectItem value="MONTH">Este Mês</SelectItem>
                 <SelectItem value="QUARTER">Este Trimestre</SelectItem>
-              </SelectContent>
-            </Select>
             <ExportButtons />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" data-tour="admin-dash-kpis">
           <MetricCard
             title="Tarefas Totais"
             value={kpis.totalTasks}
@@ -251,6 +293,7 @@ export default function AdminDashboard() {
             <AdminTable performance={performance} />
           </>
         )}
+        <GuideTour steps={tourSteps} open={tourOpen} onClose={closeTour} />
       </div>
     </PageTransition>
   )
