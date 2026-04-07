@@ -7,6 +7,7 @@ import AchievementNotifier from './AchievementNotifier'
 import { useAuth } from '@/hooks/useAuthHooks'
 import { cn } from '@/lib/utils'
 import { LayoutDashboard, CheckSquare, ShieldCheck, Medal } from 'lucide-react'
+import { SvgBlobAnimation } from '@/components/ui/svg-blob-animation'
 
 export default function Layout() {
   const { isAuthenticated, role } = useAuth()
@@ -51,11 +52,10 @@ export default function Layout() {
       <AppSidebar />
 
       <SidebarInset className="relative flex flex-col min-h-screen pb-16 md:pb-0 transition-colors duration-300 z-0 bg-transparent">
-        {/* Parallax Background */}
-        <div
-          className="fixed inset-0 z-[-1] bg-background bg-particles pointer-events-none transition-transform duration-75 ease-out"
-          style={{ transform: `translateY(${scrollY * 0.15}px)` }}
-        />
+        {/* Animated Fluid Atmosphere Background */}
+        <div className="fixed inset-0 z-[-1] pointer-events-none bg-background overflow-hidden">
+          <SvgBlobAnimation className="w-full h-full opacity-30 dark:opacity-20 scale-[1.5] transform-gpu mix-blend-screen" />
+        </div>
 
         <Header />
 
