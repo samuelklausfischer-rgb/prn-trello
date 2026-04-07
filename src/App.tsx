@@ -35,6 +35,7 @@ const App = () => (
               <Route path="/tasks" element={<Tasks />} />
               <Route path="/projects" element={<Projects />} />
               <Route path="/team" element={<Team />} />
+              <Route path="/ranking" element={<Team />} />
               <Route path="/achievements" element={<Achievements />} />
               <Route path="/profile" element={<Profile />} />
 
