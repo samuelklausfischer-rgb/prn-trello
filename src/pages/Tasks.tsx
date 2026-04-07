@@ -23,6 +23,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Plus, LayoutDashboard, Search, Archive, Users, Lock, Filter, X } from 'lucide-react'
@@ -47,7 +55,7 @@ export default function Tasks() {
 
   // Filters
   const [employeeFilter, setEmployeeFilter] = useState('all')
-  const [priorityFilter, setPriorityFilter] = useState('all')
+  const [priorityFilters, setPriorityFilters] = useState<string[]>([])
   const [projectFilter, setProjectFilter] = useState('all')
   const [areaFilter, setAreaFilter] = useState('all')
   const [deadlineFilter, setDeadlineFilter] = useState('all')
@@ -207,7 +215,8 @@ export default function Tasks() {
           matchView = !t.is_private
         }
 
-        const matchPriority = priorityFilter === 'all' ? true : t.priority === priorityFilter
+        const matchPriority =
+          priorityFilters.length === 0 ? true : priorityFilters.includes(t.priority)
         const matchProject = projectFilter === 'all' ? true : t.project_id === projectFilter
         const matchArea = areaFilter === 'all' ? true : t.department === areaFilter
         const matchMyTasks = myTasksOnly
@@ -245,7 +254,6 @@ export default function Tasks() {
     showArchived,
     activeTab,
     employeeFilter,
-    priorityFilter,
     projectFilter,
     areaFilter,
     myTasksOnly,
@@ -398,7 +406,7 @@ export default function Tasks() {
 
   const activeFiltersCount =
     (employeeFilter !== 'all' ? 1 : 0) +
-    (priorityFilter !== 'all' ? 1 : 0) +
+    (priorityFilters.length > 0 ? 1 : 0) +
     (projectFilter !== 'all' ? 1 : 0) +
     (areaFilter !== 'all' ? 1 : 0) +
     (deadlineFilter !== 'all' ? 1 : 0) +
@@ -512,18 +520,42 @@ export default function Tasks() {
                 </SelectContent>
               </Select>
 
-              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                <SelectTrigger className="w-[110px] h-9 bg-background/50 border-border/50 rounded-lg text-xs">
-                  <SelectValue placeholder="Prioridade" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Qualquer</SelectItem>
-                  <SelectItem value="low">Baixa</SelectItem>
-                  <SelectItem value="medium">Média</SelectItem>
-                  <SelectItem value="high">Alta</SelectItem>
-                  <SelectItem value="urgent">Urgente</SelectItem>
-                </SelectContent>
-              </Select>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="h-9 bg-background/50 border-border/50 rounded-lg text-xs font-normal justify-start px-3 py-1.5 w-[120px]"
+                  >
+                    <span className="truncate">
+                      Prioridade {priorityFilters.length > 0 && `(${priorityFilters.length})`}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-40 z-50">
+                  <DropdownMenuLabel className="text-xs">Prioridades</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {['low', 'medium', 'high', 'urgent'].map((p) => (
+                    <DropdownMenuCheckboxItem
+                      key={p}
+                      checked={priorityFilters.includes(p)}
+                      onCheckedChange={(c) => {
+                        setPriorityFilters((prev) =>
+                          c ? [...prev, p] : prev.filter((x) => x !== p),
+                        )
+                      }}
+                      className="text-xs cursor-pointer"
+                    >
+                      {p === 'low'
+                        ? 'Baixa'
+                        : p === 'medium'
+                          ? 'Média'
+                          : p === 'high'
+                            ? 'Alta'
+                            : 'Urgente'}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               {groupBy !== 'project' && (
                 <Select value={projectFilter} onValueChange={setProjectFilter}>
@@ -594,7 +626,7 @@ export default function Tasks() {
                   className="h-9 w-9 rounded-lg text-muted-foreground hover:text-destructive shrink-0"
                   onClick={() => {
                     setMyTasksOnly(false)
-                    setPriorityFilter('all')
+                    setPriorityFilters([])
                     setProjectFilter('all')
                     setAreaFilter('all')
                     setEmployeeFilter('all')

@@ -4,15 +4,22 @@ export interface ProjectRecord {
   id: string
   name: string
   description?: string
+  progress: number
+  status: 'active' | 'completed' | 'on_hold'
   color?: string
+  created_by: string
   created: string
   updated: string
+  expand?: {
+    created_by?: { id: string; name: string; avatar: string }
+  }
 }
 
 export const getProjects = () =>
-  pb.collection('projects').getFullList<ProjectRecord>({ sort: '-created' })
+  pb.collection('projects').getFullList<ProjectRecord>({ sort: '-created', expand: 'created_by' })
 
-export const getProject = (id: string) => pb.collection('projects').getOne<ProjectRecord>(id)
+export const getProject = (id: string) =>
+  pb.collection('projects').getOne<ProjectRecord>(id, { expand: 'created_by' })
 
 export const createProject = (data: Partial<ProjectRecord>) =>
   pb.collection('projects').create<ProjectRecord>(data)

@@ -13,6 +13,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import AdminEmployees from './pages/AdminEmployees'
 import Achievements from './pages/Achievements'
 import Profile from './pages/Profile'
+import Projects from './pages/Projects'
 import { AppProviders } from './stores/providers'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -32,6 +33,7 @@ const App = () => (
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/tasks" element={<Tasks />} />
+              <Route path="/projects" element={<Projects />} />
               <Route path="/team" element={<Team />} />
               <Route path="/achievements" element={<Achievements />} />
               <Route path="/profile" element={<Profile />} />

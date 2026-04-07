@@ -8,6 +8,7 @@ import {
   Medal,
   Zap,
   Users,
+  FolderKanban,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -28,6 +29,7 @@ export default function AppSidebar() {
   const navItems = [
     { title: 'Dashboard Pessoal', path: '/dashboard', icon: LayoutDashboard },
     { title: 'Tarefas', path: '/tasks', icon: CheckSquare },
+    { title: 'Trabalhos/Projetos', path: '/projects', icon: FolderKanban },
     { title: 'Equipe & Ranking', path: '/team', icon: Trophy },
     { title: 'Conquistas', path: '/achievements', icon: Medal },
   ]
