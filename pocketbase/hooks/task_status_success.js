@@ -76,10 +76,13 @@ onRecordAfterUpdateSuccess((e) => {
                 }
               }
 
-              // Mark task as points awarded to prevent double rewards
-              task.set('points_awarded', true)
+              // Update task using raw query to prevent recursive hook triggers
               try {
-                $app.saveNoValidate(task)
+                $app
+                  .db()
+                  .newQuery('UPDATE tasks SET points_awarded = {:val} WHERE id = {:id}')
+                  .bind({ val: true, id: task.id })
+                  .execute()
               } catch (taskErr) {
                 console.error('Error updating task points_awarded: ' + taskErr)
               }

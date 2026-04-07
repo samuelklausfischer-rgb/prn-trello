@@ -82,7 +82,7 @@ export default function Tasks() {
       targetProject = columnId === 'none' ? '' : columnId
     }
 
-    const colTasks = tasks
+    const colTasks = filteredTasks
       .filter((t) => {
         if (groupBy === 'status') return t.status === targetStatus
         return (t.project_id || 'none') === (targetProject || 'none')
