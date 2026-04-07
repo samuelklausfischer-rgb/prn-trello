@@ -351,6 +351,8 @@ export default function Tasks() {
     }
   }, [groupBy, projects])
 
+  const { open: tourOpen, closeTour, startTour } = useTour('tasks_module')
+
   if (loading) return <BoardSkeleton />
 
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) || null
@@ -447,7 +449,6 @@ export default function Tasks() {
     </div>
   )
 
-  const { open: tourOpen, closeTour, startTour } = useTour('tasks_module')
   const tourSteps = [
     {
       target: '[data-tour="tasks-header"]',
