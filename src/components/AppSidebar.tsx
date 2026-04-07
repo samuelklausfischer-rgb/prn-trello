@@ -26,7 +26,14 @@ export default function AppSidebar() {
   const { role } = useAuth()
   const location = useLocation()
 
-  const navItems = [
+  type NavItem = {
+    title: string
+    path: string
+    icon: any
+    exact?: boolean
+  }
+
+  const navItems: NavItem[] = [
     { title: 'Dashboard Pessoal', path: '/dashboard', icon: LayoutDashboard },
     { title: 'Tarefas', path: '/tasks', icon: CheckSquare },
     { title: 'Trabalhos/Projetos', path: '/projects', icon: FolderKanban },
@@ -37,7 +44,7 @@ export default function AppSidebar() {
   if (role === 'ADMIN') {
     navItems.push({ title: 'Dashboard Analítico', path: '/admin/dashboard', icon: Activity })
     navItems.push({ title: 'Funcionários', path: '/admin/employees', icon: Users })
-    navItems.push({ title: 'Painel Admin', path: '/admin', icon: ShieldCheck })
+    navItems.push({ title: 'Painel Admin', path: '/admin', icon: ShieldCheck, exact: true })
   }
 
   return (
@@ -60,8 +67,9 @@ export default function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu className="gap-2 mt-4 px-2">
               {navItems.map((item, index) => {
-                const isActive =
-                  location.pathname === item.path || location.pathname.startsWith(item.path + '/')
+                const isActive = item.exact
+                  ? location.pathname === item.path
+                  : location.pathname === item.path || location.pathname.startsWith(item.path + '/')
                 return (
                   <SidebarMenuItem key={item.path} className={`stagger-item stagger-${index + 1}`}>
                     <SidebarMenuButton
