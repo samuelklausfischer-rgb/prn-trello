@@ -456,11 +456,7 @@ export default function TaskModal({
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-2 shadow-sm h-10">
                           <FormLabel className="mb-0 text-xs font-medium">Arquivada</FormLabel>
                           <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                              disabled={!isAdmin}
-                            />
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
                           </FormControl>
                         </FormItem>
                       )}

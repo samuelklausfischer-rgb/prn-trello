@@ -17,6 +17,8 @@ import {
   Pencil,
   MoreVertical,
   Unlock,
+  Archive,
+  Ban,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -34,8 +36,7 @@ import { ptBR } from 'date-fns/locale'
 import { useState, useEffect } from 'react'
 import pb from '@/lib/pocketbase/client'
 import { useRealtime } from '@/hooks/use-realtime'
-
-import { Ban } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
 
 export default function TaskCard({
   task,
@@ -56,6 +57,7 @@ export default function TaskCard({
   users?: any[]
   onDelegate?: (taskId: string, userId: string) => void
 }) {
+  const { toast } = useToast()
   const [localChecklists, setLocalChecklists] = useState<ChecklistRecord[]>(checklists)
 
   useEffect(() => {
@@ -158,6 +160,28 @@ export default function TaskCard({
   const completedChecklists = localChecklists.filter((c) => c.is_completed).length
   const progressPercentage = totalChecklists > 0 ? (completedChecklists / totalChecklists) * 100 : 0
 
+  const handleToggleArchive = async (e: React.MouseEvent | Event) => {
+    e.stopPropagation()
+    try {
+      const newStatus = !task.is_archived
+      await updateTask(task.id, {
+        is_archived: newStatus,
+      })
+      toast({
+        title: newStatus ? 'Tarefa arquivada' : 'Tarefa restaurada',
+        description: newStatus
+          ? 'A tarefa foi movida para os arquivos.'
+          : 'A tarefa voltou para o quadro ativo.',
+      })
+    } catch (err) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível alterar o status de arquivamento.',
+        variant: 'destructive',
+      })
+    }
+  }
+
   const handleToggleBlocked = async (e: React.MouseEvent | Event) => {
     e.stopPropagation()
     try {
@@ -243,6 +267,17 @@ export default function TaskCard({
             <DropdownMenuContent align="end" className="w-48 z-50">
               <DropdownMenuLabel>Ações Rápidas</DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleToggleArchive}>
+                {task.is_archived ? (
+                  <>
+                    <Archive className="w-4 h-4 mr-2" /> Restaurar
+                  </>
+                ) : (
+                  <>
+                    <Archive className="w-4 h-4 mr-2" /> Arquivar
+                  </>
+                )}
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={handleToggleBlocked}>
                 {task.is_blocked ? (
                   <>

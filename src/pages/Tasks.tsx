@@ -219,8 +219,7 @@ export default function Tasks() {
       .filter((t) => {
         const matchSearch = t.title.toLowerCase().includes(search.toLowerCase())
 
-        const effectiveShowArchived = isAdmin && activeTab === 'team' ? false : showArchived
-        const matchArchive = effectiveShowArchived ? true : !t.is_archived
+        const matchArchive = showArchived ? true : !t.is_archived
 
         let matchView = true
 
@@ -466,18 +465,14 @@ export default function Tasks() {
                 />
               </div>
 
-              {(!isAdmin || activeTab === 'private') && (
-                <Button
-                  variant={showArchived ? 'secondary' : 'outline'}
-                  onClick={() => setShowArchived(!showArchived)}
-                  className="rounded-xl"
-                >
-                  <Archive className="w-4 h-4 sm:mr-2" />{' '}
-                  <span className="hidden sm:inline">
-                    {showArchived ? 'Ocultar' : 'Arquivados'}
-                  </span>
-                </Button>
-              )}
+              <Button
+                variant={showArchived ? 'secondary' : 'outline'}
+                onClick={() => setShowArchived(!showArchived)}
+                className="rounded-xl"
+              >
+                <Archive className="w-4 h-4 sm:mr-2" />{' '}
+                <span className="hidden sm:inline">{showArchived ? 'Ocultar' : 'Arquivados'}</span>
+              </Button>
 
               <Button
                 onClick={() => setIsNewTaskOpen(true)}
