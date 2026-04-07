@@ -71,14 +71,36 @@ const mapRecordToUser = (record: any): User | null => {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(mapRecordToUser(pb.authStore.record))
+  const [user, setUser] = useState<User | null>(
+    pb.authStore.isValid ? mapRecordToUser(pb.authStore.record) : null,
+  )
 
   useEffect(() => {
+    // If we have a token but it's invalid, clear it immediately
+    if (!pb.authStore.isValid && pb.authStore.token) {
+      pb.authStore.clear()
+    } else if (pb.authStore.isValid) {
+      // Refresh the token to keep session alive and sync with server
+      pb.collection('users')
+        .authRefresh()
+        .catch(() => {
+          pb.authStore.clear()
+        })
+    }
+
     const unsubscribe = pb.authStore.onChange((token, record) => {
-      setUser(mapRecordToUser(record))
+      setUser(pb.authStore.isValid ? mapRecordToUser(record) : null)
     })
+
+    // Listen for custom auth errors from the client
+    const handleAuthError = () => {
+      setUser(null)
+    }
+    window.addEventListener('pb:auth-error', handleAuthError)
+
     return () => {
       unsubscribe()
+      window.removeEventListener('pb:auth-error', handleAuthError)
     }
   }, [])
 

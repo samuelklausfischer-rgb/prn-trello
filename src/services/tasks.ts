@@ -32,28 +32,73 @@ export interface TaskRecord {
   }
 }
 
-export const getTasks = () =>
-  pb.collection('tasks').getFullList<TaskRecord>({
-    sort: 'order,-created',
-    expand: 'created_by,delegated_to,project_id',
-  })
+export const getTasks = () => {
+  if (!pb.authStore.isValid) {
+    pb.authStore.clear()
+    return Promise.reject(new Error('Unauthorized: Session expired'))
+  }
+  return pb
+    .collection('tasks')
+    .getFullList<TaskRecord>({
+      sort: 'order,-created',
+      expand: 'created_by,delegated_to,project_id',
+      headers: { Authorization: pb.authStore.token },
+    })
+    .catch((err) => {
+      if (err.status === 401) pb.authStore.clear()
+      throw err
+    })
+}
 
-export const getTask = (id: string) =>
-  pb.collection('tasks').getOne<TaskRecord>(id, { expand: 'created_by,delegated_to,project_id' })
+export const getTask = (id: string) => {
+  if (!pb.authStore.isValid) {
+    pb.authStore.clear()
+    return Promise.reject(new Error('Unauthorized: Session expired'))
+  }
+  return pb
+    .collection('tasks')
+    .getOne<TaskRecord>(id, {
+      expand: 'created_by,delegated_to,project_id',
+      headers: { Authorization: pb.authStore.token },
+    })
+    .catch((err) => {
+      if (err.status === 401) pb.authStore.clear()
+      throw err
+    })
+}
 
 export const createTask = async (data: Partial<TaskRecord>) => {
-  const task = await pb.collection('tasks').create<TaskRecord>(data)
+  if (!pb.authStore.isValid) {
+    pb.authStore.clear()
+    throw new Error('Unauthorized: Session expired')
+  }
+
+  const task = await pb
+    .collection('tasks')
+    .create<TaskRecord>(data, {
+      headers: { Authorization: pb.authStore.token },
+    })
+    .catch((err) => {
+      if (err.status === 401) pb.authStore.clear()
+      throw err
+    })
+
   const authId = pb.authStore.record?.id
 
   if (authId) {
     await pb
       .collection('task_history')
-      .create({
-        task_id: task.id,
-        action: 'TASK_CREATED',
-        description: 'Tarefa criada',
-        performed_by: authId,
-      })
+      .create(
+        {
+          task_id: task.id,
+          action: 'TASK_CREATED',
+          description: 'Tarefa criada',
+          performed_by: authId,
+        },
+        {
+          headers: { Authorization: pb.authStore.token },
+        },
+      )
       .catch(console.error)
   }
 
@@ -63,6 +108,11 @@ export const createTask = async (data: Partial<TaskRecord>) => {
 export const updateTaskOrder = async (
   updates: { id: string; order: number; status?: string; project_id?: string }[],
 ) => {
+  if (!pb.authStore.isValid) {
+    pb.authStore.clear()
+    throw new Error('Unauthorized: Session expired')
+  }
+
   return Promise.all(
     updates.map((u) => {
       const payload: Record<string, any> = {
@@ -72,7 +122,15 @@ export const updateTaskOrder = async (
       if (u.project_id !== undefined) {
         payload.project_id = u.project_id === '' ? '' : String(u.project_id)
       }
-      return pb.collection('tasks').update(u.id, payload)
+      return pb
+        .collection('tasks')
+        .update(u.id, payload, {
+          headers: { Authorization: pb.authStore.token },
+        })
+        .catch((err) => {
+          if (err.status === 401) pb.authStore.clear()
+          throw err
+        })
     }),
   )
 }
@@ -83,6 +141,11 @@ export const updateTask = async (
   optimisticUpdated?: string,
 ) => {
   if (!id) throw new Error('Task ID is required for update')
+
+  if (!pb.authStore.isValid) {
+    pb.authStore.clear()
+    throw new Error('Unauthorized: Session expired')
+  }
 
   const allowedFields: (keyof TaskRecord)[] = [
     'status',
@@ -123,18 +186,46 @@ export const updateTask = async (
     }
   }
 
-  if (Object.keys(payload).length === 0) {
-    return await pb.collection('tasks').getOne<TaskRecord>(id)
+  const options: any = {
+    headers: { Authorization: pb.authStore.token },
   }
 
-  const options: any = {}
   if (optimisticUpdated) {
-    options.headers = {
-      'x-optimistic-updated': optimisticUpdated,
-    }
+    options.headers['x-optimistic-updated'] = optimisticUpdated
   }
 
-  return await pb.collection('tasks').update<TaskRecord>(id, payload, options)
+  if (Object.keys(payload).length === 0) {
+    return await pb
+      .collection('tasks')
+      .getOne<TaskRecord>(id, options)
+      .catch((err) => {
+        if (err.status === 401) pb.authStore.clear()
+        throw err
+      })
+  }
+
+  return await pb
+    .collection('tasks')
+    .update<TaskRecord>(id, payload, options)
+    .catch((err) => {
+      if (err.status === 401) pb.authStore.clear()
+      throw err
+    })
 }
 
-export const deleteTask = (id: string) => pb.collection('tasks').delete(id)
+export const deleteTask = async (id: string) => {
+  if (!pb.authStore.isValid) {
+    pb.authStore.clear()
+    throw new Error('Unauthorized: Session expired')
+  }
+
+  return pb
+    .collection('tasks')
+    .delete(id, {
+      headers: { Authorization: pb.authStore.token },
+    })
+    .catch((err) => {
+      if (err.status === 401) pb.authStore.clear()
+      throw err
+    })
+}
