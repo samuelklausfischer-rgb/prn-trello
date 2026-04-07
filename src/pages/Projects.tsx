@@ -9,6 +9,8 @@ import {
 import { useRealtime } from '@/hooks/use-realtime'
 import { useAuth } from '@/hooks/useAuthHooks'
 import { useToast } from '@/hooks/use-toast'
+import { getErrorMessage } from '@/lib/pocketbase/errors'
+import pb from '@/lib/pocketbase/client'
 import PageTransition from '@/components/PageTransition'
 import { Button } from '@/components/ui/button'
 import {
@@ -50,7 +52,12 @@ export default function Projects() {
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editing, setEditing] = useState<ProjectRecord | null>(null)
-  const [form, setForm] = useState({ name: '', description: '', progress: 0, status: 'active' })
+  const [form, setForm] = useState<{
+    name: string
+    description: string
+    progress: number
+    status: 'active' | 'completed' | 'on_hold'
+  }>({ name: '', description: '', progress: 0, status: 'active' })
 
   const loadData = async () => {
     try {
@@ -85,13 +92,22 @@ export default function Projects() {
   const handleSave = async () => {
     if (!form.name.trim()) return toast({ title: 'Nome obrigatório', variant: 'destructive' })
     try {
-      if (editing) await updateProject(editing.id, form)
-      else if (user?.id) await createProject({ ...form, created_by: user.id } as any)
+      const userId = user?.id || pb.authStore.record?.id
+      if (editing) {
+        await updateProject(editing.id, form)
+      } else {
+        if (!userId) throw new Error('Usuário não autenticado.')
+        await createProject({ ...form, created_by: userId })
+      }
       toast({ title: editing ? 'Projeto atualizado!' : 'Projeto criado!' })
       setIsModalOpen(false)
       loadData()
-    } catch (error: any) {
-      toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' })
+    } catch (error: unknown) {
+      toast({
+        title: 'Erro ao salvar',
+        description: getErrorMessage(error),
+        variant: 'destructive',
+      })
     }
   }
 
@@ -102,8 +118,12 @@ export default function Projects() {
       await deleteProject(id)
       toast({ title: 'Projeto excluído!' })
       loadData()
-    } catch (error: any) {
-      toast({ title: 'Erro ao excluir', description: error.message, variant: 'destructive' })
+    } catch (error: unknown) {
+      toast({
+        title: 'Erro ao excluir',
+        description: getErrorMessage(error),
+        variant: 'destructive',
+      })
     }
   }
 
@@ -230,7 +250,12 @@ export default function Projects() {
               </div>
               <div className="space-y-2">
                 <Label>Status</Label>
-                <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                <Select
+                  value={form.status}
+                  onValueChange={(v) =>
+                    setForm({ ...form, status: v as 'active' | 'completed' | 'on_hold' })
+                  }
+                >
                   <SelectTrigger className="rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
