@@ -5,6 +5,8 @@ import { createAlert } from '@/services/alerts'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useAuth } from '@/hooks/useAuthHooks'
 import { UserCard } from '@/components/UserCard'
+import { GuideTour, useTour } from '@/components/GuideTour'
+import { Info } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -27,6 +29,30 @@ export default function AdminEmployees() {
   const [notifyTitle, setNotifyTitle] = useState('')
   const [notifyMessage, setNotifyMessage] = useState('')
   const [isSending, setIsSending] = useState(false)
+
+  const { open: tourOpen, closeTour, startTour } = useTour('employees_module')
+  const tourSteps = [
+    {
+      target: '[data-tour="employees-header"]',
+      title: 'Equipe e Comunicação',
+      content: 'Aqui você monitora o desempenho de todos e envia comunicados para sua equipe.',
+      placement: 'bottom' as const,
+    },
+    {
+      target: '[data-tour="employees-search"]',
+      title: 'Busca e Filtros',
+      content:
+        'Use a busca ou o filtro de departamentos para encontrar colaboradores específicos rapidamente.',
+      placement: 'bottom' as const,
+    },
+    {
+      target: 'section .grid > div',
+      title: 'Ações do Colaborador',
+      content:
+        'Nos cards dos usuários você encontra o botão para enviar notificações. Use para mandar alertas em tempo real direto para a tela do colaborador!',
+      placement: 'right' as const,
+    },
+  ]
 
   const loadUsers = async () => {
     try {
@@ -92,17 +118,28 @@ export default function AdminEmployees() {
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-8 space-y-8 max-w-7xl animate-fade-in-up">
+    <div className="container mx-auto p-4 md:p-8 space-y-8 max-w-7xl animate-fade-in-up relative">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
+        <div data-tour="employees-header">
           <h1 className="text-3xl font-bold tracking-tight">Equipe</h1>
           <p className="text-muted-foreground mt-1">
             Gerencie e acompanhe o desempenho de todos os usuários
           </p>
         </div>
+
+        {currentUser?.role === 'admin' && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={startTour}
+            className="rounded-xl border-primary/50 text-primary hover:bg-primary/10 h-10 px-3 hidden sm:flex"
+          >
+            <Info className="w-4 h-4 mr-2" /> Como funciona
+          </Button>
+        )}
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-4" data-tour="employees-search">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
@@ -221,6 +258,10 @@ export default function AdminEmployees() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {currentUser?.role === 'admin' && (
+        <GuideTour steps={tourSteps} open={tourOpen} onClose={closeTour} />
+      )}
     </div>
   )
 }

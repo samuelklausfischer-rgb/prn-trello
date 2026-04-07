@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuthHooks'
 import { getErrorMessage } from '@/lib/pocketbase/errors'
 import { usePointerDnD } from '@/hooks/use-pointer-dnd'
 import TaskCard from '@/components/TaskCard'
+import { GuideTour, useTour } from '@/components/GuideTour'
 import TaskModal from '@/components/TaskModal'
 import NewTaskDialog from '@/components/NewTaskDialog'
 import BoardSkeleton from '@/components/BoardSkeleton'
@@ -49,6 +50,7 @@ import {
   Building,
   LayoutGrid,
   ListFilter,
+  Info,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -445,6 +447,31 @@ export default function Tasks() {
     </div>
   )
 
+  const { open: tourOpen, closeTour, startTour } = useTour('tasks_module')
+  const tourSteps = [
+    {
+      target: '[data-tour="tasks-header"]',
+      title: 'Quadro de Tarefas',
+      content:
+        'Bem-vindo! Este é o seu centro de controle. As atualizações feitas pela equipe são sincronizadas em tempo real.',
+      placement: 'bottom' as const,
+    },
+    {
+      target: '[data-tour="tasks-tabs"]',
+      title: 'Meu Espaço vs Visão Equipe',
+      content:
+        'No "Meu Espaço", gerencie suas tarefas privadas. Na "Visão Equipe", gerencie o trabalho delegado a todos os colaboradores.',
+      placement: 'bottom' as const,
+    },
+    {
+      target: '[data-tour="tasks-new-btn"]',
+      title: 'Criar e Delegar',
+      content:
+        'Ao criar ou editar uma tarefa, você pode delegá-la escolhendo o responsável no campo "Atribuir a".',
+      placement: 'left' as const,
+    },
+  ]
+
   const activeFiltersCount =
     (employeeFilter !== 'all' ? 1 : 0) +
     (priorityFilters.length > 0 ? 1 : 0) +
@@ -462,7 +489,7 @@ export default function Tasks() {
               <div className="p-3 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl hidden md:flex backdrop-blur-md shadow-sm border border-white/10">
                 <LayoutDashboard className="w-6 h-6 text-primary" />
               </div>
-              <div>
+              <div data-tour="tasks-header">
                 <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
                   {isAdmin ? 'Tarefas Funcionário' : 'Quadro de Tarefas'}
                 </h1>
@@ -472,6 +499,16 @@ export default function Tasks() {
               </div>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={startTour}
+                  className="rounded-xl border-primary/50 text-primary hover:bg-primary/10 h-10 px-3 hidden sm:flex"
+                >
+                  <Info className="w-4 h-4 mr-2" /> Como funciona
+                </Button>
+              )}
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -492,6 +529,7 @@ export default function Tasks() {
               </Button>
 
               <Button
+                data-tour="tasks-new-btn"
                 onClick={() => setIsNewTaskOpen(true)}
                 className="rounded-xl shadow-[0_0_15px_rgba(0,212,255,0.4)]"
               >
@@ -508,7 +546,10 @@ export default function Tasks() {
                 onValueChange={(v) => setActiveTab(v as any)}
                 className="w-full sm:w-auto shrink-0"
               >
-                <TabsList className="bg-background/50 border border-border/50 p-1 rounded-xl">
+                <TabsList
+                  data-tour="tasks-tabs"
+                  className="bg-background/50 border border-border/50 p-1 rounded-xl"
+                >
                   <TabsTrigger
                     value="private"
                     className="rounded-lg gap-2 text-accent data-[state=active]:text-accent"
@@ -823,6 +864,8 @@ export default function Tasks() {
         >
           <Plus className="h-6 w-6 text-primary-foreground" />
         </Button>
+
+        {isAdmin && <GuideTour steps={tourSteps} open={tourOpen} onClose={closeTour} />}
       </div>
     </PageTransition>
   )

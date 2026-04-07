@@ -45,6 +45,8 @@ import { getUsers } from '@/services/users'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Badge } from '@/components/ui/badge'
+import { GuideTour, useTour } from '@/components/GuideTour'
+import { Info } from 'lucide-react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -77,6 +79,31 @@ export default function Projects() {
   const [isSaving, setIsSaving] = useState(false)
   const [activeTab, setActiveTab] = useState('mine')
   const [filterUser, setFilterUser] = useState('all')
+
+  const { open: tourOpen, closeTour, startTour } = useTour('projects_module')
+  const tourSteps = [
+    {
+      target: '[data-tour="projects-header"]',
+      title: 'Trabalhos e Projetos',
+      content:
+        'Acompanhe o progresso macro das iniciativas. Aqui você gerencia o andamento geral das entregas.',
+      placement: 'bottom' as const,
+    },
+    {
+      target: '[data-tour="projects-tabs"]',
+      title: 'Projetos da Equipe',
+      content:
+        'Alterne entre os seus projetos e os da equipe. É possível filtrar por colaborador específico na aba "Trabalhos da Equipe".',
+      placement: 'bottom' as const,
+    },
+    {
+      target: '[data-tour="projects-new"]',
+      title: 'Novo Projeto',
+      content:
+        'Crie projetos que poderão ser vinculados a tarefas. Os colaboradores poderão organizar seu trabalho por projeto.',
+      placement: 'left' as const,
+    },
+  ]
 
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectSchema),
@@ -267,7 +294,7 @@ export default function Projects() {
     <PageTransition>
       <div className="h-full flex flex-col gap-6 p-4 md:p-6 overflow-y-auto custom-scrollbar">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glass-card p-6 rounded-3xl">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3" data-tour="projects-header">
             <div className="p-3 bg-primary/20 rounded-2xl hidden md:flex shadow-sm">
               <FolderKanban className="w-6 h-6 text-primary" />
             </div>
@@ -276,9 +303,25 @@ export default function Projects() {
               <p className="text-sm text-muted-foreground mt-1">Acompanhe o progresso da equipe.</p>
             </div>
           </div>
-          <Button onClick={() => openModal()} className="rounded-xl">
-            <Plus className="w-4 h-4 mr-2" /> Novo Projeto
-          </Button>
+          <div className="flex items-center gap-3">
+            {role === 'ADMIN' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={startTour}
+                className="rounded-xl border-primary/50 text-primary hover:bg-primary/10 hidden sm:flex h-10 px-3"
+              >
+                <Info className="w-4 h-4 mr-2" /> Como funciona
+              </Button>
+            )}
+            <Button
+              data-tour="projects-new"
+              onClick={() => openModal()}
+              className="rounded-xl h-10"
+            >
+              <Plus className="w-4 h-4 mr-2" /> Novo Projeto
+            </Button>
+          </div>
         </div>
 
         <Tabs
@@ -287,7 +330,10 @@ export default function Projects() {
           className="w-full flex-1 flex flex-col"
         >
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <TabsList className="grid w-full sm:w-[400px] grid-cols-2 rounded-xl">
+            <TabsList
+              data-tour="projects-tabs"
+              className="grid w-full sm:w-[400px] grid-cols-2 rounded-xl"
+            >
               <TabsTrigger value="mine" className="rounded-lg">
                 Meus Trabalhos
               </TabsTrigger>
@@ -431,6 +477,7 @@ export default function Projects() {
             </Form>
           </DialogContent>
         </Dialog>
+        {role === 'ADMIN' && <GuideTour steps={tourSteps} open={tourOpen} onClose={closeTour} />}
       </div>
     </PageTransition>
   )
