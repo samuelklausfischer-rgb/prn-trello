@@ -15,6 +15,7 @@ import {
   TrendingUp,
   UserPlus,
   Star,
+  X,
 } from 'lucide-react'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import {
@@ -39,12 +40,13 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/useAuthHooks'
 import { useTheme } from './ThemeProvider'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { formatDistanceToNow, parseISO } from 'date-fns'
+import { formatDistanceToNow, parseISO, format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import {
   getNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  archiveNotification,
 } from '@/services/notifications'
 import { useRealtime } from '@/hooks/use-realtime'
 import { cn } from '@/lib/utils'
@@ -57,6 +59,14 @@ export default function Header() {
   const [animProgress, setAnimProgress] = useState(0)
   const [notifications, setNotifications] = useState<any[]>([])
   const [popoverOpen, setPopoverOpen] = useState(false)
+  const [animatingBell, setAnimatingBell] = useState(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  useEffect(() => {
+    audioRef.current = new Audio(
+      'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3',
+    )
+  }, [])
 
   useEffect(() => {
     if (user) {
@@ -82,6 +92,14 @@ export default function Header() {
 
   useRealtime('notifications', (e) => {
     if (e.record && e.record.user === user?.id) {
+      if (e.action === 'create') {
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0
+          audioRef.current.play().catch(() => {})
+        }
+        setAnimatingBell(true)
+        setTimeout(() => setAnimatingBell(false), 1000)
+      }
       loadNotifications()
     }
   })
@@ -134,6 +152,15 @@ export default function Header() {
     if (!user) return
     await markAllNotificationsAsRead(user.id)
     loadNotifications()
+  }
+
+  const handleArchive = async (id: string) => {
+    try {
+      await archiveNotification(id)
+      loadNotifications()
+    } catch (error) {
+      console.error('Failed to archive notification', error)
+    }
   }
 
   const isAdmin = role === 'ADMIN'
@@ -205,7 +232,10 @@ export default function Header() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative rounded-full hover-3d glass-card border-transparent bg-background/50 hover:bg-white/20 dark:hover:bg-white/5"
+                className={cn(
+                  'relative rounded-full hover-3d glass-card border-transparent bg-background/50 hover:bg-white/20 dark:hover:bg-white/5',
+                  animatingBell && 'animate-swing',
+                )}
               >
                 <Bell className="w-5 h-5 text-foreground/80" />
                 {unreadAlerts.length > 0 && (
@@ -270,19 +300,33 @@ export default function Header() {
                               >
                                 {alert.title}
                               </p>
-                              {isUnread && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_5px_rgba(161,0,255,0.8)] flex-shrink-0 mt-1.5"></span>
-                              )}
+                              <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
+                                {isUnread && (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_5px_rgba(161,0,255,0.8)]"></span>
+                                )}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleArchive(alert.id)
+                                  }}
+                                  className="text-muted-foreground hover:text-destructive transition-colors p-0.5 rounded-full"
+                                  title="Arquivar notificação"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
                             <p className="text-xs text-muted-foreground line-clamp-2">
                               {alert.message}
                             </p>
-                            <p className="text-[10px] text-muted-foreground/80 font-semibold">
-                              {formatDistanceToNow(parseISO(alert.created), {
-                                addSuffix: true,
-                                locale: ptBR,
-                              })}
-                            </p>
+                            <div className="flex justify-between items-center mt-1.5">
+                              <p className="text-[10px] text-muted-foreground/70 font-medium">
+                                Enviado por: {alert.expand?.sender?.name || 'Sistema'}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground/80 font-semibold">
+                                {format(parseISO(alert.created), 'HH:mm')}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       )

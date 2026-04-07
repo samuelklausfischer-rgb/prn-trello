@@ -1,7 +1,8 @@
-import { Bell, CheckCircle2 } from 'lucide-react'
-import { markNotificationAsRead } from '@/services/notifications'
+import { Bell, CheckCircle2, X } from 'lucide-react'
+import { markNotificationAsRead, archiveNotification } from '@/services/notifications'
 import { toast } from 'sonner'
 import { useState } from 'react'
+import { format, parseISO } from 'date-fns'
 
 interface Notification {
   id: string
@@ -9,6 +10,11 @@ interface Notification {
   message: string
   type: string
   created: string
+  expand?: {
+    sender?: {
+      name: string
+    }
+  }
 }
 
 interface NotificationsWidgetProps {
@@ -33,6 +39,18 @@ export function NotificationsWidget({ notifications, onRefresh }: NotificationsW
     }
   }
 
+  const handleArchive = async (id: string) => {
+    try {
+      setLoadingId(id)
+      await archiveNotification(id)
+      onRefresh()
+    } catch (error) {
+      toast.error('Erro ao arquivar notificação')
+    } finally {
+      setLoadingId(null)
+    }
+  }
+
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm p-4 space-y-4 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -51,24 +69,40 @@ export function NotificationsWidget({ notifications, onRefresh }: NotificationsW
           >
             <div className="flex justify-between items-start gap-2">
               <h4 className="font-medium text-sm leading-tight">{notif.title}</h4>
-              <button
-                onClick={() => handleMarkAsRead(notif.id)}
-                disabled={loadingId === notif.id}
-                className="text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
-                title="Marcar como lida"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleMarkAsRead(notif.id)
+                  }}
+                  disabled={loadingId === notif.id}
+                  className="text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                  title="Marcar como lida"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleArchive(notif.id)
+                  }}
+                  disabled={loadingId === notif.id}
+                  className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                  title="Arquivar"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">{notif.message}</p>
-            <span className="text-[10px] text-muted-foreground/70 mt-1">
-              {new Date(notif.created).toLocaleDateString('pt-BR', {
-                day: '2-digit',
-                month: 'short',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </span>
+            <div className="flex justify-between items-center mt-1">
+              <span className="text-[10px] text-muted-foreground/70">
+                Enviado por: {notif.expand?.sender?.name || 'Sistema'}
+              </span>
+              <span className="text-[10px] text-muted-foreground/70 font-medium">
+                {format(parseISO(notif.created), 'dd MMM, HH:mm')}
+              </span>
+            </div>
           </div>
         ))}
       </div>

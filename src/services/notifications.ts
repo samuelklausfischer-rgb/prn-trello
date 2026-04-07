@@ -2,8 +2,9 @@ import pb from '@/lib/pocketbase/client'
 
 export const getUnreadNotifications = async (userId: string) => {
   return await pb.collection('notifications').getFullList({
-    filter: `user = '${userId}' && is_read = false`,
+    filter: `user = '${userId}' && is_read = false && is_archived = false`,
     sort: '-created',
+    expand: 'sender',
   })
 }
 
@@ -14,10 +15,17 @@ export const markNotificationAsRead = async (id: string) => {
   })
 }
 
+export const archiveNotification = async (id: string) => {
+  return await pb.collection('notifications').update(id, {
+    is_archived: true,
+  })
+}
+
 export const getNotifications = async (userId: string) => {
   return await pb.collection('notifications').getFullList({
-    filter: `user = '${userId}'`,
+    filter: `user = '${userId}' && is_archived = false`,
     sort: '-created',
+    expand: 'sender',
   })
 }
 

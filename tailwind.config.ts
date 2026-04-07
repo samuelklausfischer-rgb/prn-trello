@@ -117,9 +117,18 @@ export default {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: '0' },
         },
+        swing: {
+          '15%': { transform: 'rotate(15deg)' },
+          '30%': { transform: 'rotate(-10deg)' },
+          '50%': { transform: 'rotate(5deg)' },
+          '65%': { transform: 'rotate(-5deg)' },
+          '80%': { transform: 'rotate(2deg)' },
+          '100%': { transform: 'rotate(0deg)' },
+        },
       },
       animations: {
         'fade-in': 'fadeIn 0.3s ease-in-out forwards',
+        swing: 'swing 0.8s ease-out',
         'slide-up': 'slideUp 0.3s ease-out forwards',
         'bounce-in': 'bounceIn 0.5s ease-out forwards',
         shimmer: 'shimmer 2s infinite linear',
