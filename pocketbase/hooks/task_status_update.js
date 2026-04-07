@@ -17,8 +17,7 @@ onRecordUpdate((e) => {
       if (newStatus === 'done') {
         e.record.set('completed_at', new Date().toISOString())
       } else if (newStatus !== 'done' && e.record.get('completed_at')) {
-        // Must use null to clear date fields, empty string causes 400 validation error
-        e.record.set('completed_at', null)
+        e.record.set('completed_at', '')
       }
     }
   } catch (err) {

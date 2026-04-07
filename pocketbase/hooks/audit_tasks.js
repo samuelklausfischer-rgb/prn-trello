@@ -6,18 +6,14 @@ onRecordAfterUpdateSuccess((e) => {
       return
     }
 
-    let userId = ''
+    let userId = e.record.get('created_by')
     try {
       const reqInfo = e.requestInfo()
-      if (reqInfo && reqInfo.auth) {
+      if (reqInfo && reqInfo.auth && reqInfo.auth.id) {
         userId = reqInfo.auth.id
       }
     } catch (err) {
       // Ignored: Background process or non-HTTP context
-    }
-
-    if (!userId) {
-      userId = e.record.get('created_by')
     }
 
     const fieldsToWatch = [

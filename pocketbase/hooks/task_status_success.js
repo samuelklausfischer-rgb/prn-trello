@@ -12,18 +12,14 @@ onRecordAfterUpdateSuccess((e) => {
     if (newStatus !== oldStatus) {
       const task = e.record
 
-      let performedBy = ''
+      let performedBy = task.get('created_by')
       try {
         const reqInfo = e.requestInfo()
-        if (reqInfo && reqInfo.auth) {
+        if (reqInfo && reqInfo.auth && reqInfo.auth.id) {
           performedBy = reqInfo.auth.id
         }
       } catch (err) {
         // Ignored: Background process or non-HTTP context
-      }
-
-      if (!performedBy) {
-        performedBy = task.get('created_by')
       }
 
       // 1. History Logging

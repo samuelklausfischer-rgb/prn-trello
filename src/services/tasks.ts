@@ -70,7 +70,7 @@ export const updateTaskOrder = async (
       }
       if (u.status) payload.status = String(u.status)
       if (u.project_id !== undefined) {
-        payload.project_id = u.project_id === '' ? null : String(u.project_id)
+        payload.project_id = u.project_id === '' ? '' : String(u.project_id)
       }
       return pb.collection('tasks').update(u.id, payload)
     }),
@@ -113,8 +113,10 @@ export const updateTask = async (
         if (val && typeof val === 'object' && 'id' in val) {
           payload[key] = (val as any).id
         } else {
-          payload[key] = val
+          payload[key] = val || ''
         }
+      } else if (data[key] === null) {
+        payload[key] = ''
       } else {
         payload[key] = data[key]
       }
