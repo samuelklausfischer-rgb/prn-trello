@@ -122,14 +122,18 @@ export default function Tasks() {
     )
 
     try {
-      await updateTaskOrder([
-        {
-          id: taskToUpdate.id,
-          order: newOrder,
-          status: targetStatus,
-          project_id: targetProject,
-        },
-      ])
+      const payload: any = {
+        id: taskToUpdate.id,
+        order: newOrder,
+      }
+
+      if (groupBy === 'status') {
+        payload.status = targetStatus
+      } else {
+        payload.project_id = targetProject
+      }
+
+      await updateTaskOrder([payload])
     } catch (error) {
       setTasks(previousTasks)
       toast({

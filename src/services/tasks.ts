@@ -65,9 +65,13 @@ export const updateTaskOrder = async (
 ) => {
   return Promise.all(
     updates.map((u) => {
-      const payload: Partial<TaskRecord> = { order: u.order }
-      if (u.status) payload.status = u.status as any
-      if (u.project_id !== undefined) payload.project_id = u.project_id
+      const payload: Record<string, any> = {
+        order: typeof u.order === 'number' && !isNaN(u.order) ? Number(u.order) : 0,
+      }
+      if (u.status) payload.status = String(u.status)
+      if (u.project_id !== undefined) {
+        payload.project_id = u.project_id === '' ? null : String(u.project_id)
+      }
       return pb.collection('tasks').update(u.id, payload)
     }),
   )
