@@ -2,8 +2,7 @@ onRecordAfterUpdateSuccess((e) => {
   try {
     const original = e.record.originalCopy()
     if (!original) {
-      e.next()
-      return
+      return e.next()
     }
 
     let userId = e.record.get('created_by')
@@ -76,5 +75,5 @@ onRecordAfterUpdateSuccess((e) => {
     console.error('Error in audit_tasks hook: ', err)
   }
 
-  e.next()
+  return e.next()
 }, 'tasks')

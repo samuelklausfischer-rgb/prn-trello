@@ -66,7 +66,7 @@ export const updateTaskOrder = async (
   return Promise.all(
     updates.map((u) => {
       const payload: Record<string, any> = {
-        order: typeof u.order === 'number' && !isNaN(u.order) ? Number(u.order) : 0,
+        order: typeof u.order === 'number' && !isNaN(u.order) ? u.order : 0,
       }
       if (u.status) payload.status = String(u.status)
       if (u.project_id !== undefined) {

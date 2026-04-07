@@ -2,8 +2,7 @@ onRecordUpdate((e) => {
   try {
     const original = e.record.originalCopy()
     if (!original) {
-      e.next()
-      return
+      return e.next()
     }
 
     const newStatus = e.record.get('status')
@@ -17,12 +16,12 @@ onRecordUpdate((e) => {
       if (newStatus === 'done') {
         e.record.set('completed_at', new Date().toISOString())
       } else if (newStatus !== 'done' && e.record.get('completed_at')) {
-        e.record.set('completed_at', null)
+        e.record.set('completed_at', '')
       }
     }
   } catch (err) {
     console.error('Error in task_status_update hook: ', err)
   }
 
-  e.next()
+  return e.next()
 }, 'tasks')

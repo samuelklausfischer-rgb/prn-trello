@@ -10,5 +10,5 @@ onRecordUpdate((e) => {
   } catch (err) {
     console.error('Error in points_logger_update hook: ', err)
   }
-  e.next()
+  return e.next()
 }, 'users')

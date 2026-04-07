@@ -65,6 +65,7 @@ export default function Tasks() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [isNewTaskOpen, setIsNewTaskOpen] = useState(false)
   const isDraggingRef = useRef(false)
+  const pendingUpdatesRef = useRef(0)
 
   const { toast } = useToast()
 
@@ -126,16 +127,17 @@ export default function Tasks() {
       ),
     )
 
+    pendingUpdatesRef.current += 1
     try {
       const payload: any = {
         id: taskToUpdate.id,
-        order: Number(newOrder) || 0,
+        order: typeof newOrder === 'number' && !isNaN(newOrder) ? newOrder : 0,
       }
 
       if (groupBy === 'status') {
         payload.status = targetStatus
       } else {
-        payload.project_id = targetProject
+        payload.project_id = targetProject === 'none' ? '' : targetProject
       }
 
       await updateTaskOrder([payload])
@@ -146,6 +148,8 @@ export default function Tasks() {
         description: getErrorMessage(error) || 'A tarefa retornou para a sua posição original.',
         variant: 'destructive',
       })
+    } finally {
+      pendingUpdatesRef.current -= 1
     }
   }
 
@@ -165,8 +169,8 @@ export default function Tasks() {
       ])
 
       // Only apply full state updates if not currently dragging a card
-      // to avoid visual jumps mid-drag.
-      if (!isDraggingRef.current) {
+      // or awaiting an optimistic update, to avoid visual jumps mid-drag.
+      if (!isDraggingRef.current && pendingUpdatesRef.current === 0) {
         setTasks(tData)
       }
       setUsers(uData)
@@ -286,6 +290,7 @@ export default function Tasks() {
 
     const previousTasks = [...tasks]
     setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, delegated_to: userId } : t)))
+    pendingUpdatesRef.current += 1
     try {
       await updateTask(taskId, { delegated_to: userId }, taskToUpdate.updated)
       toast({ title: 'Tarefa delegada com sucesso' })
@@ -296,6 +301,8 @@ export default function Tasks() {
         description: getErrorMessage(error),
         variant: 'destructive',
       })
+    } finally {
+      pendingUpdatesRef.current -= 1
     }
   }
 

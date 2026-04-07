@@ -2,8 +2,7 @@ onRecordAfterUpdateSuccess((e) => {
   try {
     const original = e.record.originalCopy()
     if (!original) {
-      e.next()
-      return
+      return e.next()
     }
 
     const newStatus = e.record.get('status')
@@ -46,42 +45,44 @@ onRecordAfterUpdateSuccess((e) => {
 
           if (targetUserId) {
             const user = $app.findRecordById('users', targetUserId)
-            const currentPoints = user.get('points') || 0
-            const currentXp = user.get('xp') || 0
+            if (user) {
+              const currentPoints = user.get('points') || 0
+              const currentXp = user.get('xp') || 0
 
-            const newPoints = currentPoints + pointsReward
-            const newXp = currentXp + pointsReward
+              const newPoints = currentPoints + pointsReward
+              const newXp = currentXp + pointsReward
 
-            user.set('points', newPoints)
-            user.set('xp', newXp)
-            user.set('last_activity', new Date().toISOString())
+              user.set('points', newPoints)
+              user.set('xp', newXp)
+              user.set('last_activity', new Date().toISOString())
 
-            $app.saveNoValidate(user)
+              $app.saveNoValidate(user)
 
-            // 3. Points History Integration
-            if (pointsReward > 0) {
-              try {
-                const phCol = $app.findCollectionByNameOrId('points_history')
-                const ph = new Record(phCol)
-                ph.set('user_id', targetUserId)
-                ph.set('points', pointsReward)
-                ph.set('reason', `Tarefa concluída: ${task.get('title')}`)
-                ph.set('source_type', 'task')
-                ph.set('source_id', task.id)
-                ph.set('balance_after', newPoints)
+              // 3. Points History Integration
+              if (pointsReward > 0) {
+                try {
+                  const phCol = $app.findCollectionByNameOrId('points_history')
+                  const ph = new Record(phCol)
+                  ph.set('user_id', targetUserId)
+                  ph.set('points', pointsReward)
+                  ph.set('reason', `Tarefa concluída: ${task.get('title')}`)
+                  ph.set('source_type', 'task')
+                  ph.set('source_id', task.id)
+                  ph.set('balance_after', newPoints)
 
-                $app.saveNoValidate(ph)
-              } catch (phErr) {
-                console.error('Error saving points history: ' + phErr)
+                  $app.saveNoValidate(ph)
+                } catch (phErr) {
+                  console.error('Error saving points history: ' + phErr)
+                }
               }
-            }
 
-            // Mark task as points awarded to prevent double rewards
-            task.set('points_awarded', true)
-            try {
-              $app.saveNoValidate(task)
-            } catch (taskErr) {
-              console.error('Error updating task points_awarded: ' + taskErr)
+              // Mark task as points awarded to prevent double rewards
+              task.set('points_awarded', true)
+              try {
+                $app.saveNoValidate(task)
+              } catch (taskErr) {
+                console.error('Error updating task points_awarded: ' + taskErr)
+              }
             }
           }
         } catch (err) {
@@ -93,5 +94,5 @@ onRecordAfterUpdateSuccess((e) => {
     console.error('Fatal error in task_status_success hook: ', err)
   }
 
-  e.next()
+  return e.next()
 }, 'tasks')
