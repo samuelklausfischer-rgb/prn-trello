@@ -33,7 +33,23 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
-import { Plus, LayoutDashboard, Search, Archive, Users, Lock, Filter, X } from 'lucide-react'
+import {
+  Plus,
+  LayoutDashboard,
+  Search,
+  Archive,
+  Users,
+  Lock,
+  Filter,
+  X,
+  Clock,
+  Flag,
+  Briefcase,
+  User,
+  Building,
+  LayoutGrid,
+  ListFilter,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { isPast, isSameDay, isSameWeek } from 'date-fns'
@@ -506,159 +522,239 @@ export default function Tasks() {
               </Tabs>
             )}
 
-            <div className="flex items-center gap-2 flex-wrap w-full xl:w-auto bg-background/30 p-1.5 rounded-2xl border border-border/40 flex-1 xl:flex-none justify-end">
-              <div className="flex items-center gap-2 px-2 text-sm font-semibold text-muted-foreground whitespace-nowrap">
-                <Filter className="w-4 h-4" /> Filtros
-                {activeFiltersCount > 0 && (
-                  <Badge
-                    variant="secondary"
-                    className="ml-1 h-5 w-5 p-0 flex items-center justify-center rounded-full bg-primary/20 text-primary"
-                  >
-                    {activeFiltersCount}
-                  </Badge>
-                )}
+            <div className="flex flex-col gap-3 w-full xl:w-auto bg-background/20 p-3 rounded-2xl border border-border/40 flex-1 xl:flex-none">
+              {/* Visualização Group */}
+              <div className="flex flex-wrap items-center justify-between gap-4 pb-3 border-b border-border/40">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 px-1 text-sm font-semibold text-muted-foreground">
+                    <LayoutGrid className="w-4 h-4" /> Visualização
+                  </div>
+                  <Select value={groupBy} onValueChange={(v) => setGroupBy(v as any)}>
+                    <SelectTrigger className="w-[140px] h-8 bg-background/50 border-border/50 rounded-lg text-xs">
+                      <SelectValue placeholder="Agrupar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="status">Por Status</SelectItem>
+                      <SelectItem value="project">Por Projeto</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2 bg-background/50 border border-border/50 px-3 py-1 rounded-lg h-8">
+                  <Switch
+                    id="focus-mode"
+                    checked={myTasksOnly}
+                    onCheckedChange={setMyTasksOnly}
+                    className="data-[state=checked]:bg-primary shadow-[0_0_10px_rgba(0,212,255,0.3)] scale-90"
+                  />
+                  <Label htmlFor="focus-mode" className="text-xs font-semibold cursor-pointer">
+                    Modo Foco
+                  </Label>
+                </div>
               </div>
 
-              <Select value={groupBy} onValueChange={(v) => setGroupBy(v as any)}>
-                <SelectTrigger className="w-[120px] h-9 bg-background/50 border-border/50 rounded-lg text-xs">
-                  <SelectValue placeholder="Agrupar" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="status">Por Status</SelectItem>
-                  <SelectItem value="project">Por Projeto</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={deadlineFilter} onValueChange={setDeadlineFilter}>
-                <SelectTrigger className="w-[110px] h-9 bg-background/50 border-border/50 rounded-lg text-xs">
-                  <SelectValue placeholder="Prazo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Qualquer Prazo</SelectItem>
-                  <SelectItem value="today">Hoje</SelectItem>
-                  <SelectItem value="week">Esta Semana</SelectItem>
-                  <SelectItem value="overdue">Atrasado</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="h-9 bg-background/50 border-border/50 rounded-lg text-xs font-normal justify-start px-3 py-1.5 w-[120px]"
-                  >
-                    <span className="truncate">
-                      Prioridade {priorityFilters.length > 0 && `(${priorityFilters.length})`}
-                    </span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-40 z-50">
-                  <DropdownMenuLabel className="text-xs">Prioridades</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {['low', 'medium', 'high', 'urgent'].map((p) => (
-                    <DropdownMenuCheckboxItem
-                      key={p}
-                      checked={priorityFilters.includes(p)}
-                      onCheckedChange={(c) => {
-                        setPriorityFilters((prev) =>
-                          c ? [...prev, p] : prev.filter((x) => x !== p),
-                        )
-                      }}
-                      className="text-xs cursor-pointer"
+              {/* Filtros de Dados Group */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2 px-1 text-sm font-semibold text-muted-foreground mr-1">
+                  <ListFilter className="w-4 h-4" /> Filtros
+                  {activeFiltersCount > 0 && (
+                    <Badge
+                      variant="secondary"
+                      className="h-5 min-w-5 px-1.5 p-0 flex items-center justify-center rounded-full bg-primary/20 text-primary text-[10px]"
                     >
-                      {p === 'low'
-                        ? 'Baixa'
-                        : p === 'medium'
-                          ? 'Média'
-                          : p === 'high'
-                            ? 'Alta'
-                            : 'Urgente'}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                      {activeFiltersCount}
+                    </Badge>
+                  )}
+                </div>
 
-              {groupBy !== 'project' && (
-                <Select value={projectFilter} onValueChange={setProjectFilter}>
-                  <SelectTrigger className="w-[110px] h-9 bg-background/50 border-border/50 rounded-lg text-xs">
-                    <SelectValue placeholder="Projeto" />
+                <Select value={deadlineFilter} onValueChange={setDeadlineFilter}>
+                  <SelectTrigger
+                    className={cn(
+                      'h-8 rounded-lg text-xs px-3 min-w-[110px] w-auto max-w-[160px]',
+                      deadlineFilter !== 'all'
+                        ? 'bg-primary/10 border-primary/30 text-primary font-medium'
+                        : 'bg-background/50 border-border/50',
+                    )}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <Clock className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">
+                        {deadlineFilter === 'all'
+                          ? 'Prazo'
+                          : `Prazo: ${
+                              deadlineFilter === 'today'
+                                ? 'Hoje'
+                                : deadlineFilter === 'week'
+                                  ? 'Esta Semana'
+                                  : deadlineFilter === 'overdue'
+                                    ? 'Atrasado'
+                                    : ''
+                            }`}
+                      </span>
+                    </div>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    {projects.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="all">Qualquer Prazo</SelectItem>
+                    <SelectItem value="today">Hoje</SelectItem>
+                    <SelectItem value="week">Esta Semana</SelectItem>
+                    <SelectItem value="overdue">Atrasado</SelectItem>
                   </SelectContent>
                 </Select>
-              )}
 
-              {areas.length > 0 && (
-                <Select value={areaFilter} onValueChange={setAreaFilter}>
-                  <SelectTrigger className="w-[110px] h-9 bg-background/50 border-border/50 rounded-lg text-xs">
-                    <SelectValue placeholder="Área" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas as Áreas</SelectItem>
-                    {areas.map((a: any) => (
-                      <SelectItem key={a} value={a}>
-                        {a}
-                      </SelectItem>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        'h-8 rounded-lg text-xs font-normal justify-start px-3',
+                        priorityFilters.length > 0
+                          ? 'bg-primary/10 border-primary/30 text-primary font-medium'
+                          : 'bg-background/50 border-border/50',
+                      )}
+                    >
+                      <Flag className="w-3.5 h-3.5 mr-2 shrink-0" />
+                      <span className="truncate">
+                        {priorityFilters.length === 0
+                          ? 'Prioridade'
+                          : `Prioridade: ${priorityFilters.length} sel.`}
+                      </span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-40 z-50">
+                    <DropdownMenuLabel className="text-xs">Prioridades</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {['low', 'medium', 'high', 'urgent'].map((p) => (
+                      <DropdownMenuCheckboxItem
+                        key={p}
+                        checked={priorityFilters.includes(p)}
+                        onCheckedChange={(c) => {
+                          setPriorityFilters((prev) =>
+                            c ? [...prev, p] : prev.filter((x) => x !== p),
+                          )
+                        }}
+                        className="text-xs cursor-pointer"
+                      >
+                        {p === 'low'
+                          ? 'Baixa'
+                          : p === 'medium'
+                            ? 'Média'
+                            : p === 'high'
+                              ? 'Alta'
+                              : 'Urgente'}
+                      </DropdownMenuCheckboxItem>
                     ))}
-                  </SelectContent>
-                </Select>
-              )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
-              {isAdmin && activeTab === 'team' && (
-                <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
-                  <SelectTrigger className="w-[120px] h-9 bg-background/50 border-border/50 rounded-lg text-xs">
-                    <SelectValue placeholder="Responsável" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    {users
-                      .filter((u) => u.role?.toLowerCase() === 'employee')
-                      .map((u) => (
-                        <SelectItem key={u.id} value={u.id}>
-                          {u.name}
+                {groupBy !== 'project' && (
+                  <Select value={projectFilter} onValueChange={setProjectFilter}>
+                    <SelectTrigger
+                      className={cn(
+                        'h-8 rounded-lg text-xs px-3 min-w-[110px] w-auto max-w-[160px]',
+                        projectFilter !== 'all'
+                          ? 'bg-primary/10 border-primary/30 text-primary font-medium'
+                          : 'bg-background/50 border-border/50',
+                      )}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <Briefcase className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">
+                          {projectFilter === 'all'
+                            ? 'Projeto'
+                            : `Projeto: ${projects.find((p) => p.id === projectFilter)?.name || 'Selecionado'}`}
+                        </span>
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os Projetos</SelectItem>
+                      {projects.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name}
                         </SelectItem>
                       ))}
-                  </SelectContent>
-                </Select>
-              )}
+                    </SelectContent>
+                  </Select>
+                )}
 
-              <div className="flex items-center gap-2 bg-background/50 border border-border/50 px-3 py-1.5 rounded-lg h-9">
-                <Switch
-                  id="focus-mode"
-                  checked={myTasksOnly}
-                  onCheckedChange={setMyTasksOnly}
-                  className="data-[state=checked]:bg-primary shadow-[0_0_10px_rgba(0,212,255,0.3)]"
-                />
-                <Label htmlFor="focus-mode" className="text-xs font-semibold cursor-pointer">
-                  Modo Foco
-                </Label>
+                {areas.length > 0 && (
+                  <Select value={areaFilter} onValueChange={setAreaFilter}>
+                    <SelectTrigger
+                      className={cn(
+                        'h-8 rounded-lg text-xs px-3 min-w-[110px] w-auto max-w-[160px]',
+                        areaFilter !== 'all'
+                          ? 'bg-primary/10 border-primary/30 text-primary font-medium'
+                          : 'bg-background/50 border-border/50',
+                      )}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <Building className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">
+                          {areaFilter === 'all' ? 'Departamento' : `Depto: ${areaFilter}`}
+                        </span>
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as Áreas</SelectItem>
+                      {areas.map((a: any) => (
+                        <SelectItem key={a} value={a}>
+                          {a}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {isAdmin && activeTab === 'team' && (
+                  <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
+                    <SelectTrigger
+                      className={cn(
+                        'h-8 rounded-lg text-xs px-3 min-w-[120px] w-auto max-w-[160px]',
+                        employeeFilter !== 'all'
+                          ? 'bg-primary/10 border-primary/30 text-primary font-medium'
+                          : 'bg-background/50 border-border/50',
+                      )}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <User className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">
+                          {employeeFilter === 'all'
+                            ? 'Responsável'
+                            : `Resp: ${users.find((u) => u.id === employeeFilter)?.name?.split(' ')[0] || 'Selecionado'}`}
+                        </span>
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      {users
+                        .filter((u) => u.role?.toLowerCase() === 'employee')
+                        .map((u) => (
+                          <SelectItem key={u.id} value={u.id}>
+                            {u.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {activeFiltersCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 rounded-lg text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 px-3 ml-auto xl:ml-0"
+                    onClick={() => {
+                      setMyTasksOnly(false)
+                      setPriorityFilters([])
+                      setProjectFilter('all')
+                      setAreaFilter('all')
+                      setEmployeeFilter('all')
+                      setDeadlineFilter('all')
+                      setGroupBy('status')
+                    }}
+                  >
+                    <X className="h-3.5 w-3.5 mr-1.5" />
+                    Limpar Tudo
+                  </Button>
+                )}
               </div>
-
-              {activeFiltersCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 rounded-lg text-muted-foreground hover:text-destructive shrink-0"
-                  onClick={() => {
-                    setMyTasksOnly(false)
-                    setPriorityFilters([])
-                    setProjectFilter('all')
-                    setAreaFilter('all')
-                    setEmployeeFilter('all')
-                    setDeadlineFilter('all')
-                    setGroupBy('status')
-                  }}
-                  title="Limpar filtros"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
             </div>
           </div>
         </div>
