@@ -40,6 +40,8 @@ import {
 } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 import { Plus, FolderKanban, Pencil, Trash2, Calendar } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { getUsers } from '@/services/users'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Badge } from '@/components/ui/badge'
@@ -68,10 +70,13 @@ export default function Projects() {
   const { user, role } = useAuth()
   const { toast } = useToast()
   const [projects, setProjects] = useState<ProjectRecord[]>([])
+  const [users, setUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editing, setEditing] = useState<ProjectRecord | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [activeTab, setActiveTab] = useState('mine')
+  const [filterUser, setFilterUser] = useState('all')
 
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectSchema),
@@ -85,7 +90,9 @@ export default function Projects() {
 
   const loadData = async () => {
     try {
-      setProjects(await getProjects())
+      const [projectsData, usersData] = await Promise.all([getProjects(), getUsers()])
+      setProjects(projectsData)
+      setUsers(usersData.filter((u) => u.is_active !== false))
     } catch (err) {
       console.error(err)
     } finally {
@@ -165,6 +172,97 @@ export default function Projects() {
     on_hold: 'Pausado',
   }
 
+  const filteredProjects = projects.filter((p) => {
+    if (activeTab === 'mine') {
+      return p.created_by === user?.id
+    }
+    if (activeTab === 'team') {
+      if (filterUser === 'all') return true
+      return p.created_by === filterUser
+    }
+    return true
+  })
+
+  const renderProjectsGrid = () => {
+    if (loading) {
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-48 rounded-3xl bg-muted/20 animate-pulse border" />
+          ))}
+        </div>
+      )
+    }
+
+    if (filteredProjects.length === 0) {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center glass-card rounded-3xl border-dashed border-2 py-12">
+          <FolderKanban className="w-12 h-12 text-muted-foreground opacity-50 mb-4" />
+          <h3 className="text-lg font-semibold">Nenhum projeto encontrado</h3>
+        </div>
+      )
+    }
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredProjects.map((p) => (
+          <Card
+            key={p.id}
+            className="group glass-card rounded-3xl border-border/50 hover:-translate-y-1 transition-all"
+          >
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-start gap-2">
+                <CardTitle className="text-lg font-bold line-clamp-2">{p.name}</CardTitle>
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] uppercase border-none ${colors[p.status]}`}
+                >
+                  {labels[p.status]}
+                </Badge>
+              </div>
+              <CardDescription className="line-clamp-2 text-xs mt-1 min-h-[32px]">
+                {p.description || 'Sem descrição'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pb-4">
+              <div className="flex justify-between text-sm font-semibold mb-2">
+                <span className="text-muted-foreground">Progresso</span>
+                <span className="text-primary">{p.progress}%</span>
+              </div>
+              <Progress value={p.progress} className="h-2.5" />
+            </CardContent>
+            <CardFooter className="pt-0 flex justify-between items-center border-t border-border/30 mt-2 px-6 pt-4">
+              <div className="flex items-center text-[11px] text-muted-foreground gap-1.5">
+                <Calendar className="w-3.5 h-3.5" />{' '}
+                {format(new Date(p.created), "dd 'de' MMM", { locale: ptBR })}
+              </div>
+              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full"
+                  onClick={() => openModal(p)}
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+                {(role === 'ADMIN' || p.created_by === user?.id) && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive rounded-full"
+                    onClick={(e) => handleDelete(p.id, e)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <PageTransition>
       <div className="h-full flex flex-col gap-6 p-4 md:p-6 overflow-y-auto custom-scrollbar">
@@ -183,77 +281,54 @@ export default function Projects() {
           </Button>
         </div>
 
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-48 rounded-3xl bg-muted/20 animate-pulse border" />
-            ))}
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="w-full flex-1 flex flex-col"
+        >
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <TabsList className="grid w-full sm:w-[400px] grid-cols-2 rounded-xl">
+              <TabsTrigger value="mine" className="rounded-lg">
+                Meus Trabalhos
+              </TabsTrigger>
+              <TabsTrigger value="team" className="rounded-lg">
+                Trabalhos da Equipe
+              </TabsTrigger>
+            </TabsList>
+
+            {activeTab === 'team' && (
+              <Select value={filterUser} onValueChange={setFilterUser}>
+                <SelectTrigger className="w-full sm:w-[250px] rounded-xl glass-card">
+                  <SelectValue placeholder="Filtrar por colaborador" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os colaboradores</SelectItem>
+                  {users.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.name || u.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
-        ) : projects.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center glass-card rounded-3xl border-dashed border-2">
-            <FolderKanban className="w-12 h-12 text-muted-foreground opacity-50 mb-4" />
-            <h3 className="text-lg font-semibold">Nenhum projeto encontrado</h3>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map((p) => (
-              <Card
-                key={p.id}
-                className="group glass-card rounded-3xl border-border/50 hover:-translate-y-1 transition-all"
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start gap-2">
-                    <CardTitle className="text-lg font-bold line-clamp-2">{p.name}</CardTitle>
-                    <Badge
-                      variant="outline"
-                      className={`text-[10px] uppercase border-none ${colors[p.status]}`}
-                    >
-                      {labels[p.status]}
-                    </Badge>
-                  </div>
-                  <CardDescription className="line-clamp-2 text-xs mt-1 min-h-[32px]">
-                    {p.description || 'Sem descrição'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pb-4">
-                  <div className="flex justify-between text-sm font-semibold mb-2">
-                    <span className="text-muted-foreground">Progresso</span>
-                    <span className="text-primary">{p.progress}%</span>
-                  </div>
-                  <Progress value={p.progress} className="h-2.5" />
-                </CardContent>
-                <CardFooter className="pt-0 flex justify-between items-center border-t border-border/30 mt-2 px-6 pt-4">
-                  <div className="flex items-center text-[11px] text-muted-foreground gap-1.5">
-                    <Calendar className="w-3.5 h-3.5" />{' '}
-                    {format(new Date(p.created), "dd 'de' MMM", { locale: ptBR })}
-                  </div>
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 rounded-full"
-                      onClick={() => openModal(p)}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    {(role === 'ADMIN' || p.created_by === user?.id) && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive rounded-full"
-                        onClick={(e) => handleDelete(p.id, e)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        )}
+
+          <TabsContent
+            value="mine"
+            className="m-0 flex-1 focus-visible:outline-none focus-visible:ring-0"
+          >
+            {renderProjectsGrid()}
+          </TabsContent>
+          <TabsContent
+            value="team"
+            className="m-0 flex-1 focus-visible:outline-none focus-visible:ring-0"
+          >
+            {renderProjectsGrid()}
+          </TabsContent>
+        </Tabs>
 
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          {' '}
           <DialogContent className="sm:max-w-md rounded-3xl glass-card">
             <DialogHeader>
               <DialogTitle>{editing ? 'Editar Projeto' : 'Novo Projeto'}</DialogTitle>
