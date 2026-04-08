@@ -39,6 +39,9 @@ export interface UserAchievement {
   is_notified: boolean
   created: string
   updated: string
+  expand?: {
+    achievement_id: Achievement
+  }
 }
 
 export const getAchievements = () =>
@@ -49,7 +52,7 @@ export const getAchievements = () =>
 export const getUserAchievements = (userId: string) =>
   pb
     .collection('user_achievements')
-    .getFullList<UserAchievement>({ filter: `user_id = "${userId}"` })
+    .getFullList<UserAchievement>({ filter: `user_id = "${userId}"`, expand: 'achievement_id' })
 
 export const markAchievementNotified = (id: string) =>
   pb.collection('user_achievements').update<UserAchievement>(id, { is_notified: true })
