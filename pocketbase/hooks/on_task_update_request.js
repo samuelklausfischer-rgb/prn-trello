@@ -27,6 +27,7 @@ onRecordUpdateRequest((e) => {
       'delegated_to',
       'priority',
       'points_reward',
+      'points_awarded',
       'is_archived',
       'is_private',
     ]

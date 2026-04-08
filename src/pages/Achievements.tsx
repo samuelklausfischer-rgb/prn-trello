@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useAuth } from '@/hooks/useAuthHooks'
+import { useRealtime } from '@/hooks/use-realtime'
 import {
   Trophy,
   CheckCircle2,
@@ -155,7 +156,7 @@ export default function Achievements() {
   const [userAchs, setUserAchs] = useState<Record<string, UserAchievement>>({})
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const fetchData = () => {
     if (!user) return
     Promise.all([getAchievements(), getUserAchievements(user.id)])
       .then(([achs, uAchs]) => {
@@ -164,7 +165,19 @@ export default function Achievements() {
         setLoading(false)
       })
       .catch(console.error)
+  }
+
+  useEffect(() => {
+    fetchData()
   }, [user])
+
+  useRealtime(
+    'user_achievements',
+    () => {
+      fetchData()
+    },
+    !!user,
+  )
 
   const categories = useMemo(() => {
     const cats = Array.from(new Set(achievements.map((a) => a.category))).sort()

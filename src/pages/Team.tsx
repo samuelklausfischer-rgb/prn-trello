@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Trophy, Medal, Star } from 'lucide-react'
+import { Trophy, Medal, Star, Briefcase } from 'lucide-react'
 import PageTransition from '@/components/PageTransition'
-import { getEmployees } from '@/services/users'
 import { useRealtime } from '@/hooks/use-realtime'
 import pb from '@/lib/pocketbase/client'
 import type { RecordModel } from 'pocketbase'
@@ -15,7 +14,9 @@ export default function Team() {
 
   const fetchTeam = async () => {
     try {
-      const data = await getEmployees()
+      const data = await pb.collection('users').getFullList({
+        sort: '-points',
+      })
       setTeam(data)
     } catch (error) {
       console.error('Error fetching team:', error)
@@ -107,9 +108,10 @@ export default function Team() {
                         <h3 className="font-bold text-base sm:text-lg text-foreground truncate">
                           {user.name || 'Sem nome'}
                         </h3>
-                        {user.department && (
-                          <span className="text-[10px] sm:text-xs px-2 py-0.5 bg-secondary text-secondary-foreground rounded-full w-fit whitespace-nowrap">
-                            {user.department}
+                        {user.job_title && (
+                          <span className="text-[10px] sm:text-xs px-2 py-0.5 bg-secondary text-secondary-foreground rounded-full w-fit whitespace-nowrap flex items-center gap-1">
+                            <Briefcase className="w-3 h-3" />
+                            {user.job_title}
                           </span>
                         )}
                       </div>
