@@ -10,6 +10,22 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+
+const JOB_TITLES = [
+  'Engenharia de IA',
+  'Comercial',
+  'Financeiro',
+  'Licitação',
+  'Digitador(a)',
+  'Operacional',
+]
 
 export function ProfileEditDialog({
   open,
@@ -45,13 +61,23 @@ export function ProfileEditDialog({
             <Label htmlFor="job_title" className="text-right">
               Cargo
             </Label>
-            <Input
-              id="job_title"
-              value={formData.job_title}
-              onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
-              className="col-span-3"
-              placeholder="Ex: Engenheiro de IA"
-            />
+            <div className="col-span-3">
+              <Select
+                value={formData.job_title || ''}
+                onValueChange={(value) => setFormData({ ...formData, job_title: value })}
+              >
+                <SelectTrigger id="job_title">
+                  <SelectValue placeholder="Selecione um cargo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {JOB_TITLES.map((title) => (
+                    <SelectItem key={title} value={title}>
+                      {title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="phone" className="text-right">
@@ -82,7 +108,7 @@ export function ProfileEditDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button onClick={onSave} disabled={saving}>
+          <Button onClick={onSave} disabled={saving || !formData.job_title}>
             {saving ? 'Salvando...' : 'Salvar'}
           </Button>
         </DialogFooter>
