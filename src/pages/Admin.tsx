@@ -11,9 +11,29 @@ import { CommunicationTab } from '@/components/admin/CommunicationTab'
 import { ActivityTab } from '@/components/admin/ActivityTab'
 import { useRealtime } from '@/hooks/use-realtime'
 import { toast } from 'sonner'
+import { GuideTour, useTour } from '@/components/GuideTour'
 
 export default function Admin() {
   const [searchParams, setSearchParams] = useSearchParams()
+
+  const { open: tourOpen, closeTour } = useTour('admin')
+  const tourSteps = [
+    {
+      target: '[data-tour="admin-header"]',
+      title: 'Painel Administrativo',
+      content:
+        'Apenas administradores têm acesso. Aqui você controla configurações globais, usuários e comunicações.',
+      placement: 'bottom' as const,
+    },
+    {
+      target: '[data-tour="admin-tabs"]',
+      title: 'Gerenciamento de Usuários',
+      content:
+        'Convide por e-mail, altere papéis e acompanhe as atividades. Cuidado com o botão de Remover, alterações aqui afetam toda a organização!',
+      placement: 'bottom' as const,
+      image: 'https://img.usecurling.com/p/400/200?q=warning%20security&color=red',
+    },
+  ]
   const activeTab = searchParams.get('tab') || 'users'
 
   const [users, setUsers] = useState<any[]>([])
@@ -62,7 +82,16 @@ export default function Admin() {
   return (
     <PageTransition>
       <div className="space-y-8 pb-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <GuideTour
+          steps={tourSteps}
+          open={tourOpen}
+          onClose={closeTour}
+          estimatedTime="2-3 minutos"
+        />
+        <div
+          data-tour="admin-header"
+          className="flex flex-col md:flex-row md:items-center justify-between gap-4"
+        >
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
               Painel Administrativo
@@ -108,7 +137,10 @@ export default function Admin() {
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 max-w-md bg-muted/50 p-1">
+          <TabsList
+            data-tour="admin-tabs"
+            className="grid w-full grid-cols-3 max-w-md bg-muted/50 p-1"
+          >
             <TabsTrigger value="users" className="font-semibold">
               Usuários
             </TabsTrigger>

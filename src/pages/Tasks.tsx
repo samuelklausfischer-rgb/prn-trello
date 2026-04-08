@@ -351,7 +351,7 @@ export default function Tasks() {
     }
   }, [groupBy, projects])
 
-  const { open: tourOpen, closeTour, startTour } = useTour('tasks_module')
+  const { open: tourOpen, closeTour, startTour } = useTour('tasks')
 
   if (loading) return <BoardSkeleton />
 
@@ -452,24 +452,33 @@ export default function Tasks() {
   const tourSteps = [
     {
       target: '[data-tour="tasks-header"]',
-      title: 'Quadro de Tarefas',
+      title: 'Fluxo de Trabalho (Kanban)',
       content:
-        'Bem-vindo ao seu centro de controle. As atualizações feitas pela equipe são sincronizadas em tempo real, permitindo o acompanhamento de todo o progresso sem interrupções.',
-      placement: 'bottom' as const,
-    },
-    {
-      target: '[data-tour="tasks-tabs"]',
-      title: 'Meu Espaço vs Visão Equipe',
-      content:
-        'Em "Meu Espaço", você gerencia suas tarefas privadas. Na "Visão Equipe", você tem uma visão ampla de todo o trabalho delegado aos colaboradores.',
+        'Neste quadro você movimenta tarefas entre "A Fazer", "Em Progresso", "Revisão" e "Concluído".',
       placement: 'bottom' as const,
     },
     {
       target: '[data-tour="tasks-new-btn"]',
-      title: 'Criar e Delegar com Autonomia',
+      title: 'Criar Nova Tarefa',
       content:
-        'Crie tarefas e atribua aos responsáveis de forma direta. A equipe será notificada em tempo real para iniciar o trabalho.',
+        'Ao criar, você pode vincular a tarefa a um Projeto, delegar para membros da equipe e definir prazos.',
       placement: 'left' as const,
+      image: 'https://img.usecurling.com/p/400/200?q=new%20task%20button&color=blue',
+    },
+    {
+      target: '[data-tour="tasks-filters"]',
+      title: 'Filtros Avançados',
+      content:
+        'Use os filtros para focar no que importa! Se não houver tarefas visíveis, experimente clicar em "Limpar Tudo".',
+      placement: 'top' as const,
+    },
+    {
+      target: '[data-column="todo"]',
+      title: 'Arrastar e Soltar (Drag & Drop)',
+      content:
+        'Mova os cards entre as colunas para atualizar o status instantaneamente. Toda a equipe vê a mudança em tempo real.',
+      placement: 'right' as const,
+      image: 'https://img.usecurling.com/p/400/200?q=drag%20and%20drop%20cards&color=gray',
     },
   ]
 
@@ -595,7 +604,7 @@ export default function Tasks() {
               </div>
 
               {/* Filtros de Dados Group */}
-              <div className="flex items-center gap-2 flex-wrap">
+              <div data-tour="tasks-filters" className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-2 px-1 text-sm font-semibold text-muted-foreground mr-1">
                   <ListFilter className="w-4 h-4" /> Filtros
                   {activeFiltersCount > 0 && (
@@ -866,7 +875,12 @@ export default function Tasks() {
           <Plus className="h-6 w-6 text-primary-foreground" />
         </Button>
 
-        {isAdmin && <GuideTour steps={tourSteps} open={tourOpen} onClose={closeTour} />}
+        <GuideTour
+          steps={tourSteps}
+          open={tourOpen}
+          onClose={closeTour}
+          estimatedTime="3-4 minutos"
+        />
       </div>
     </PageTransition>
   )

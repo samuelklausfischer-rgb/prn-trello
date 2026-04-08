@@ -17,6 +17,7 @@ export type User = {
   phone?: string
   department?: string
   job_title?: string
+  tutorial_progress?: Record<string, boolean>
 }
 
 export const SYSTEM_USERS: User[] = [
@@ -29,6 +30,7 @@ export const SYSTEM_USERS: User[] = [
     level: 1,
     streak_days: 0,
     xp: 0,
+    tutorial_progress: {},
   },
   {
     id: 'emp-1',
@@ -39,6 +41,7 @@ export const SYSTEM_USERS: User[] = [
     level: 1,
     streak_days: 3,
     xp: 100,
+    tutorial_progress: {},
   },
 ]
 
@@ -47,6 +50,7 @@ type AuthContextType = {
   login: (user: User) => void
   logout: () => void
   addPoints: (points: number, reason?: string, sourceType?: string) => void
+  updateTutorialProgress: (tourId: string, completed: boolean) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -67,6 +71,7 @@ const mapRecordToUser = (record: any): User | null => {
     phone: record.phone || '',
     department: record.department || '',
     job_title: record.job_title || '',
+    tutorial_progress: record.tutorial_progress || {},
   }
 }
 
@@ -76,11 +81,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   )
 
   useEffect(() => {
-    // If we have a token but it's invalid, clear it immediately
     if (!pb.authStore.isValid && pb.authStore.token) {
       pb.authStore.clear()
     } else if (pb.authStore.isValid) {
-      // Refresh the token to keep session alive and sync with server
       pb.collection('users')
         .authRefresh()
         .catch(() => {
@@ -92,7 +95,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(pb.authStore.isValid ? mapRecordToUser(record) : null)
     })
 
-    // Listen for custom auth errors from the client
     const handleAuthError = () => {
       setUser(null)
     }
@@ -140,9 +142,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const updateTutorialProgress = async (tourId: string, completed: boolean) => {
+    if (!user) return
+    const newProgress = { ...(user.tutorial_progress || {}), [tourId]: completed }
+    setUser({ ...user, tutorial_progress: newProgress })
+    try {
+      await pb.collection('users').update(user.id, { tutorial_progress: newProgress })
+    } catch (e) {
+      console.error('Failed to update tutorial progress:', e)
+    }
+  }
+
   return React.createElement(
     AuthContext.Provider,
-    { value: { user, login, logout, addPoints } },
+    { value: { user, login, logout, addPoints, updateTutorialProgress } },
     children,
   )
 }

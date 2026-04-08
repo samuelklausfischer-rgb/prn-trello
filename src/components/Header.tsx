@@ -167,6 +167,26 @@ export default function Header() {
 
   const unreadAlerts = notifications.filter((n) => !n.is_read)
 
+  const { user: storeUser, updateTutorialProgress } = useAuthStore()
+
+  const tutorialsList = [
+    { id: 'dashboard', label: 'Dashboard Geral', path: '/dashboard' },
+    { id: 'tasks', label: 'Gestão de Tarefas', path: '/tasks' },
+    { id: 'projects', label: 'Projetos e Trabalhos', path: '/projects' },
+    { id: 'team', label: 'Equipe e Ranking', path: '/team' },
+    { id: 'achievements', label: 'Galeria de Conquistas', path: '/achievements' },
+    ...(isAdmin ? [{ id: 'admin', label: 'Painel Admin', path: '/admin' }] : []),
+  ]
+
+  const handleRestartTour = async (tourId: string, path: string) => {
+    if (updateTutorialProgress) {
+      await updateTutorialProgress(tourId, false)
+      if (location.pathname !== path) {
+        navigate(path)
+      }
+    }
+  }
+
   const getAlertIcon = (type: string) => {
     switch (type) {
       case 'task_deadline':
@@ -336,6 +356,44 @@ export default function Header() {
               </ScrollArea>
             </PopoverContent>
           </Popover>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative rounded-full hover-3d glass-card border-transparent bg-background/50 hover:bg-white/20 dark:hover:bg-white/5"
+              >
+                <HelpCircle className="w-5 h-5 text-foreground/80" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="w-64 font-sans glass-card border-white/20 rounded-2xl p-2 z-50"
+            >
+              <div className="px-2 py-2 border-b border-border/50 mb-1">
+                <p className="font-bold text-sm text-foreground">Tutoriais do Sistema</p>
+                <p className="text-xs text-muted-foreground">Acompanhe seu progresso</p>
+              </div>
+              {tutorialsList.map((t) => {
+                const isDone = storeUser?.tutorial_progress?.[t.id]
+                return (
+                  <DropdownMenuItem
+                    key={t.id}
+                    onClick={() => handleRestartTour(t.id, t.path)}
+                    className="flex items-center justify-between cursor-pointer py-2.5 rounded-lg hover:bg-white/10"
+                  >
+                    <span className="font-medium text-sm">{t.label}</span>
+                    {isDone ? (
+                      <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <Circle className="w-4 h-4 text-muted-foreground/50" />
+                    )}
+                  </DropdownMenuItem>
+                )
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <Button
             variant="outline"

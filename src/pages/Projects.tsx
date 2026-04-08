@@ -80,28 +80,35 @@ export default function Projects() {
   const [activeTab, setActiveTab] = useState('mine')
   const [filterUser, setFilterUser] = useState('all')
 
-  const { open: tourOpen, closeTour, startTour } = useTour('projects_module')
+  const { open: tourOpen, closeTour, startTour } = useTour('projects')
   const tourSteps = [
     {
       target: '[data-tour="projects-header"]',
-      title: 'Visão Macro de Projetos',
+      title: 'Central de Projetos',
       content:
-        'Acompanhe o progresso geral das iniciativas da sua empresa. Os projetos agrupam tarefas e fornecem uma visão clara do andamento.',
+        'Acompanhe o andamento geral das iniciativas. O progresso aqui é calculado automaticamente com base nas tarefas vinculadas.',
       placement: 'bottom' as const,
     },
     {
       target: '[data-tour="projects-tabs"]',
-      title: 'Acompanhamento da Equipe',
+      title: 'Meus x Equipe',
       content:
-        'Alterne entre seus projetos e os da equipe. Use os filtros para visualizar projetos atribuídos a colaboradores específicos em tempo real.',
+        'Filtre e visualize rapidamente os projetos de toda a equipe para manter todos alinhados.',
       placement: 'bottom' as const,
     },
     {
       target: '[data-tour="projects-new"]',
-      title: 'Determinar e Atribuir',
+      title: 'Criando Projetos',
       content:
-        'Crie novos projetos estratégicos. Ao criar um projeto, ele ficará disponível para ser vinculado às tarefas dos funcionários correspondentes.',
+        'Crie novos projetos, adicione membros e comece a vincular tarefas. (Nota: Adicione membros para que recebam notificações).',
       placement: 'left' as const,
+    },
+    {
+      target: '[data-tour="project-cards-container"]',
+      title: 'Barra de Progresso',
+      content:
+        'Veja em tempo real o status e percentual de conclusão. Tarefas concluídas alimentam esta barra!',
+      placement: 'top' as const,
     },
   ]
 
@@ -292,7 +299,10 @@ export default function Projects() {
 
   return (
     <PageTransition>
-      <div className="h-full flex flex-col gap-6 p-4 md:p-6 overflow-y-auto custom-scrollbar">
+      <div
+        className="h-full flex flex-col gap-6 p-4 md:p-6 overflow-y-auto custom-scrollbar"
+        data-tour="project-cards-container"
+      >
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glass-card p-6 rounded-3xl">
           <div className="flex items-center gap-3" data-tour="projects-header">
             <div className="p-3 bg-primary/20 rounded-2xl hidden md:flex shadow-sm">
@@ -477,7 +487,12 @@ export default function Projects() {
             </Form>
           </DialogContent>
         </Dialog>
-        {role === 'ADMIN' && <GuideTour steps={tourSteps} open={tourOpen} onClose={closeTour} />}
+        <GuideTour
+          steps={tourSteps}
+          open={tourOpen}
+          onClose={closeTour}
+          estimatedTime="2 minutos"
+        />
       </div>
     </PageTransition>
   )

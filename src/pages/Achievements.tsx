@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useAuth } from '@/hooks/useAuthHooks'
 import { useRealtime } from '@/hooks/use-realtime'
+import { GuideTour, useTour } from '@/components/GuideTour'
 import {
   Trophy,
   CheckCircle2,
@@ -152,6 +153,29 @@ const categoryLabels: Record<string, string> = {
 
 export default function Achievements() {
   const { user } = useAuth()
+
+  const { open: tourOpen, closeTour } = useTour('achievements')
+  const tourSteps = [
+    {
+      target: '[data-tour="achievements-header"]',
+      title: 'Galeria de Conquistas',
+      content: 'Aqui você pode ver todos os badges e medalhas disponíveis no sistema.',
+      placement: 'bottom' as const,
+    },
+    {
+      target: '[data-tour="achievements-tabs"]',
+      title: 'Categorias',
+      content: 'Navegue pelas diferentes categorias para focar em objetivos específicos.',
+      placement: 'bottom' as const,
+    },
+    {
+      target: '[data-tour="achievements-grid"]',
+      title: 'Desbloqueio e Requisitos',
+      content:
+        'Medalhas coloridas já foram desbloqueadas. As cinzas ainda estão bloqueadas. Cumpra os requisitos (ex: completar X tarefas) para ganhá-las!',
+      placement: 'top' as const,
+    },
+  ]
   const [achievements, setAchievements] = useState<Achievement[]>([])
   const [userAchs, setUserAchs] = useState<Record<string, UserAchievement>>({})
   const [loading, setLoading] = useState(true)
@@ -200,7 +224,10 @@ export default function Achievements() {
     }
 
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+      <div
+        data-tour="achievements-grid"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6"
+      >
         {items.map((ach) => {
           const Icon = iconMap[ach.icon] || Trophy
           const ua = userAchs[ach.id]
@@ -269,7 +296,13 @@ export default function Achievements() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <div>
+      <GuideTour
+        steps={tourSteps}
+        open={tourOpen}
+        onClose={closeTour}
+        estimatedTime="1-2 minutos"
+      />
+      <div data-tour="achievements-header">
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Medal className="w-8 h-8 text-amber-500" /> Galeria de Conquistas
         </h1>
@@ -278,7 +311,10 @@ export default function Achievements() {
         </p>
       </div>
       <Tabs defaultValue="all" className="w-full">
-        <ScrollArea className="w-full pb-3 mb-4 border-b border-border/40">
+        <ScrollArea
+          data-tour="achievements-tabs"
+          className="w-full pb-3 mb-4 border-b border-border/40"
+        >
           <TabsList className="inline-flex w-max items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
             {categories.map((cat) => (
               <TabsTrigger

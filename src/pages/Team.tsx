@@ -7,9 +7,29 @@ import PageTransition from '@/components/PageTransition'
 import { useRealtime } from '@/hooks/use-realtime'
 import pb from '@/lib/pocketbase/client'
 import type { RecordModel } from 'pocketbase'
+import { GuideTour, useTour } from '@/components/GuideTour'
 
 export default function Team() {
   const [team, setTeam] = useState<RecordModel[]>([])
+
+  const { open: tourOpen, closeTour } = useTour('team')
+  const tourSteps = [
+    {
+      target: '[data-tour="team-header"]',
+      title: 'Ranking da Equipe',
+      content:
+        'Veja quem está liderando a produtividade. Tarefas complexas rendem mais pontos e XP!',
+      placement: 'bottom' as const,
+    },
+    {
+      target: '[data-tour="team-leaderboard"]',
+      title: 'Lógica de Pontuação',
+      content:
+        'A cada tarefa concluída, você ganha Pontos e XP. O XP eleva seu Nível, e os Pontos definem sua posição aqui.',
+      placement: 'top' as const,
+      image: 'https://img.usecurling.com/p/400/200?q=trophy%20points&color=orange',
+    },
+  ]
   const [loading, setLoading] = useState(true)
 
   const fetchTeam = async () => {
@@ -36,7 +56,16 @@ export default function Team() {
   return (
     <PageTransition>
       <div className="max-w-4xl mx-auto space-y-8 py-4 px-4 sm:px-0">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-8 bg-card p-6 rounded-2xl shadow-subtle border border-border/50 transition-colors duration-300">
+        <GuideTour
+          steps={tourSteps}
+          open={tourOpen}
+          onClose={closeTour}
+          estimatedTime="1-2 minutos"
+        />
+        <div
+          data-tour="team-header"
+          className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-8 bg-card p-6 rounded-2xl shadow-subtle border border-border/50 transition-colors duration-300"
+        >
           <div className="bg-accent/10 p-4 rounded-2xl shrink-0">
             <Trophy className="w-10 h-10 text-accent" />
           </div>
@@ -50,7 +79,7 @@ export default function Team() {
           </div>
         </div>
 
-        <div className="grid gap-4 pb-8">
+        <div data-tour="team-leaderboard" className="grid gap-4 pb-8">
           {loading ? (
             Array.from({ length: 5 }).map((_, i) => (
               <Card key={i} className="border border-border/60">
