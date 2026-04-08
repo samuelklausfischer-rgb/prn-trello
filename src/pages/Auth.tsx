@@ -4,21 +4,19 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useAuth } from '@/hooks/useAuthHooks'
-import { Loader2, Target, Users, LayoutDashboard, Zap, ShieldCheck } from 'lucide-react'
+import { Loader2, Target, Users, LayoutDashboard, Zap } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 import pb from '@/lib/pocketbase/client'
 import { extractFieldErrors } from '@/lib/pocketbase/errors'
 import { ClientResponseError } from 'pocketbase'
-import { cn } from '@/lib/utils'
 
 export default function Auth() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
   const [name, setName] = useState('')
-  const [role, setRole] = useState<'admin' | 'employee'>('employee')
+  const role = 'employee'
   const [isLoading, setIsLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -183,7 +181,7 @@ export default function Auth() {
             <p className="text-muted-foreground font-medium">
               {mode === 'login'
                 ? 'Insira suas credenciais para continuar.'
-                : 'Preencha os dados para se registrar.'}
+                : 'Preencha os dados para registrar sua conta de funcionário.'}
             </p>
           </div>
 
@@ -210,48 +208,6 @@ export default function Auth() {
             <div className="space-y-4">
               {mode === 'register' && (
                 <>
-                  <div className="space-y-3 pb-2">
-                    <Label className="text-muted-foreground text-xs uppercase tracking-wider font-bold">
-                      Tipo de Perfil
-                    </Label>
-                    <RadioGroup
-                      value={role}
-                      onValueChange={(val) => setRole(val as 'admin' | 'employee')}
-                      className="grid grid-cols-2 gap-3"
-                    >
-                      <Label
-                        htmlFor="role-admin"
-                        className={cn(
-                          'flex flex-col items-center justify-center rounded-xl border-2 p-3 cursor-pointer transition-all hover:bg-accent/5',
-                          role === 'admin'
-                            ? 'border-primary bg-primary/10 text-primary shadow-[0_0_15px_rgba(0,212,255,0.15)]'
-                            : 'border-white/10 text-muted-foreground bg-background/50',
-                        )}
-                      >
-                        <RadioGroupItem value="admin" id="role-admin" className="sr-only" />
-                        <ShieldCheck className="w-5 h-5 mb-1.5" />
-                        <span className="font-semibold text-sm">Criar conta Admin</span>
-                      </Label>
-                      <Label
-                        htmlFor="role-employee"
-                        className={cn(
-                          'flex flex-col items-center justify-center rounded-xl border-2 p-3 cursor-pointer transition-all hover:bg-accent/5',
-                          role === 'employee'
-                            ? 'border-primary bg-primary/10 text-primary shadow-[0_0_15px_rgba(0,212,255,0.15)]'
-                            : 'border-white/10 text-muted-foreground bg-background/50',
-                        )}
-                      >
-                        <RadioGroupItem value="employee" id="role-employee" className="sr-only" />
-                        <Users className="w-5 h-5 mb-1.5" />
-                        <span className="font-semibold text-sm text-center leading-tight">
-                          Criar conta
-                          <br />
-                          Funcionário
-                        </span>
-                      </Label>
-                    </RadioGroup>
-                  </div>
-
                   <div className="space-y-2.5">
                     <Label htmlFor="name">Nome Completo</Label>
                     <Input
@@ -363,7 +319,7 @@ export default function Auth() {
               ) : (
                 <>
                   <span className="relative z-10">
-                    {mode === 'login' ? 'Entrar no Sistema' : 'Criar Conta'}
+                    {mode === 'login' ? 'Entrar no Sistema' : 'Criar Conta de Funcionário'}
                   </span>
                 </>
               )}
