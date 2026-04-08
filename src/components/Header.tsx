@@ -16,6 +16,9 @@ import {
   UserPlus,
   Star,
   X,
+  HelpCircle,
+  CheckCircle2,
+  Circle,
 } from 'lucide-react'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import {
@@ -50,6 +53,7 @@ import {
 } from '@/services/notifications'
 import { useRealtime } from '@/hooks/use-realtime'
 import { cn } from '@/lib/utils'
+import useAuthStore from '@/stores/useAuthStore'
 
 export default function Header() {
   const { user, logout, role } = useAuth()
@@ -61,6 +65,7 @@ export default function Header() {
   const [popoverOpen, setPopoverOpen] = useState(false)
   const [animatingBell, setAnimatingBell] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const { user: storeUser, updateTutorialProgress } = useAuthStore()
 
   useEffect(() => {
     audioRef.current = new Audio(
@@ -166,8 +171,6 @@ export default function Header() {
   const isAdmin = role === 'ADMIN'
 
   const unreadAlerts = notifications.filter((n) => !n.is_read)
-
-  const { user: storeUser, updateTutorialProgress } = useAuthStore()
 
   const tutorialsList = [
     { id: 'dashboard', label: 'Dashboard Geral', path: '/dashboard' },
