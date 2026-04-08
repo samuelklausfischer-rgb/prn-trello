@@ -54,6 +54,7 @@ import {
 import { useRealtime } from '@/hooks/use-realtime'
 import { cn } from '@/lib/utils'
 import useAuthStore from '@/stores/useAuthStore'
+import useTourStore from '@/stores/useTourStore'
 
 export default function Header() {
   const { user, logout, role } = useAuth()
@@ -66,6 +67,7 @@ export default function Header() {
   const [animatingBell, setAnimatingBell] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const { user: storeUser, updateTutorialProgress } = useAuthStore()
+  const { startTour } = useTourStore()
 
   useEffect(() => {
     audioRef.current = new Audio(
@@ -250,6 +252,16 @@ export default function Header() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={startTour}
+            className="flex items-center gap-1.5 rounded-full glass-card hover-3d bg-background/50 border-primary/20 hover:bg-primary/10 text-primary font-bold shadow-sm h-9 w-9 sm:w-auto sm:px-3 justify-center"
+          >
+            <HelpCircle className="w-4 h-4 shrink-0" />
+            <span className="hidden sm:inline">Como funciona</span>
+          </Button>
+
           <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
             <PopoverTrigger asChild>
               <Button

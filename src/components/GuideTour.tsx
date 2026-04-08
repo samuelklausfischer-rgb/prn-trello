@@ -235,7 +235,9 @@ export function GuideTour({
             </div>
           )}
 
-          <p className="text-sm text-muted-foreground leading-relaxed flex-1">{step.content}</p>
+          <p className="text-sm text-muted-foreground leading-relaxed flex-1 whitespace-pre-wrap">
+            {step.content}
+          </p>
 
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-border/50">
             <span className="text-xs font-semibold text-muted-foreground">

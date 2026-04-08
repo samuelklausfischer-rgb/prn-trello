@@ -4,6 +4,7 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import AppSidebar from './AppSidebar'
 import Header from './Header'
 import AchievementNotifier from './AchievementNotifier'
+import PageTour from './PageTour'
 import { useAuth } from '@/hooks/useAuthHooks'
 import { cn } from '@/lib/utils'
 import { LayoutDashboard, CheckSquare, ShieldCheck, Medal } from 'lucide-react'
@@ -48,6 +49,8 @@ export default function Layout() {
       >
         Pular para o conteúdo principal
       </a>
+
+      <PageTour />
 
       <AppSidebar />
 
