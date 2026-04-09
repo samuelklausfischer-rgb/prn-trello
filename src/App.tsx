@@ -5,6 +5,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import Auth from './pages/Auth'
+import ResetPassword from './pages/ResetPassword'
 import Tasks from './pages/Tasks'
 import Team from './pages/Team'
 import Admin from './pages/Admin'
@@ -28,6 +29,7 @@ const App = () => (
           <Routes>
             {/* Public Routes */}
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Protected Routes Wrapper */}
             <Route element={<ProtectedRoute />}>

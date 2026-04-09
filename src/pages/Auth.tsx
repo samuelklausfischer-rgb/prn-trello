@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useAuth } from '@/hooks/useAuthHooks'
-import { Loader2, Target, Users, LayoutDashboard, Zap } from 'lucide-react'
+import { Loader2, Target, Users, LayoutDashboard, Zap, ArrowLeft, MailCheck } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 import pb from '@/lib/pocketbase/client'
 import { extractFieldErrors } from '@/lib/pocketbase/errors'
@@ -21,7 +21,8 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
-  const [mode, setMode] = useState<'login' | 'register'>('login')
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot-password'>('login')
+  const [resetSent, setResetSent] = useState(false)
 
   const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
@@ -36,10 +37,35 @@ export default function Auth() {
     }
   }, [isAuthenticated, navigate, from])
 
+  const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg('')
     setFieldErrors({})
+
+    if (mode === 'forgot-password') {
+      if (!email || !isValidEmail(email)) {
+        setErrorMsg('Por favor, insira um e-mail válido.')
+        return
+      }
+      setIsLoading(true)
+      try {
+        await pb.collection('users').requestPasswordReset(email)
+        setResetSent(true)
+      } catch (err: unknown) {
+        // Even if it fails, for security we often just say "if it exists we sent an email",
+        // but let's show actual errors if they are helpful (e.g., validation)
+        if (err instanceof ClientResponseError && err.status === 400) {
+          setErrorMsg('Não foi possível processar a solicitação. Verifique o e-mail.')
+        } else {
+          setResetSent(true) // Generic success to prevent email enumeration
+        }
+      } finally {
+        setIsLoading(false)
+      }
+      return
+    }
 
     if (mode === 'register') {
       if (!name || !email || !password || !passwordConfirm) {
@@ -177,191 +203,260 @@ export default function Auth() {
         <div className="w-full max-w-md space-y-8 animate-fade-in-up stagger-2 glass-card p-8 sm:p-10 rounded-3xl border-t border-l border-white/20">
           <div className="space-y-2">
             <h2 className="text-3xl font-bold text-foreground tracking-tight">
-              {mode === 'login' ? 'Acesse sua conta' : 'Crie sua conta'}
+              {mode === 'login'
+                ? 'Acesse sua conta'
+                : mode === 'register'
+                  ? 'Crie sua conta'
+                  : 'Recuperar senha'}
             </h2>
             <p className="text-muted-foreground font-medium">
               {mode === 'login'
                 ? 'Insira suas credenciais para continuar.'
-                : 'Preencha os dados para registrar sua nova conta.'}
+                : mode === 'register'
+                  ? 'Preencha os dados para registrar sua nova conta.'
+                  : 'Informe seu e-mail para receber um link de recuperação.'}
             </p>
           </div>
 
-          <Tabs
-            value={mode}
-            onValueChange={(v) => {
-              setMode(v as 'login' | 'register')
-              setErrorMsg('')
-              setFieldErrors({})
-            }}
-            className="w-full"
-          >
-            <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted/50 p-1">
-              <TabsTrigger value="login" className="rounded-md">
-                Entrar
-              </TabsTrigger>
-              <TabsTrigger value="register" className="rounded-md">
-                Cadastrar
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          {mode !== 'forgot-password' && (
+            <Tabs
+              value={mode}
+              onValueChange={(v) => {
+                setMode(v as 'login' | 'register')
+                setErrorMsg('')
+                setFieldErrors({})
+              }}
+              className="w-full"
+            >
+              <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted/50 p-1">
+                <TabsTrigger value="login" className="rounded-md">
+                  Entrar
+                </TabsTrigger>
+                <TabsTrigger value="register" className="rounded-md">
+                  Cadastrar
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
 
-          <form onSubmit={handleAuth} className="space-y-6">
-            <div className="space-y-4">
-              {mode === 'register' && (
-                <>
-                  <div className="space-y-3">
-                    <Label>Tipo de Conta</Label>
-                    <RadioGroup
-                      value={role}
-                      onValueChange={(val) => setRole(val as 'employee' | 'admin')}
-                      className="grid grid-cols-2 gap-4"
-                    >
-                      <div>
-                        <Label
-                          htmlFor="role-employee"
-                          className={`flex items-center justify-center rounded-xl border p-3.5 cursor-pointer transition-all ${
-                            role === 'employee'
-                              ? 'border-primary bg-primary/10 text-primary shadow-sm'
-                              : 'border-white/10 bg-background/50 hover:bg-background/80 text-muted-foreground'
-                          }`}
-                        >
-                          <RadioGroupItem value="employee" id="role-employee" className="sr-only" />
-                          <span className="font-semibold">Funcionário</span>
-                        </Label>
-                      </div>
-                      <div>
-                        <Label
-                          htmlFor="role-admin"
-                          className={`flex items-center justify-center rounded-xl border p-3.5 cursor-pointer transition-all ${
-                            role === 'admin'
-                              ? 'border-primary bg-primary/10 text-primary shadow-sm'
-                              : 'border-white/10 bg-background/50 hover:bg-background/80 text-muted-foreground'
-                          }`}
-                        >
-                          <RadioGroupItem value="admin" id="role-admin" className="sr-only" />
-                          <span className="font-semibold">Administrador</span>
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
+          {mode === 'forgot-password' && resetSent ? (
+            <div className="flex flex-col items-center justify-center space-y-6 animate-in fade-in zoom-in-95 duration-300 py-4">
+              <div className="bg-primary/10 p-4 rounded-full">
+                <MailCheck className="w-10 h-10 text-primary" />
+              </div>
+              <div className="text-center space-y-2">
+                <h3 className="text-xl font-bold">E-mail enviado</h3>
+                <p className="text-muted-foreground text-sm max-w-[280px]">
+                  Se existir uma conta associada a este e-mail, você receberá um link para redefinir
+                  sua senha em instantes.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setMode('login')
+                  setResetSent(false)
+                  setPassword('')
+                }}
+                className="w-full h-12"
+              >
+                Voltar ao Login
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={handleAuth} className="space-y-6">
+              <div className="space-y-4">
+                {mode === 'register' && (
+                  <>
+                    <div className="space-y-3">
+                      <Label>Tipo de Conta</Label>
+                      <RadioGroup
+                        value={role}
+                        onValueChange={(val) => setRole(val as 'employee' | 'admin')}
+                        className="grid grid-cols-2 gap-4"
+                      >
+                        <div>
+                          <Label
+                            htmlFor="role-employee"
+                            className={`flex items-center justify-center rounded-xl border p-3.5 cursor-pointer transition-all ${
+                              role === 'employee'
+                                ? 'border-primary bg-primary/10 text-primary shadow-sm'
+                                : 'border-white/10 bg-background/50 hover:bg-background/80 text-muted-foreground'
+                            }`}
+                          >
+                            <RadioGroupItem
+                              value="employee"
+                              id="role-employee"
+                              className="sr-only"
+                            />
+                            <span className="font-semibold">Funcionário</span>
+                          </Label>
+                        </div>
+                        <div>
+                          <Label
+                            htmlFor="role-admin"
+                            className={`flex items-center justify-center rounded-xl border p-3.5 cursor-pointer transition-all ${
+                              role === 'admin'
+                                ? 'border-primary bg-primary/10 text-primary shadow-sm'
+                                : 'border-white/10 bg-background/50 hover:bg-background/80 text-muted-foreground'
+                            }`}
+                          >
+                            <RadioGroupItem value="admin" id="role-admin" className="sr-only" />
+                            <span className="font-semibold">Administrador</span>
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
 
+                    <div className="space-y-2.5">
+                      <Label htmlFor="name">Nome Completo</Label>
+                      <Input
+                        id="name"
+                        type="text"
+                        placeholder="João Silva"
+                        value={name}
+                        onChange={(e) => {
+                          setName(e.target.value)
+                          setErrorMsg('')
+                          setFieldErrors((prev) => ({ ...prev, name: '' }))
+                        }}
+                        className={`h-12 bg-background/50 border-white/10 ${fieldErrors.name ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                        aria-invalid={!!fieldErrors.name}
+                      />
+                      {fieldErrors.name && (
+                        <p className="text-sm font-medium text-destructive animate-in fade-in slide-in-from-top-1">
+                          {fieldErrors.name}
+                        </p>
+                      )}
+                    </div>
+                  </>
+                )}
+                <div className="space-y-2.5">
+                  <Label htmlFor="email">Email Corporativo</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="nome@prn.com"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value)
+                      setErrorMsg('')
+                      setFieldErrors((prev) => ({ ...prev, email: '' }))
+                    }}
+                    className={`h-12 bg-background/50 border-white/10 ${errorMsg || fieldErrors.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                    aria-invalid={!!fieldErrors.email}
+                  />
+                  {fieldErrors.email && (
+                    <p className="text-sm font-medium text-destructive animate-in fade-in slide-in-from-top-1">
+                      {fieldErrors.email}
+                    </p>
+                  )}
+                </div>
+
+                {mode !== 'forgot-password' && (
                   <div className="space-y-2.5">
-                    <Label htmlFor="name">Nome Completo</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password">Senha</Label>
+                      {mode === 'login' && (
+                        <button
+                          type="button"
+                          className="text-xs font-semibold text-primary hover:text-accent transition-colors"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            setMode('forgot-password')
+                            setErrorMsg('')
+                            setFieldErrors({})
+                          }}
+                        >
+                          Esqueceu a senha?
+                        </button>
+                      )}
+                    </div>
                     <Input
-                      id="name"
-                      type="text"
-                      placeholder="João Silva"
-                      value={name}
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
                       onChange={(e) => {
-                        setName(e.target.value)
+                        setPassword(e.target.value)
                         setErrorMsg('')
-                        setFieldErrors((prev) => ({ ...prev, name: '' }))
+                        setFieldErrors((prev) => ({ ...prev, password: '' }))
                       }}
-                      className={`h-12 bg-background/50 border-white/10 ${fieldErrors.name ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                      aria-invalid={!!fieldErrors.name}
+                      className={`h-12 bg-background/50 border-white/10 ${errorMsg || fieldErrors.password ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                      aria-invalid={!!fieldErrors.password}
                     />
-                    {fieldErrors.name && (
+                    {fieldErrors.password && (
                       <p className="text-sm font-medium text-destructive animate-in fade-in slide-in-from-top-1">
-                        {fieldErrors.name}
+                        {fieldErrors.password}
                       </p>
                     )}
                   </div>
-                </>
-              )}
-              <div className="space-y-2.5">
-                <Label htmlFor="email">Email Corporativo</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="nome@prn.com"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value)
-                    setErrorMsg('')
-                    setFieldErrors((prev) => ({ ...prev, email: '' }))
-                  }}
-                  className={`h-12 bg-background/50 border-white/10 ${errorMsg || fieldErrors.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                  aria-invalid={!!fieldErrors.email}
-                />
-                {fieldErrors.email && (
-                  <p className="text-sm font-medium text-destructive animate-in fade-in slide-in-from-top-1">
-                    {fieldErrors.email}
-                  </p>
+                )}
+
+                {mode === 'register' && (
+                  <div className="space-y-2.5">
+                    <Label htmlFor="passwordConfirm">Confirmar Senha</Label>
+                    <Input
+                      id="passwordConfirm"
+                      type="password"
+                      placeholder="••••••••"
+                      value={passwordConfirm}
+                      onChange={(e) => {
+                        setPasswordConfirm(e.target.value)
+                        setErrorMsg('')
+                      }}
+                      className={`h-12 bg-background/50 border-white/10 ${errorMsg.includes('senhas não coincidem') ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                    />
+                  </div>
                 )}
               </div>
 
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Senha</Label>
-                  {mode === 'login' && (
-                    <a
-                      href="#"
-                      className="text-xs font-semibold text-primary hover:text-accent transition-colors"
-                      onClick={(e) => e.preventDefault()}
-                    >
-                      Esqueceu a senha?
-                    </a>
-                  )}
+              {errorMsg && (
+                <div className="text-sm font-semibold text-destructive animate-in fade-in slide-in-from-top-1 bg-destructive/10 p-3 rounded-xl border border-destructive/20">
+                  {errorMsg}
                 </div>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value)
-                    setErrorMsg('')
-                    setFieldErrors((prev) => ({ ...prev, password: '' }))
-                  }}
-                  className={`h-12 bg-background/50 border-white/10 ${errorMsg || fieldErrors.password ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                  aria-invalid={!!fieldErrors.password}
-                />
-                {fieldErrors.password && (
-                  <p className="text-sm font-medium text-destructive animate-in fade-in slide-in-from-top-1">
-                    {fieldErrors.password}
-                  </p>
-                )}
-              </div>
+              )}
 
-              {mode === 'register' && (
-                <div className="space-y-2.5">
-                  <Label htmlFor="passwordConfirm">Confirmar Senha</Label>
-                  <Input
-                    id="passwordConfirm"
-                    type="password"
-                    placeholder="••••••••"
-                    value={passwordConfirm}
-                    onChange={(e) => {
-                      setPasswordConfirm(e.target.value)
+              <div className="space-y-3 pt-2">
+                <Button type="submit" disabled={isLoading} className="w-full h-12 text-md">
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      {mode === 'login'
+                        ? 'Autenticando...'
+                        : mode === 'register'
+                          ? 'Registrando...'
+                          : 'Enviando...'}
+                    </>
+                  ) : (
+                    <>
+                      <span className="relative z-10">
+                        {mode === 'login'
+                          ? 'Entrar no Sistema'
+                          : mode === 'register'
+                            ? 'Criar Conta'
+                            : 'Enviar Link de Recuperação'}
+                      </span>
+                    </>
+                  )}
+                </Button>
+
+                {mode === 'forgot-password' && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      setMode('login')
                       setErrorMsg('')
                     }}
-                    className={`h-12 bg-background/50 border-white/10 ${errorMsg.includes('senhas não coincidem') ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                  />
-                </div>
-              )}
-            </div>
-
-            {errorMsg && (
-              <div className="text-sm font-semibold text-destructive animate-in fade-in slide-in-from-top-1 bg-destructive/10 p-3 rounded-xl border border-destructive/20">
-                {errorMsg}
+                    className="w-full h-12 text-muted-foreground hover:text-foreground"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" /> Voltar ao Login
+                  </Button>
+                )}
               </div>
-            )}
-
-            <Button type="submit" disabled={isLoading} className="w-full h-12 text-md mt-2">
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  {mode === 'login' ? 'Autenticando...' : 'Registrando...'}
-                </>
-              ) : (
-                <>
-                  <span className="relative z-10">
-                    {mode === 'login' ? 'Entrar no Sistema' : 'Criar Conta'}
-                  </span>
-                </>
-              )}
-            </Button>
-          </form>
+            </form>
+          )}
         </div>
       </div>
     </div>
