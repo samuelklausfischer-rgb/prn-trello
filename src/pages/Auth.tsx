@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useAuth } from '@/hooks/useAuthHooks'
 import { Loader2, Target, Users, LayoutDashboard, Zap } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
@@ -16,7 +17,7 @@ export default function Auth() {
   const [password, setPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
   const [name, setName] = useState('')
-  const role = 'employee'
+  const [role, setRole] = useState<'employee' | 'admin'>('employee')
   const [isLoading, setIsLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -181,7 +182,7 @@ export default function Auth() {
             <p className="text-muted-foreground font-medium">
               {mode === 'login'
                 ? 'Insira suas credenciais para continuar.'
-                : 'Preencha os dados para registrar sua conta de funcionário.'}
+                : 'Preencha os dados para registrar sua nova conta.'}
             </p>
           </div>
 
@@ -208,6 +209,42 @@ export default function Auth() {
             <div className="space-y-4">
               {mode === 'register' && (
                 <>
+                  <div className="space-y-3">
+                    <Label>Tipo de Conta</Label>
+                    <RadioGroup
+                      value={role}
+                      onValueChange={(val) => setRole(val as 'employee' | 'admin')}
+                      className="grid grid-cols-2 gap-4"
+                    >
+                      <div>
+                        <Label
+                          htmlFor="role-employee"
+                          className={`flex items-center justify-center rounded-xl border p-3.5 cursor-pointer transition-all ${
+                            role === 'employee'
+                              ? 'border-primary bg-primary/10 text-primary shadow-sm'
+                              : 'border-white/10 bg-background/50 hover:bg-background/80 text-muted-foreground'
+                          }`}
+                        >
+                          <RadioGroupItem value="employee" id="role-employee" className="sr-only" />
+                          <span className="font-semibold">Funcionário</span>
+                        </Label>
+                      </div>
+                      <div>
+                        <Label
+                          htmlFor="role-admin"
+                          className={`flex items-center justify-center rounded-xl border p-3.5 cursor-pointer transition-all ${
+                            role === 'admin'
+                              ? 'border-primary bg-primary/10 text-primary shadow-sm'
+                              : 'border-white/10 bg-background/50 hover:bg-background/80 text-muted-foreground'
+                          }`}
+                        >
+                          <RadioGroupItem value="admin" id="role-admin" className="sr-only" />
+                          <span className="font-semibold">Administrador</span>
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
                   <div className="space-y-2.5">
                     <Label htmlFor="name">Nome Completo</Label>
                     <Input
@@ -319,7 +356,7 @@ export default function Auth() {
               ) : (
                 <>
                   <span className="relative z-10">
-                    {mode === 'login' ? 'Entrar no Sistema' : 'Criar Conta de Funcionário'}
+                    {mode === 'login' ? 'Entrar no Sistema' : 'Criar Conta'}
                   </span>
                 </>
               )}
