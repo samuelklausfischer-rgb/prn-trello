@@ -47,6 +47,7 @@ export const SYSTEM_USERS: User[] = [
 
 type AuthContextType = {
   user: User | null
+  isLoading: boolean
   login: (user: User) => void
   logout: () => void
   addPoints: (points: number, reason?: string, sourceType?: string) => void
@@ -79,17 +80,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(
     pb.authStore.isValid ? mapRecordToUser(pb.authStore.record) : null,
   )
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    if (!pb.authStore.isValid && pb.authStore.token) {
-      pb.authStore.clear()
-    } else if (pb.authStore.isValid) {
-      pb.collection('users')
-        .authRefresh()
-        .catch(() => {
+    const initAuth = async () => {
+      if (!pb.authStore.isValid && pb.authStore.token) {
+        pb.authStore.clear()
+        setUser(null)
+      } else if (pb.authStore.isValid) {
+        try {
+          const authData = await pb.collection('users').authRefresh()
+          setUser(mapRecordToUser(authData.record))
+        } catch (err) {
           pb.authStore.clear()
-        })
+          setUser(null)
+        }
+      }
+      setIsLoading(false)
     }
+
+    initAuth()
 
     const unsubscribe = pb.authStore.onChange((token, record) => {
       setUser(pb.authStore.isValid ? mapRecordToUser(record) : null)
@@ -97,6 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const handleAuthError = () => {
       setUser(null)
+      pb.authStore.clear()
     }
     window.addEventListener('pb:auth-error', handleAuthError)
 
@@ -155,7 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return React.createElement(
     AuthContext.Provider,
-    { value: { user, login, logout, addPoints, updateTutorialProgress } },
+    { value: { user, isLoading, login, logout, addPoints, updateTutorialProgress } },
     children,
   )
 }
