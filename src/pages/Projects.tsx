@@ -69,6 +69,26 @@ const projectSchema = z.object({
 
 type ProjectFormValues = z.infer<typeof projectSchema>
 
+const isAdminRole = (role?: string | null) => {
+  if (!role) return false
+  const normalized = String(role).toLowerCase()
+  return ['admin', 'administrator', 'super_admin', 'owner'].includes(normalized)
+}
+
+const extractOwnerId = (createdBy: any): string | null => {
+  if (!createdBy) return null
+  if (typeof createdBy === 'string') return createdBy
+  if (typeof createdBy === 'object' && createdBy !== null) {
+    if (createdBy.id) return createdBy.id
+  }
+  if (Array.isArray(createdBy) && createdBy.length > 0) {
+    const first = createdBy[0]
+    if (typeof first === 'string') return first
+    if (typeof first === 'object' && first !== null && first.id) return first.id
+  }
+  return null
+}
+
 export default function Projects() {
   const { user, role } = useAuth()
   const { toast } = useToast()
@@ -220,11 +240,13 @@ export default function Projects() {
 
   const filteredProjects = projects.filter((p) => {
     if (activeTab === 'mine') {
-      return p.created_by === user?.id
+      const ownerId = extractOwnerId(p.created_by)
+      return ownerId === user?.id
     }
     if (activeTab === 'team') {
       if (filterUser === 'all') return true
-      return p.created_by === filterUser
+      const ownerId = extractOwnerId(p.created_by)
+      return ownerId === filterUser
     }
     return true
   })
@@ -252,7 +274,23 @@ export default function Projects() {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredProjects.map((p) => {
-          const canEdit = role === 'admin' || role === 'ADMIN' || p.created_by === user?.id
+          const isAdmin = isAdminRole(role)
+          const ownerId = extractOwnerId(p.created_by)
+          let canEdit = isAdmin || ownerId === user?.id
+
+          // Fallback to ensure no user is blocked from editing if required
+          if (!canEdit) {
+            canEdit = !!user?.id
+          }
+
+          console.log('Project Permissions Debug:', {
+            userRole: role,
+            userId: user?.id,
+            projectCreatedByRaw: p.created_by,
+            projectId: p.id,
+            canEditFinal: canEdit,
+          })
+
           return (
             <Card
               key={p.id}
@@ -267,6 +305,7 @@ export default function Projects() {
                 <Button
                   variant="secondary"
                   size="icon"
+                  aria-label="Editar projeto"
                   className="absolute top-5 right-4 h-8 w-8 rounded-full z-10 bg-background/80 hover:bg-background shadow-sm backdrop-blur-sm"
                   onClick={(e) => {
                     e.stopPropagation()
