@@ -271,23 +271,25 @@ export default function Projects() {
                 {format(new Date(p.created), "dd 'de' MMM", { locale: ptBR })}
               </div>
               <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 rounded-full"
-                  onClick={() => openModal(p)}
-                >
-                  <Pencil className="w-4 h-4" />
-                </Button>
                 {(role === 'ADMIN' || p.created_by === user?.id) && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive rounded-full"
-                    onClick={(e) => handleDelete(p.id, e)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 rounded-full"
+                      onClick={() => openModal(p)}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive rounded-full"
+                      onClick={(e) => handleDelete(p.id, e)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </>
                 )}
               </div>
             </CardFooter>
