@@ -251,66 +251,74 @@ export default function Projects() {
 
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredProjects.map((p) => (
-          <Card
-            key={p.id}
-            className="group glass-card rounded-3xl border-border/50 hover:-translate-y-1 transition-all overflow-hidden"
-          >
-            <div className="h-2 w-full" style={{ backgroundColor: p.color || '#3b82f6' }} />
-            <CardHeader className="pb-3 pt-4">
-              <div className="flex justify-between items-start gap-2">
-                <CardTitle className="text-lg font-bold line-clamp-2">{p.name}</CardTitle>
-                <Badge
-                  variant="outline"
-                  className={`text-[10px] uppercase border-none ${colors[p.status]}`}
-                >
-                  {labels[p.status]}
-                </Badge>
-              </div>
-              <CardDescription className="line-clamp-2 text-xs mt-1 min-h-[32px]">
-                {p.description || 'Sem descrição'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pb-4">
-              <div className="flex justify-between text-sm font-semibold mb-2">
-                <span className="text-muted-foreground">Progresso</span>
-                <span className="text-primary">{p.progress}%</span>
-              </div>
-              <Progress value={p.progress} className="h-2.5" />
-            </CardContent>
-            <CardFooter className="pt-0 flex justify-between items-center border-t border-border/30 mt-2 px-6 pt-4">
-              <div className="flex items-center text-[11px] text-muted-foreground gap-1.5">
-                <Calendar className="w-3.5 h-3.5" />{' '}
-                {format(new Date(p.created), "dd 'de' MMM", { locale: ptBR })}
-              </div>
-              <div className="flex gap-2">
-                {(role === 'admin' || role === 'ADMIN' || p.created_by === user?.id) && (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 rounded-full hover:bg-primary/20 hover:text-primary"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        openModal(p)
-                      }}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:bg-destructive/20 rounded-full"
-                      onClick={(e) => handleDelete(p.id, e)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </>
-                )}
-              </div>
-            </CardFooter>
-          </Card>
-        ))}
+        {filteredProjects.map((p) => {
+          const canEdit = role === 'admin' || role === 'ADMIN' || p.created_by === user?.id
+          return (
+            <Card
+              key={p.id}
+              onClick={() => {
+                if (canEdit) openModal(p)
+              }}
+              className={`group glass-card rounded-3xl border-border/50 transition-all overflow-hidden ${
+                canEdit ? 'cursor-pointer hover:-translate-y-1 hover:shadow-md' : ''
+              }`}
+            >
+              <div className="h-2 w-full" style={{ backgroundColor: p.color || '#3b82f6' }} />
+              <CardHeader className="pb-3 pt-4">
+                <div className="flex justify-between items-start gap-2">
+                  <CardTitle className="text-lg font-bold line-clamp-2">{p.name}</CardTitle>
+                  <Badge
+                    variant="outline"
+                    className={`text-[10px] uppercase border-none ${colors[p.status]}`}
+                  >
+                    {labels[p.status]}
+                  </Badge>
+                </div>
+                <CardDescription className="line-clamp-2 text-xs mt-1 min-h-[32px]">
+                  {p.description || 'Sem descrição'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pb-4">
+                <div className="flex justify-between text-sm font-semibold mb-2">
+                  <span className="text-muted-foreground">Progresso</span>
+                  <span className="text-primary">{p.progress}%</span>
+                </div>
+                <Progress value={p.progress} className="h-2.5" />
+              </CardContent>
+              <CardFooter className="pt-0 flex justify-between items-center border-t border-border/30 mt-2 px-6 pt-4">
+                <div className="flex items-center text-[11px] text-muted-foreground gap-1.5">
+                  <Calendar className="w-3.5 h-3.5" />{' '}
+                  {format(new Date(p.created), "dd 'de' MMM", { locale: ptBR })}
+                </div>
+                <div className="flex gap-2">
+                  {canEdit && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-full hover:bg-primary/20 hover:text-primary"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openModal(p)
+                        }}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:bg-destructive/20 rounded-full"
+                        onClick={(e) => handleDelete(p.id, e)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </CardFooter>
+            </Card>
+          )
+        })}
       </div>
     )
   }
