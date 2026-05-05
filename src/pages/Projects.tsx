@@ -259,13 +259,26 @@ export default function Projects() {
               onClick={() => {
                 if (canEdit) openModal(p)
               }}
-              className={`group glass-card rounded-3xl border-border/50 transition-all overflow-hidden ${
+              className={`group relative glass-card rounded-3xl border-border/50 transition-all overflow-hidden ${
                 canEdit ? 'cursor-pointer hover:-translate-y-1 hover:shadow-md' : ''
               }`}
             >
+              {canEdit && (
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="absolute top-5 right-4 h-8 w-8 rounded-full z-10 bg-background/80 hover:bg-background shadow-sm backdrop-blur-sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    openModal(p)
+                  }}
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+              )}
               <div className="h-2 w-full" style={{ backgroundColor: p.color || '#3b82f6' }} />
-              <CardHeader className="pb-3 pt-4">
-                <div className="flex justify-between items-start gap-2">
+              <CardHeader className="pb-3 pt-4 pr-14">
+                <div className="flex flex-col items-start gap-2">
                   <CardTitle className="text-lg font-bold line-clamp-2">{p.name}</CardTitle>
                   <Badge
                     variant="outline"
@@ -292,27 +305,14 @@ export default function Projects() {
                 </div>
                 <div className="flex gap-2">
                   {canEdit && (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 rounded-full hover:bg-primary/20 hover:text-primary"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          openModal(p)
-                        }}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:bg-destructive/20 rounded-full"
-                        onClick={(e) => handleDelete(p.id, e)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:bg-destructive/20 rounded-full"
+                      onClick={(e) => handleDelete(p.id, e)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   )}
                 </div>
               </CardFooter>
