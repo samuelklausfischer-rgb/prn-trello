@@ -64,6 +64,7 @@ const projectSchema = z.object({
   description: z.string().optional(),
   progress: z.coerce.number().min(0).max(100),
   status: z.enum(['active', 'completed', 'on_hold']),
+  color: z.string().optional(),
 })
 
 type ProjectFormValues = z.infer<typeof projectSchema>
@@ -148,8 +149,9 @@ export default function Projects() {
             description: p.description || '',
             progress: p.progress || 0,
             status: p.status || 'active',
+            color: p.color || '#3b82f6',
           }
-        : { name: '', description: '', progress: 0, status: 'active' },
+        : { name: '', description: '', progress: 0, status: 'active', color: '#3b82f6' },
     )
     setIsModalOpen(true)
   }
@@ -242,9 +244,10 @@ export default function Projects() {
         {filteredProjects.map((p) => (
           <Card
             key={p.id}
-            className="group glass-card rounded-3xl border-border/50 hover:-translate-y-1 transition-all"
+            className="group glass-card rounded-3xl border-border/50 hover:-translate-y-1 transition-all overflow-hidden"
           >
-            <CardHeader className="pb-3">
+            <div className="h-2 w-full" style={{ backgroundColor: p.color || '#3b82f6' }} />
+            <CardHeader className="pb-3 pt-4">
               <div className="flex justify-between items-start gap-2">
                 <CardTitle className="text-lg font-bold line-clamp-2">{p.name}</CardTitle>
                 <Badge
@@ -270,21 +273,24 @@ export default function Projects() {
                 <Calendar className="w-3.5 h-3.5" />{' '}
                 {format(new Date(p.created), "dd 'de' MMM", { locale: ptBR })}
               </div>
-              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                {(role === 'ADMIN' || p.created_by === user?.id) && (
+              <div className="flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                {(role === 'admin' || role === 'ADMIN' || p.created_by === user?.id) && (
                   <>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 rounded-full"
-                      onClick={() => openModal(p)}
+                      className="h-8 w-8 rounded-full hover:bg-primary/20 hover:text-primary"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        openModal(p)
+                      }}
                     >
                       <Pencil className="w-4 h-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-destructive rounded-full"
+                      className="h-8 w-8 text-destructive hover:bg-destructive/20 rounded-full"
                       onClick={(e) => handleDelete(p.id, e)}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -316,7 +322,7 @@ export default function Projects() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {role === 'ADMIN' && (
+            {(role === 'admin' || role === 'ADMIN') && (
               <Button
                 variant="outline"
                 size="sm"
@@ -466,6 +472,34 @@ export default function Projects() {
                           max={100}
                           step={1}
                         />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="color"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cor do Projeto</FormLabel>
+                      <FormControl>
+                        <div className="flex items-center gap-3">
+                          <Input
+                            type="color"
+                            className="w-12 h-12 p-1 rounded-xl cursor-pointer"
+                            {...field}
+                            value={field.value || '#3b82f6'}
+                          />
+                          <Input
+                            type="text"
+                            placeholder="#000000"
+                            className="flex-1 rounded-xl uppercase"
+                            {...field}
+                            value={field.value || '#3b82f6'}
+                            onChange={(e) => field.onChange(e.target.value)}
+                          />
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
