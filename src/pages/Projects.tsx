@@ -75,7 +75,7 @@ const isAdminRole = (role?: string | null) => {
   return ['admin', 'administrator', 'super_admin', 'owner'].includes(normalized)
 }
 
-const extractOwnerId = (createdBy: any): string | null => {
+const getOwnerId = (createdBy: any): string | null => {
   if (!createdBy) return null
   if (typeof createdBy === 'string') return createdBy
   if (typeof createdBy === 'object' && createdBy !== null) {
@@ -193,6 +193,24 @@ export default function Projects() {
       }
 
       if (editing) {
+        console.log('--- PROJECT UPDATE DIAGNOSTICS ---')
+        console.log('editing.id:', editing.id)
+        console.log('editing:', editing)
+        console.log('user?.id:', userId)
+        console.log('role:', role)
+        console.log('payload:', payload)
+        console.log('editing.created_by:', editing.created_by)
+
+        try {
+          const existing = await pb.collection('projects').getOne(editing.id)
+          console.log('Pre-check getOne successful:', existing)
+        } catch (err: any) {
+          console.error(
+            'Pre-check getOne failed. This means either the ID is wrong, or the user lacks view permission.',
+            err,
+          )
+        }
+
         await updateProject(editing.id, payload)
       } else {
         await createProject({ ...payload, created_by: userId })
@@ -240,12 +258,12 @@ export default function Projects() {
 
   const filteredProjects = projects.filter((p) => {
     if (activeTab === 'mine') {
-      const ownerId = extractOwnerId(p.created_by)
+      const ownerId = getOwnerId(p.created_by)
       return ownerId === user?.id
     }
     if (activeTab === 'team') {
       if (filterUser === 'all') return true
-      const ownerId = extractOwnerId(p.created_by)
+      const ownerId = getOwnerId(p.created_by)
       return ownerId === filterUser
     }
     return true
@@ -275,7 +293,7 @@ export default function Projects() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredProjects.map((p) => {
           const isAdmin = isAdminRole(role)
-          const ownerId = extractOwnerId(p.created_by)
+          const ownerId = getOwnerId(p.created_by)
           let canEdit = isAdmin || ownerId === user?.id
 
           // Fallback to ensure no user is blocked from editing if required
