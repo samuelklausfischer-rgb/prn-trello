@@ -186,10 +186,10 @@ export default function Projects() {
       const userId = user?.id || pb.authStore.record?.id
       if (!userId) throw new Error('Usuário não autenticado.')
 
-      // Ensure status is sent as a plain string, mitigating any array issues
+      // Ensure status is sent exactly as a plain string to match backend schema constraints
       const payload = {
         ...values,
-        status: Array.isArray(values.status) ? values.status[0] : values.status,
+        status: String(values.status).trim(),
       }
 
       if (editing) {
@@ -218,7 +218,11 @@ export default function Projects() {
       toast({ title: editing ? 'Projeto atualizado!' : 'Projeto criado!' })
       setIsModalOpen(false)
       loadData()
-    } catch (error: unknown) {
+    } catch (error: any) {
+      console.error(
+        'Project save error detailed:',
+        JSON.stringify(error?.response?.data || error, null, 2),
+      )
       toast({
         title: 'Erro ao salvar',
         description: getErrorMessage(error),
@@ -251,9 +255,9 @@ export default function Projects() {
     on_hold: 'bg-amber-500/20 text-amber-500',
   }
   const labels: Record<string, string> = {
-    active: 'Em Andamento',
+    active: 'Ativo',
     completed: 'Concluído',
-    on_hold: 'Pausado',
+    on_hold: 'Em Espera',
   }
 
   const filteredProjects = projects.filter((p) => {
@@ -522,9 +526,9 @@ export default function Projects() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="active">Em Andamento</SelectItem>
+                          <SelectItem value="active">Ativo</SelectItem>
                           <SelectItem value="completed">Concluído</SelectItem>
-                          <SelectItem value="on_hold">Pausado</SelectItem>
+                          <SelectItem value="on_hold">Em Espera</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
