@@ -142,13 +142,17 @@ export default function Projects() {
 
   const openModal = (p?: ProjectRecord) => {
     setEditing(p || null)
+
+    // Ensure status is treated as a single string
+    const statusVal = p?.status ? (Array.isArray(p.status) ? p.status[0] : p.status) : 'active'
+
     form.reset(
       p
         ? {
             name: p.name,
             description: p.description || '',
             progress: p.progress || 0,
-            status: p.status || 'active',
+            status: statusVal as 'active' | 'completed' | 'on_hold',
             color: p.color || '#3b82f6',
           }
         : { name: '', description: '', progress: 0, status: 'active', color: '#3b82f6' },
@@ -162,10 +166,16 @@ export default function Projects() {
       const userId = user?.id || pb.authStore.record?.id
       if (!userId) throw new Error('Usuário não autenticado.')
 
+      // Ensure status is sent as a plain string, mitigating any array issues
+      const payload = {
+        ...values,
+        status: Array.isArray(values.status) ? values.status[0] : values.status,
+      }
+
       if (editing) {
-        await updateProject(editing.id, values)
+        await updateProject(editing.id, payload)
       } else {
-        await createProject({ ...values, created_by: userId })
+        await createProject({ ...payload, created_by: userId })
       }
       toast({ title: editing ? 'Projeto atualizado!' : 'Projeto criado!' })
       setIsModalOpen(false)
@@ -273,7 +283,7 @@ export default function Projects() {
                 <Calendar className="w-3.5 h-3.5" />{' '}
                 {format(new Date(p.created), "dd 'de' MMM", { locale: ptBR })}
               </div>
-              <div className="flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+              <div className="flex gap-2">
                 {(role === 'admin' || role === 'ADMIN' || p.created_by === user?.id) && (
                   <>
                     <Button
