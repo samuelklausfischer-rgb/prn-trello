@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-06T16:48:08.239Z",
+  "generatedAt": "2026-05-06T17:36:31.341Z",
   "collections": [
     {
       "name": "users",
@@ -1028,7 +1028,15 @@
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": ["active", "completed", "on_hold"]
+          "selectValues": [
+            "active",
+            "completed",
+            "on_hold",
+            "todo",
+            "in_progress",
+            "review",
+            "done"
+          ]
         },
         {
           "name": "color",
