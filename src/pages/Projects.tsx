@@ -186,10 +186,9 @@ export default function Projects() {
       const userId = user?.id || pb.authStore.record?.id
       if (!userId) throw new Error('Usuário não autenticado.')
 
-      // Ensure status is sent exactly as a plain string to match backend schema constraints
       const payload = {
         ...values,
-        status: String(values.status).trim(),
+        status: values.status,
       }
 
       if (editing) {
