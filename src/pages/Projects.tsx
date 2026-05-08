@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   getProjects,
   ProjectRecord,
@@ -39,7 +39,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
-import { Plus, FolderKanban, Pencil, Trash2, Calendar } from 'lucide-react'
+import { Plus, FolderKanban, Pencil, Trash2, Calendar, Users, ShieldAlert } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getUsers } from '@/services/users'
 import { format } from 'date-fns'
@@ -58,13 +58,17 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
+import { Checkbox } from '@/components/ui/checkbox'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Nome obrigatório'),
   description: z.string().optional(),
   progress: z.coerce.number().min(0).max(100),
-  status: z.enum(['active', 'completed', 'on_hold']),
+  status: z.enum(['active', 'completed', 'on_hold', 'todo', 'in_progress', 'review', 'done']),
   color: z.string().optional(),
+  shared_with_users: z.array(z.string()).optional().default([]),
+  shared_with_roles: z.array(z.string()).optional().default([]),
 })
 
 type ProjectFormValues = z.infer<typeof projectSchema>
@@ -140,6 +144,8 @@ export default function Projects() {
       description: '',
       progress: 0,
       status: 'active',
+      shared_with_users: [],
+      shared_with_roles: [],
     },
   })
 
@@ -160,10 +166,13 @@ export default function Projects() {
   }, [])
   useRealtime('projects', () => loadData())
 
+  const uniqueJobTitles = useMemo(() => {
+    return Array.from(new Set(users.map((u) => u.job_title).filter(Boolean))).sort()
+  }, [users])
+
   const openModal = (p?: ProjectRecord) => {
     setEditing(p || null)
 
-    // Ensure status is treated as a single string
     const statusVal = p?.status ? (Array.isArray(p.status) ? p.status[0] : p.status) : 'active'
 
     form.reset(
@@ -172,10 +181,27 @@ export default function Projects() {
             name: p.name,
             description: p.description || '',
             progress: p.progress || 0,
-            status: statusVal as 'active' | 'completed' | 'on_hold',
+            status: statusVal as
+              | 'active'
+              | 'completed'
+              | 'on_hold'
+              | 'todo'
+              | 'in_progress'
+              | 'review'
+              | 'done',
             color: p.color || '#3b82f6',
+            shared_with_users: p.shared_with_users || [],
+            shared_with_roles: p.shared_with_roles || [],
           }
-        : { name: '', description: '', progress: 0, status: 'active', color: '#3b82f6' },
+        : {
+            name: '',
+            description: '',
+            progress: 0,
+            status: 'active',
+            color: '#3b82f6',
+            shared_with_users: [],
+            shared_with_roles: [],
+          },
     )
     setIsModalOpen(true)
   }
@@ -186,30 +212,9 @@ export default function Projects() {
       const userId = user?.id || pb.authStore.record?.id
       if (!userId) throw new Error('Usuário não autenticado.')
 
-      const payload = {
-        ...values,
-        status: values.status,
-      }
+      const payload = { ...values }
 
       if (editing) {
-        console.log('--- PROJECT UPDATE DIAGNOSTICS ---')
-        console.log('editing.id:', editing.id)
-        console.log('editing:', editing)
-        console.log('user?.id:', userId)
-        console.log('role:', role)
-        console.log('payload:', payload)
-        console.log('editing.created_by:', editing.created_by)
-
-        try {
-          const existing = await pb.collection('projects').getOne(editing.id)
-          console.log('Pre-check getOne successful:', existing)
-        } catch (err: any) {
-          console.error(
-            'Pre-check getOne failed. This means either the ID is wrong, or the user lacks view permission.',
-            err,
-          )
-        }
-
         await updateProject(editing.id, payload)
       } else {
         await createProject({ ...payload, created_by: userId })
@@ -218,10 +223,7 @@ export default function Projects() {
       setIsModalOpen(false)
       loadData()
     } catch (error: any) {
-      console.error(
-        'Project save error detailed:',
-        JSON.stringify(error?.response?.data || error, null, 2),
-      )
+      console.error('Project save error detailed:', error)
       toast({
         title: 'Erro ao salvar',
         description: getErrorMessage(error),
@@ -252,11 +254,19 @@ export default function Projects() {
     active: 'bg-blue-500/20 text-blue-500',
     completed: 'bg-green-500/20 text-green-500',
     on_hold: 'bg-amber-500/20 text-amber-500',
+    todo: 'bg-slate-500/20 text-slate-500',
+    in_progress: 'bg-blue-500/20 text-blue-500',
+    review: 'bg-purple-500/20 text-purple-500',
+    done: 'bg-green-500/20 text-green-500',
   }
   const labels: Record<string, string> = {
     active: 'Ativo',
     completed: 'Concluído',
     on_hold: 'Em Espera',
+    todo: 'A Fazer',
+    in_progress: 'Em Andamento',
+    review: 'Em Revisão',
+    done: 'Finalizado',
   }
 
   const filteredProjects = projects.filter((p) => {
@@ -298,19 +308,11 @@ export default function Projects() {
           const isAdmin = isAdminRole(role)
           const ownerId = getOwnerId(p.created_by)
           let canEdit = isAdmin || ownerId === user?.id
+          const isShared = ownerId !== user?.id && !isAdmin
 
-          // Fallback to ensure no user is blocked from editing if required
           if (!canEdit) {
-            canEdit = !!user?.id
+            canEdit = false
           }
-
-          console.log('Project Permissions Debug:', {
-            userRole: role,
-            userId: user?.id,
-            projectCreatedByRaw: p.created_by,
-            projectId: p.id,
-            canEditFinal: canEdit,
-          })
 
           return (
             <Card
@@ -339,12 +341,23 @@ export default function Projects() {
               <div className="h-2 w-full" style={{ backgroundColor: p.color || '#3b82f6' }} />
               <CardHeader className="pb-3 pt-4 pr-14">
                 <div className="flex flex-col items-start gap-2">
-                  <CardTitle className="text-lg font-bold line-clamp-2">{p.name}</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-lg font-bold line-clamp-2">{p.name}</CardTitle>
+                    {isShared && (
+                      <Badge
+                        variant="secondary"
+                        className="h-5 px-1.5 text-[9px] gap-1 bg-primary/10 text-primary border-primary/20 uppercase tracking-wider"
+                      >
+                        <Users className="w-3 h-3" />
+                        Acesso Compartilhado
+                      </Badge>
+                    )}
+                  </div>
                   <Badge
                     variant="outline"
-                    className={`text-[10px] uppercase border-none ${colors[p.status]}`}
+                    className={`text-[10px] uppercase border-none ${colors[p.status] || colors.active}`}
                   >
-                    {labels[p.status]}
+                    {labels[p.status] || p.status}
                   </Badge>
                 </div>
                 <CardDescription className="line-clamp-2 text-xs mt-1 min-h-[32px]">
@@ -431,10 +444,10 @@ export default function Projects() {
               className="grid w-full sm:w-[400px] grid-cols-2 rounded-xl"
             >
               <TabsTrigger value="mine" className="rounded-lg">
-                Meus Trabalhos
+                Meus Projetos
               </TabsTrigger>
               <TabsTrigger value="team" className="rounded-lg">
-                Trabalhos da Equipe
+                Projetos da Equipe
               </TabsTrigger>
             </TabsList>
 
@@ -470,133 +483,259 @@ export default function Projects() {
         </Tabs>
 
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          {' '}
-          <DialogContent className="sm:max-w-md rounded-3xl glass-card">
-            <DialogHeader>
-              <DialogTitle>{editing ? 'Editar Projeto' : 'Novo Projeto'}</DialogTitle>
-            </DialogHeader>
+          <DialogContent className="sm:max-w-md rounded-3xl glass-card p-0 overflow-hidden">
+            <div className="p-6 pb-2">
+              <DialogHeader>
+                <DialogTitle>{editing ? 'Editar Projeto' : 'Novo Projeto'}</DialogTitle>
+              </DialogHeader>
+            </div>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Nome do projeto" className="rounded-xl" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Descrição</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Descrição do projeto"
-                          className="rounded-xl h-20"
-                          {...field}
-                          value={field.value || ''}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="rounded-xl">
-                            <SelectValue placeholder="Selecione o status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="active">Ativo</SelectItem>
-                          <SelectItem value="completed">Concluído</SelectItem>
-                          <SelectItem value="on_hold">Em Espera</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="progress"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex justify-between items-center pb-2">
-                        <FormLabel>Progresso Manual</FormLabel>
-                        <span className="font-bold text-primary">{field.value}%</span>
-                      </div>
-                      <FormControl>
-                        <Slider
-                          value={[field.value]}
-                          onValueChange={(v) => field.onChange(v[0])}
-                          max={100}
-                          step={1}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="color"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cor do Projeto</FormLabel>
-                      <FormControl>
-                        <div className="flex items-center gap-3">
-                          <Input
-                            type="color"
-                            className="w-12 h-12 p-1 rounded-xl cursor-pointer"
-                            {...field}
-                            value={field.value || '#3b82f6'}
-                          />
-                          <Input
-                            type="text"
-                            placeholder="#000000"
-                            className="flex-1 rounded-xl uppercase"
-                            {...field}
-                            value={field.value || '#3b82f6'}
-                            onChange={(e) => field.onChange(e.target.value)}
-                          />
+              <form onSubmit={form.handleSubmit(onSubmit)}>
+                <Tabs defaultValue="details" className="w-full">
+                  <div className="px-6">
+                    <TabsList className="grid w-full grid-cols-2 rounded-xl">
+                      <TabsTrigger value="details" className="rounded-lg">
+                        Detalhes
+                      </TabsTrigger>
+                      <TabsTrigger value="access" className="rounded-lg">
+                        Compartilhamento
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
+
+                  <div className="p-6 pt-4 space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                    <TabsContent value="details" className="m-0 space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nome</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Nome do projeto"
+                                className="rounded-xl"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Descrição</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Descrição do projeto"
+                                className="rounded-xl h-20"
+                                {...field}
+                                value={field.value || ''}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="status"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Status</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                              value={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="rounded-xl">
+                                  <SelectValue placeholder="Selecione o status" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="active">Ativo</SelectItem>
+                                <SelectItem value="completed">Concluído</SelectItem>
+                                <SelectItem value="on_hold">Em Espera</SelectItem>
+                                <SelectItem value="todo">A Fazer</SelectItem>
+                                <SelectItem value="in_progress">Em Andamento</SelectItem>
+                                <SelectItem value="review">Em Revisão</SelectItem>
+                                <SelectItem value="done">Finalizado</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="progress"
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="flex justify-between items-center pb-2">
+                              <FormLabel>Progresso Manual</FormLabel>
+                              <span className="font-bold text-primary">{field.value}%</span>
+                            </div>
+                            <FormControl>
+                              <Slider
+                                value={[field.value]}
+                                onValueChange={(v) => field.onChange(v[0])}
+                                max={100}
+                                step={1}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="color"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Cor do Projeto</FormLabel>
+                            <FormControl>
+                              <div className="flex items-center gap-3">
+                                <Input
+                                  type="color"
+                                  className="w-12 h-12 p-1 rounded-xl cursor-pointer"
+                                  {...field}
+                                  value={field.value || '#3b82f6'}
+                                />
+                                <Input
+                                  type="text"
+                                  placeholder="#000000"
+                                  className="flex-1 rounded-xl uppercase"
+                                  {...field}
+                                  value={field.value || '#3b82f6'}
+                                  onChange={(e) => field.onChange(e.target.value)}
+                                />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </TabsContent>
+
+                    <TabsContent value="access" className="m-0 space-y-5">
+                      <div className="bg-primary/5 p-4 rounded-xl flex items-start gap-3 border border-primary/10">
+                        <ShieldAlert className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                        <div className="text-sm text-primary/80">
+                          Projetos são privados por padrão. Os usuários e cargos selecionados abaixo
+                          terão acesso de visualização a este projeto.
                         </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <DialogFooter className="pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsModalOpen(false)}
-                    className="rounded-xl"
-                    disabled={isSaving}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button type="submit" className="rounded-xl" disabled={isSaving}>
-                    {isSaving ? 'Salvando...' : editing ? 'Atualizar' : 'Criar'}
-                  </Button>
-                </DialogFooter>
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="shared_with_users"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Compartilhar com Colaboradores Específicos</FormLabel>
+                            <div className="border rounded-xl bg-background overflow-hidden">
+                              <ScrollArea className="h-40 p-3">
+                                <div className="flex flex-col gap-3">
+                                  {users
+                                    .filter((u) => u.id !== (user?.id || pb.authStore.record?.id))
+                                    .map((u) => (
+                                      <div key={u.id} className="flex items-center space-x-3">
+                                        <Checkbox
+                                          checked={field.value?.includes(u.id)}
+                                          onCheckedChange={(checked) => {
+                                            const current = field.value || []
+                                            field.onChange(
+                                              checked
+                                                ? [...current, u.id]
+                                                : current.filter((id) => id !== u.id),
+                                            )
+                                          }}
+                                        />
+                                        <label className="text-sm font-medium leading-none cursor-pointer flex-1">
+                                          {u.name || u.email}{' '}
+                                          {u.job_title && (
+                                            <span className="text-muted-foreground ml-1 font-normal">
+                                              - {u.job_title}
+                                            </span>
+                                          )}
+                                        </label>
+                                      </div>
+                                    ))}
+                                  {users.length <= 1 && (
+                                    <span className="text-sm text-muted-foreground italic">
+                                      Nenhum outro colaborador disponível.
+                                    </span>
+                                  )}
+                                </div>
+                              </ScrollArea>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="shared_with_roles"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Compartilhar com Cargos (Departamentos)</FormLabel>
+                            <div className="border rounded-xl bg-background overflow-hidden">
+                              <ScrollArea className="h-32 p-3">
+                                <div className="flex flex-col gap-3">
+                                  {uniqueJobTitles.map((role) => (
+                                    <div key={role} className="flex items-center space-x-3">
+                                      <Checkbox
+                                        checked={field.value?.includes(role)}
+                                        onCheckedChange={(checked) => {
+                                          const current = field.value || []
+                                          field.onChange(
+                                            checked
+                                              ? [...current, role]
+                                              : current.filter((r) => r !== role),
+                                          )
+                                        }}
+                                      />
+                                      <label className="text-sm font-medium leading-none cursor-pointer flex-1">
+                                        {role}
+                                      </label>
+                                    </div>
+                                  ))}
+                                  {uniqueJobTitles.length === 0 && (
+                                    <span className="text-sm text-muted-foreground italic">
+                                      Nenhum cargo cadastrado.
+                                    </span>
+                                  )}
+                                </div>
+                              </ScrollArea>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </TabsContent>
+                  </div>
+                </Tabs>
+
+                <div className="p-6 pt-2">
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsModalOpen(false)}
+                      className="rounded-xl"
+                      disabled={isSaving}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button type="submit" className="rounded-xl" disabled={isSaving}>
+                      {isSaving ? 'Salvando...' : editing ? 'Atualizar Projeto' : 'Criar Projeto'}
+                    </Button>
+                  </DialogFooter>
+                </div>
               </form>
             </Form>
           </DialogContent>
