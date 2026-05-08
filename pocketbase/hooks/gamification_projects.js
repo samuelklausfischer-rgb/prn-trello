@@ -1,10 +1,10 @@
 onRecordUpdate((e) => {
-  const newStatus = e.record.get('status')
-  const original = e.record.originalCopy()
-  const oldStatus = original ? original.get('status') : ''
+  const newStatus = e.record.getString('status')
+  const original = e.record.original()
+  const oldStatus = original ? original.getString('status') : ''
 
   if (newStatus === 'completed' && oldStatus !== 'completed') {
-    const targetUserId = e.record.get('created_by')
+    const targetUserId = e.record.getString('created_by')
     if (!targetUserId) {
       e.next()
       return
@@ -29,13 +29,13 @@ onRecordUpdate((e) => {
       const historyRecord = new Record(historyCol)
       historyRecord.set('user_id', targetUserId)
       historyRecord.set('points', pReward)
-      historyRecord.set('reason', `Projeto concluído: ${e.record.get('name')}`)
+      historyRecord.set('reason', `Projeto concluído: ${e.record.getString('name')}`)
       historyRecord.set('source_type', 'project')
-      historyRecord.set('source_id', e.record.get('id'))
+      historyRecord.set('source_id', e.record.id)
       historyRecord.set('balance_after', newPoints)
       $app.save(historyRecord)
 
-      const userJobTitle = user.get('job_title') || ''
+      const userJobTitle = user.getString('job_title') || ''
       const nJobTitle = String(userJobTitle).toLowerCase().trim().replace(/ /g, '_')
       const userAchs = $app.findRecordsByFilter(
         'user_achievements',
@@ -46,12 +46,12 @@ onRecordUpdate((e) => {
       )
 
       for (const ua of userAchs) {
-        if (ua.get('unlocked_at')) continue
+        if (ua.getString('unlocked_at')) continue
 
         try {
-          const achId = ua.get('achievement_id')
+          const achId = ua.getString('achievement_id')
           const ach = $app.findRecordById('achievements', achId)
-          const category = String(ach.get('category')).toLowerCase().trim()
+          const category = String(ach.getString('category')).toLowerCase().trim()
 
           let shouldIncrement = false
           if (category === 'milestone') shouldIncrement = true
@@ -84,7 +84,7 @@ onRecordUpdate((e) => {
                   const hRecord = new Record(historyCol)
                   hRecord.set('user_id', targetUserId)
                   hRecord.set('points', achPts)
-                  hRecord.set('reason', `Conquista desbloqueada: ${ach.get('name')}`)
+                  hRecord.set('reason', `Conquista desbloqueada: ${ach.getString('name')}`)
                   hRecord.set('source_type', 'achievement')
                   hRecord.set('source_id', achId)
                   hRecord.set('balance_after', updatedPts)
@@ -97,23 +97,23 @@ onRecordUpdate((e) => {
                 const notifRecord = new Record(notifCol)
                 notifRecord.set('user', targetUserId)
                 notifRecord.set('title', 'Conquista Desbloqueada! 🏆')
-                notifRecord.set('message', `Você desbloqueou a conquista: ${ach.get('name')}`)
+                notifRecord.set('message', `Você desbloqueou a conquista: ${ach.getString('name')}`)
                 notifRecord.set('type', 'achievement')
                 notifRecord.set('action_url', '/achievements')
                 notifRecord.set('is_read', false)
                 $app.save(notifRecord)
               } catch (nErr) {
-                console.error('Error sending achievement notification', nErr)
+                $app.logger().error('Error sending achievement notification', 'error', String(nErr))
               }
             }
             $app.save(ua)
           }
         } catch (err) {
-          console.error('Error processing achievement in project', err)
+          $app.logger().error('Error processing achievement in project', 'error', String(err))
         }
       }
     } catch (err) {
-      console.error('Error updating gamification for project', err)
+      $app.logger().error('Error updating gamification for project', 'error', String(err))
     }
   }
   e.next()

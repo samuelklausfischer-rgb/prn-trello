@@ -279,7 +279,9 @@ export default function Projects() {
       if (editing) {
         const updated = await updateProject(editing.id, payload)
         toast({ title: 'Projeto atualizado com sucesso!' })
-        setProjects((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)))
+        setProjects((prev) =>
+          prev.map((p) => (p.id === updated.id ? { ...p, ...updated, expand: p.expand } : p)),
+        )
       } else {
         const created = await createProject({ ...payload, created_by: userId })
         toast({ title: 'Projeto criado com sucesso!' })
