@@ -28,15 +28,29 @@ export const createProject = (data: Partial<ProjectRecord>) =>
 
 export const updateProject = (id: string, data: Partial<ProjectRecord>) => {
   const payload = { ...data } as Record<string, any>
+
+  // Strip system-generated and uneditable fields to prevent 400 Bad Request
   delete payload.id
   delete payload.created
   delete payload.updated
   delete payload.created_by
   delete payload.expand
+  delete payload.collectionId
+  delete payload.collectionName
 
   // Strictly enforce arrays to satisfy PocketBase schema requirements for relations and JSON arrays
-  payload.shared_with_users = Array.isArray(data.shared_with_users) ? data.shared_with_users : []
-  payload.shared_with_roles = Array.isArray(data.shared_with_roles) ? data.shared_with_roles : []
+  if (data.shared_with_users !== undefined) {
+    const users = Array.isArray(data.shared_with_users) ? data.shared_with_users : []
+    // Use empty string to safely clear relation fields in PocketBase if empty
+    payload.shared_with_users =
+      users.length > 0 ? users.filter((u) => typeof u === 'string' && u.trim() !== '') : ''
+  }
+
+  if (data.shared_with_roles !== undefined) {
+    const roles = Array.isArray(data.shared_with_roles) ? data.shared_with_roles : []
+    // Validate as a clean array of strings
+    payload.shared_with_roles = roles.filter((r) => typeof r === 'string' && r.trim() !== '')
+  }
 
   if (data.progress !== undefined) {
     payload.progress = Number(data.progress)
