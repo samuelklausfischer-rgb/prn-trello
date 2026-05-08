@@ -9,7 +9,7 @@ import {
 import { useRealtime } from '@/hooks/use-realtime'
 import { useAuth } from '@/hooks/useAuthHooks'
 import { useToast } from '@/hooks/use-toast'
-import { getErrorMessage } from '@/lib/pocketbase/errors'
+import { getErrorMessage, extractFieldErrors } from '@/lib/pocketbase/errors'
 import pb from '@/lib/pocketbase/client'
 import PageTransition from '@/components/PageTransition'
 import { Button } from '@/components/ui/button'
@@ -104,6 +104,8 @@ export default function Projects() {
   const [isSaving, setIsSaving] = useState(false)
   const [activeTab, setActiveTab] = useState('mine')
   const [filterUser, setFilterUser] = useState('all')
+  const [userSearch, setUserSearch] = useState('')
+  const [roleSearch, setRoleSearch] = useState('')
 
   const { open: tourOpen, closeTour, startTour } = useTour('projects')
   const tourSteps = [
@@ -172,6 +174,8 @@ export default function Projects() {
 
   const openModal = (p?: ProjectRecord) => {
     setEditing(p || null)
+    setUserSearch('')
+    setRoleSearch('')
 
     const statusVal = p?.status ? (Array.isArray(p.status) ? p.status[0] : p.status) : 'active'
 
@@ -224,11 +228,25 @@ export default function Projects() {
       loadData()
     } catch (error: any) {
       console.error('Project save error detailed:', error)
-      toast({
-        title: 'Erro ao salvar',
-        description: getErrorMessage(error),
-        variant: 'destructive',
-      })
+      const fieldErrors = extractFieldErrors(error)
+      if (Object.keys(fieldErrors).length > 0) {
+        Object.entries(fieldErrors).forEach(([field, msg]) => {
+          form.setError(field as keyof ProjectFormValues, {
+            type: 'server',
+            message: msg as string,
+          })
+        })
+        toast({
+          title: 'Corrija os erros no formulário',
+          variant: 'destructive',
+        })
+      } else {
+        toast({
+          title: 'Erro ao salvar',
+          description: getErrorMessage(error),
+          variant: 'destructive',
+        })
+      }
     } finally {
       setIsSaving(false)
     }
@@ -307,12 +325,11 @@ export default function Projects() {
         {filteredProjects.map((p) => {
           const isAdmin = isAdminRole(role)
           const ownerId = getOwnerId(p.created_by)
-          let canEdit = isAdmin || ownerId === user?.id
+          const isSharedWithUser = p.shared_with_users?.includes(user?.id || '')
+          const isSharedWithRole =
+            !!user?.job_title && p.shared_with_roles?.includes(user.job_title)
+          let canEdit = isAdmin || ownerId === user?.id || isSharedWithUser || isSharedWithRole
           const isShared = ownerId !== user?.id && !isAdmin
-
-          if (!canEdit) {
-            canEdit = false
-          }
 
           return (
             <Card
@@ -636,13 +653,28 @@ export default function Projects() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Compartilhar com Colaboradores Específicos</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Buscar colaborador..."
+                                value={userSearch}
+                                onChange={(e) => setUserSearch(e.target.value)}
+                                className="rounded-xl mb-2"
+                              />
+                            </FormControl>
                             <div className="border rounded-xl bg-background overflow-hidden">
                               <ScrollArea className="h-40 p-3">
                                 <div className="flex flex-col gap-3">
                                   {users
                                     .filter((u) => u.id !== (user?.id || pb.authStore.record?.id))
+                                    .filter(
+                                      (u) =>
+                                        !userSearch ||
+                                        u.name?.toLowerCase().includes(userSearch.toLowerCase()) ||
+                                        u.email?.toLowerCase().includes(userSearch.toLowerCase()),
+                                    )
                                     .map((u) => (
                                       <div key={u.id} className="flex items-center space-x-3">
+                                        {' '}
                                         <Checkbox
                                           checked={field.value?.includes(u.id)}
                                           onCheckedChange={(checked) => {
@@ -683,27 +715,42 @@ export default function Projects() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Compartilhar com Cargos (Departamentos)</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Buscar cargo..."
+                                value={roleSearch}
+                                onChange={(e) => setRoleSearch(e.target.value)}
+                                className="rounded-xl mb-2"
+                              />
+                            </FormControl>
                             <div className="border rounded-xl bg-background overflow-hidden">
                               <ScrollArea className="h-32 p-3">
                                 <div className="flex flex-col gap-3">
-                                  {uniqueJobTitles.map((role) => (
-                                    <div key={role} className="flex items-center space-x-3">
-                                      <Checkbox
-                                        checked={field.value?.includes(role)}
-                                        onCheckedChange={(checked) => {
-                                          const current = field.value || []
-                                          field.onChange(
-                                            checked
-                                              ? [...current, role]
-                                              : current.filter((r) => r !== role),
-                                          )
-                                        }}
-                                      />
-                                      <label className="text-sm font-medium leading-none cursor-pointer flex-1">
-                                        {role}
-                                      </label>
-                                    </div>
-                                  ))}
+                                  {uniqueJobTitles
+                                    .filter(
+                                      (r) =>
+                                        !roleSearch ||
+                                        r.toLowerCase().includes(roleSearch.toLowerCase()),
+                                    )
+                                    .map((role) => (
+                                      <div key={role} className="flex items-center space-x-3">
+                                        {' '}
+                                        <Checkbox
+                                          checked={field.value?.includes(role)}
+                                          onCheckedChange={(checked) => {
+                                            const current = field.value || []
+                                            field.onChange(
+                                              checked
+                                                ? [...current, role]
+                                                : current.filter((r) => r !== role),
+                                            )
+                                          }}
+                                        />
+                                        <label className="text-sm font-medium leading-none cursor-pointer flex-1">
+                                          {role}
+                                        </label>
+                                      </div>
+                                    ))}
                                   {uniqueJobTitles.length === 0 && (
                                     <span className="text-sm text-muted-foreground italic">
                                       Nenhum cargo cadastrado.
