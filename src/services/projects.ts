@@ -41,9 +41,10 @@ export const updateProject = (id: string, data: Partial<ProjectRecord>) => {
   // Strictly enforce arrays to satisfy PocketBase schema requirements for relations and JSON arrays
   if (data.shared_with_users !== undefined) {
     const users = Array.isArray(data.shared_with_users) ? data.shared_with_users : []
-    // Use empty string to safely clear relation fields in PocketBase if empty
-    payload.shared_with_users =
-      users.length > 0 ? users.filter((u) => typeof u === 'string' && u.trim() !== '') : ''
+    // Ensure relation fields are sent as an array of IDs
+    payload.shared_with_users = users
+      .map((u) => (typeof u === 'object' && u !== null ? (u as any).id : u))
+      .filter((u) => typeof u === 'string' && u.trim() !== '')
   }
 
   if (data.shared_with_roles !== undefined) {

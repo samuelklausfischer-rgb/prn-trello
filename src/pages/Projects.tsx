@@ -253,6 +253,7 @@ export default function Projects() {
     } catch (error: any) {
       console.error('Project save error detailed:', error)
       if (error?.status === 400) {
+        console.error('Validation error object:', error?.response?.data || error?.data || error)
         toast({
           title: 'Erro ao salvar: Verifique os dados informados.',
           variant: 'destructive',
