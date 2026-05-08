@@ -39,8 +39,27 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
-import { Plus, FolderKanban, Pencil, Trash2, Calendar, Users, ShieldAlert } from 'lucide-react'
+import {
+  Plus,
+  FolderKanban,
+  Pencil,
+  Trash2,
+  Calendar,
+  Users,
+  ShieldAlert,
+  Check,
+} from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
+import {
+  Command,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+} from '@/components/ui/command'
+import { cn } from '@/lib/utils'
 import { getUsers } from '@/services/users'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -104,8 +123,6 @@ export default function Projects() {
   const [isSaving, setIsSaving] = useState(false)
   const [activeTab, setActiveTab] = useState('mine')
   const [filterUser, setFilterUser] = useState('all')
-  const [userSearch, setUserSearch] = useState('')
-  const [roleSearch, setRoleSearch] = useState('')
 
   const { open: tourOpen, closeTour, startTour } = useTour('projects')
   const tourSteps = [
@@ -174,8 +191,6 @@ export default function Projects() {
 
   const openModal = (p?: ProjectRecord) => {
     setEditing(p || null)
-    setUserSearch('')
-    setRoleSearch('')
 
     const statusVal = p?.status ? (Array.isArray(p.status) ? p.status[0] : p.status) : 'active'
 
@@ -650,118 +665,195 @@ export default function Projects() {
                       <FormField
                         control={form.control}
                         name="shared_with_users"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Compartilhar com Colaboradores Específicos</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Buscar colaborador..."
-                                value={userSearch}
-                                onChange={(e) => setUserSearch(e.target.value)}
-                                className="rounded-xl mb-2"
-                              />
-                            </FormControl>
-                            <div className="border rounded-xl bg-background overflow-hidden">
-                              <ScrollArea className="h-40 p-3">
-                                <div className="flex flex-col gap-3">
-                                  {users
-                                    .filter((u) => u.id !== (user?.id || pb.authStore.record?.id))
-                                    .filter(
-                                      (u) =>
-                                        !userSearch ||
-                                        u.name?.toLowerCase().includes(userSearch.toLowerCase()) ||
-                                        u.email?.toLowerCase().includes(userSearch.toLowerCase()),
-                                    )
-                                    .map((u) => (
-                                      <div key={u.id} className="flex items-center space-x-3">
-                                        {' '}
-                                        <Checkbox
-                                          checked={field.value?.includes(u.id)}
-                                          onCheckedChange={(checked) => {
-                                            const current = field.value || []
-                                            field.onChange(
-                                              checked
-                                                ? [...current, u.id]
-                                                : current.filter((id) => id !== u.id),
-                                            )
-                                          }}
-                                        />
-                                        <label className="text-sm font-medium leading-none cursor-pointer flex-1">
-                                          {u.name || u.email}{' '}
-                                          {u.job_title && (
-                                            <span className="text-muted-foreground ml-1 font-normal">
-                                              - {u.job_title}
-                                            </span>
-                                          )}
-                                        </label>
-                                      </div>
-                                    ))}
-                                  {users.length <= 1 && (
-                                    <span className="text-sm text-muted-foreground italic">
-                                      Nenhum outro colaborador disponível.
-                                    </span>
-                                  )}
-                                </div>
-                              </ScrollArea>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                        render={({ field }) => {
+                          const availableUsers = users.filter(
+                            (u) => u.id !== (user?.id || pb.authStore.record?.id),
+                          )
+                          const selectedUsers = availableUsers.filter((u) =>
+                            field.value?.includes(u.id),
+                          )
+                          return (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>Compartilhar com Colaboradores Específicos</FormLabel>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant="outline"
+                                      role="combobox"
+                                      className={cn(
+                                        'w-full justify-between rounded-xl font-normal',
+                                        !field.value?.length && 'text-muted-foreground',
+                                      )}
+                                    >
+                                      {field.value?.length > 0
+                                        ? `${field.value.length} colaborador(es) selecionado(s)`
+                                        : 'Selecione colaboradores...'}
+                                      <Plus className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[300px] p-0" align="start">
+                                  <Command>
+                                    <CommandInput placeholder="Buscar colaborador..." />
+                                    <CommandEmpty>Nenhum colaborador encontrado.</CommandEmpty>
+                                    <CommandList>
+                                      <CommandGroup>
+                                        {availableUsers.map((u) => (
+                                          <CommandItem
+                                            key={u.id}
+                                            value={u.name || u.email}
+                                            onSelect={() => {
+                                              const isSelected = field.value?.includes(u.id)
+                                              if (isSelected) {
+                                                field.onChange(
+                                                  field.value.filter((id) => id !== u.id),
+                                                )
+                                              } else {
+                                                field.onChange([...(field.value || []), u.id])
+                                              }
+                                            }}
+                                          >
+                                            <div
+                                              className={cn(
+                                                'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
+                                                field.value?.includes(u.id)
+                                                  ? 'bg-primary text-primary-foreground'
+                                                  : 'opacity-50 [&_svg]:invisible',
+                                              )}
+                                            >
+                                              <Check className="h-4 w-4" />
+                                            </div>
+                                            <span>{u.name || u.email}</span>
+                                            {u.job_title && (
+                                              <span className="text-xs text-muted-foreground ml-2">
+                                                ({u.job_title})
+                                              </span>
+                                            )}
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
+                              <div className="flex flex-wrap gap-2 mt-3">
+                                {selectedUsers.map((u) => (
+                                  <Badge
+                                    key={u.id}
+                                    variant="secondary"
+                                    className="rounded-lg py-1 px-2 pr-1"
+                                  >
+                                    {u.name || u.email}
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        field.onChange(field.value.filter((id) => id !== u.id))
+                                      }
+                                      className="ml-1 p-0.5 rounded-full hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </button>
+                                  </Badge>
+                                ))}
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )
+                        }}
                       />
 
                       <FormField
                         control={form.control}
                         name="shared_with_roles"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Compartilhar com Cargos (Departamentos)</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Buscar cargo..."
-                                value={roleSearch}
-                                onChange={(e) => setRoleSearch(e.target.value)}
-                                className="rounded-xl mb-2"
-                              />
-                            </FormControl>
-                            <div className="border rounded-xl bg-background overflow-hidden">
-                              <ScrollArea className="h-32 p-3">
-                                <div className="flex flex-col gap-3">
-                                  {uniqueJobTitles
-                                    .filter(
-                                      (r) =>
-                                        !roleSearch ||
-                                        r.toLowerCase().includes(roleSearch.toLowerCase()),
-                                    )
-                                    .map((role) => (
-                                      <div key={role} className="flex items-center space-x-3">
-                                        {' '}
-                                        <Checkbox
-                                          checked={field.value?.includes(role)}
-                                          onCheckedChange={(checked) => {
-                                            const current = field.value || []
-                                            field.onChange(
-                                              checked
-                                                ? [...current, role]
-                                                : current.filter((r) => r !== role),
-                                            )
-                                          }}
-                                        />
-                                        <label className="text-sm font-medium leading-none cursor-pointer flex-1">
-                                          {role}
-                                        </label>
-                                      </div>
-                                    ))}
-                                  {uniqueJobTitles.length === 0 && (
-                                    <span className="text-sm text-muted-foreground italic">
-                                      Nenhum cargo cadastrado.
-                                    </span>
-                                  )}
-                                </div>
-                              </ScrollArea>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                        render={({ field }) => {
+                          const selectedRoles = uniqueJobTitles.filter((r) =>
+                            field.value?.includes(r),
+                          )
+                          return (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>Compartilhar com Cargos (Departamentos)</FormLabel>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant="outline"
+                                      role="combobox"
+                                      className={cn(
+                                        'w-full justify-between rounded-xl font-normal',
+                                        !field.value?.length && 'text-muted-foreground',
+                                      )}
+                                    >
+                                      {field.value?.length > 0
+                                        ? `${field.value.length} cargo(s) selecionado(s)`
+                                        : 'Selecione cargos...'}
+                                      <Plus className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[300px] p-0" align="start">
+                                  <Command>
+                                    <CommandInput placeholder="Buscar cargo..." />
+                                    <CommandEmpty>Nenhum cargo encontrado.</CommandEmpty>
+                                    <CommandList>
+                                      <CommandGroup>
+                                        {uniqueJobTitles.map((role) => (
+                                          <CommandItem
+                                            key={role}
+                                            value={role}
+                                            onSelect={() => {
+                                              const isSelected = field.value?.includes(role)
+                                              if (isSelected) {
+                                                field.onChange(
+                                                  field.value.filter((r) => r !== role),
+                                                )
+                                              } else {
+                                                field.onChange([...(field.value || []), role])
+                                              }
+                                            }}
+                                          >
+                                            <div
+                                              className={cn(
+                                                'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
+                                                field.value?.includes(role)
+                                                  ? 'bg-primary text-primary-foreground'
+                                                  : 'opacity-50 [&_svg]:invisible',
+                                              )}
+                                            >
+                                              <Check className="h-4 w-4" />
+                                            </div>
+                                            <span>{role}</span>
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
+                              <div className="flex flex-wrap gap-2 mt-3">
+                                {selectedRoles.map((role) => (
+                                  <Badge
+                                    key={role}
+                                    variant="secondary"
+                                    className="rounded-lg py-1 px-2 pr-1"
+                                  >
+                                    {role}
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        field.onChange(field.value.filter((r) => r !== role))
+                                      }
+                                      className="ml-1 p-0.5 rounded-full hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </button>
+                                  </Badge>
+                                ))}
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )
+                        }}
                       />
                     </TabsContent>
                   </div>
