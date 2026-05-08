@@ -56,17 +56,19 @@ export default function TaskModal({
   onOpenChange,
   users,
   isAdmin = false,
+  onTaskUpdate,
 }: {
   task: TaskRecord | null
   open: boolean
   onOpenChange: (o: boolean) => void
   users: any[]
   isAdmin?: boolean
+  onTaskUpdate?: (task: TaskRecord) => void
 }) {
   const { toast } = useToast()
   const [projects, setProjects] = useState<ProjectRecord[]>([])
   const [task, setTask] = useState<TaskRecord | null>(initialTask)
-  const formInitializedRef = useRef(false)
+  const formInitializedRef = useRef<string | null>(null)
 
   useEffect(() => {
     setTask(initialTask)
@@ -104,12 +106,12 @@ export default function TaskModal({
   })
 
   useEffect(() => {
-    if (!open) {
-      formInitializedRef.current = false
+    if (!open || !initialTask) {
+      formInitializedRef.current = null
       return
     }
 
-    if (open && initialTask && !formInitializedRef.current) {
+    if (formInitializedRef.current !== initialTask.id) {
       let d = '',
         t = ''
       if (initialTask.due_date) {
@@ -136,7 +138,7 @@ export default function TaskModal({
         due_time_input: t,
         deadline_type: initialTask.deadline_type || 'optional',
       })
-      formInitializedRef.current = true
+      formInitializedRef.current = initialTask.id
     }
   }, [open, initialTask, form])
 
@@ -182,7 +184,9 @@ export default function TaskModal({
       }
 
       const updatedRecord = await updateTask(task.id, payload, task.updated)
-      setTask((prev) => ({ ...prev, ...(updatedRecord as any), expand: prev?.expand }))
+      const merged = { ...task, ...(updatedRecord as any), expand: task.expand }
+      setTask(merged)
+      if (onTaskUpdate) onTaskUpdate(merged)
       toast({
         title: 'Sucesso',
         description: 'Tarefa atualizada com sucesso.',

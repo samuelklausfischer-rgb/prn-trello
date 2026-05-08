@@ -201,7 +201,7 @@ export const updateTask = async (
   const options: any = { expand: undefined }
 
   if (optimisticUpdated) {
-    options.headers = { 'x-optimistic-updated': optimisticUpdated }
+    payload.updated = optimisticUpdated
   }
 
   if (Object.keys(payload).length === 0) {

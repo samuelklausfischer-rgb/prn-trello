@@ -158,7 +158,13 @@ export default function Tasks() {
         payload.project_id = targetProject === 'none' ? '' : targetProject
       }
 
-      await updateTaskOrder([payload])
+      const updatedRecords = await updateTaskOrder([payload])
+      setTasks((prev) =>
+        prev.map((t) => {
+          const updated = updatedRecords.find((ur: any) => ur.id === t.id)
+          return updated ? { ...t, ...updated, expand: t.expand } : t
+        }),
+      )
     } catch (error) {
       setTasks(previousTasks)
       toast({
@@ -312,7 +318,12 @@ export default function Tasks() {
     setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, delegated_to: userId } : t)))
     pendingUpdatesRef.current += 1
     try {
-      await updateTask(taskId, { delegated_to: userId }, taskToUpdate.updated)
+      const updatedRecord = await updateTask(taskId, { delegated_to: userId }, taskToUpdate.updated)
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === taskId ? { ...t, ...(updatedRecord as any), expand: t.expand } : t,
+        ),
+      )
       toast({ title: 'Tarefa delegada com sucesso' })
     } catch (error) {
       setTasks(previousTasks)
@@ -864,6 +875,9 @@ export default function Tasks() {
           onOpenChange={(op: boolean) => !op && setSelectedTaskId(null)}
           users={users}
           isAdmin={isAdmin}
+          onTaskUpdate={(updatedTask) => {
+            setTasks((prev) => prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)))
+          }}
         />
         <NewTaskDialog
           open={isNewTaskOpen}

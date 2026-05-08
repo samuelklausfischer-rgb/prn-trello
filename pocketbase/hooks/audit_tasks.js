@@ -1,6 +1,6 @@
 onRecordAfterUpdateSuccess((e) => {
   try {
-    const original = e.record.originalCopy()
+    const original = e.record.original()
     if (!original) {
       return e.next()
     }
