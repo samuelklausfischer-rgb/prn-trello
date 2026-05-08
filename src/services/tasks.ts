@@ -171,7 +171,7 @@ export const updateTaskOrder = async (
         payload.project_id = u.project_id === '' ? null : String(u.project_id)
       }
 
-      const options: any = { expand: undefined }
+      const options: any = { expand: 'created_by,delegated_to,project_id' }
 
       return pb
         .collection('tasks')
@@ -198,7 +198,7 @@ export const updateTask = async (
 
   const payload = sanitizeTaskPayload(data)
 
-  const options: any = { expand: undefined }
+  const options: any = { expand: 'created_by,delegated_to,project_id' }
 
   if (optimisticUpdated) {
     payload.updated = optimisticUpdated

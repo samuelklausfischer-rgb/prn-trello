@@ -5,13 +5,13 @@ onRecordAfterUpdateSuccess((e) => {
       return e.next()
     }
 
-    const newStatus = e.record.get('status')
-    const oldStatus = original.get('status')
+    const newStatus = e.record.getString('status')
+    const oldStatus = original.getString('status')
 
     if (newStatus !== oldStatus) {
       const task = e.record
 
-      let performedBy = task.get('created_by')
+      let performedBy = task.getString('created_by')
       try {
         const reqInfo = e.requestInfo()
         if (reqInfo && reqInfo.auth && reqInfo.auth.id) {
@@ -30,7 +30,7 @@ onRecordAfterUpdateSuccess((e) => {
         history.set('description', `Status alterado de ${oldStatus || 'Nenhum'} para ${newStatus}`)
         history.set('old_value', String(oldStatus || ''))
         history.set('new_value', String(newStatus || ''))
-        history.set('performed_by', performedBy)
+        history.set('performed_by', performedBy || task.getString('created_by'))
 
         $app.saveNoValidate(history)
       } catch (err) {
@@ -38,16 +38,16 @@ onRecordAfterUpdateSuccess((e) => {
       }
 
       // 2. Gamification Rewards and Task Completion Logic
-      if (newStatus === 'done' && !task.get('points_awarded')) {
+      if (newStatus === 'done' && !task.getBool('points_awarded')) {
         try {
-          const targetUserId = task.get('delegated_to') || task.get('created_by')
-          const pointsReward = task.get('points_reward') || 0
+          const targetUserId = task.getString('delegated_to') || task.getString('created_by')
+          const pointsReward = task.getInt('points_reward') || 0
 
           if (targetUserId) {
             const user = $app.findRecordById('users', targetUserId)
             if (user) {
-              const currentPoints = user.get('points') || 0
-              const currentXp = user.get('xp') || 0
+              const currentPoints = user.getInt('points') || 0
+              const currentXp = user.getInt('xp') || 0
 
               const newPoints = currentPoints + pointsReward
               const newXp = currentXp + pointsReward
@@ -65,7 +65,7 @@ onRecordAfterUpdateSuccess((e) => {
                   const ph = new Record(phCol)
                   ph.set('user_id', targetUserId)
                   ph.set('points', pointsReward)
-                  ph.set('reason', `Tarefa concluída: ${task.get('title')}`)
+                  ph.set('reason', `Tarefa concluída: ${task.getString('title')}`)
                   ph.set('source_type', 'task')
                   ph.set('source_id', task.id)
                   ph.set('balance_after', newPoints)

@@ -162,7 +162,7 @@ export default function Tasks() {
       setTasks((prev) =>
         prev.map((t) => {
           const updated = updatedRecords.find((ur: any) => ur.id === t.id)
-          return updated ? { ...t, ...updated, expand: t.expand } : t
+          return updated ? { ...t, ...updated, expand: { ...t.expand, ...updated.expand } } : t
         }),
       )
     } catch (error) {
@@ -321,7 +321,13 @@ export default function Tasks() {
       const updatedRecord = await updateTask(taskId, { delegated_to: userId }, taskToUpdate.updated)
       setTasks((prev) =>
         prev.map((t) =>
-          t.id === taskId ? { ...t, ...(updatedRecord as any), expand: t.expand } : t,
+          t.id === taskId
+            ? {
+                ...t,
+                ...(updatedRecord as any),
+                expand: { ...t.expand, ...(updatedRecord as any).expand },
+              }
+            : t,
         ),
       )
       toast({ title: 'Tarefa delegada com sucesso' })

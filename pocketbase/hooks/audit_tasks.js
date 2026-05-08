@@ -5,7 +5,7 @@ onRecordAfterUpdateSuccess((e) => {
       return e.next()
     }
 
-    let userId = e.record.get('created_by')
+    let userId = e.record.getString('created_by')
     try {
       const reqInfo = e.requestInfo()
       if (reqInfo && reqInfo.auth && reqInfo.auth.id) {
@@ -65,7 +65,7 @@ onRecordAfterUpdateSuccess((e) => {
             record.set('description', `Alterou o campo ${field}`)
             record.set('old_value', oldStr)
             record.set('new_value', newStr)
-            record.set('performed_by', userId)
+            record.set('performed_by', userId || e.record.getString('created_by'))
 
             $app.saveNoValidate(record)
           } catch (err) {

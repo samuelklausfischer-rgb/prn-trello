@@ -5,17 +5,17 @@ onRecordUpdate((e) => {
       return e.next()
     }
 
-    const newStatus = e.record.get('status')
-    const oldStatus = original.get('status')
+    const newStatus = e.record.getString('status')
+    const oldStatus = original.getString('status')
 
     if (newStatus !== oldStatus) {
-      if (newStatus === 'in_progress' && !e.record.get('started_at')) {
+      if (newStatus === 'in_progress' && !e.record.getString('started_at')) {
         e.record.set('started_at', new Date().toISOString())
       }
 
       if (newStatus === 'done') {
         e.record.set('completed_at', new Date().toISOString())
-      } else if (newStatus !== 'done' && e.record.get('completed_at')) {
+      } else if (newStatus !== 'done' && e.record.getString('completed_at')) {
         e.record.set('completed_at', '')
       }
     }
