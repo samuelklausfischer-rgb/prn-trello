@@ -65,6 +65,57 @@ export const getTask = (id: string) => {
     })
 }
 
+export const sanitizeTaskPayload = (data: Record<string, any>) => {
+  const allowedFields = [
+    'title',
+    'description',
+    'status',
+    'priority',
+    'due_date',
+    'delegated_to',
+    'project_id',
+    'is_private',
+    'is_archived',
+    'points_reward',
+    'deadline_type',
+    'department',
+    'tags',
+    'board_group',
+    'order',
+    'is_blocked',
+    'block_reason',
+    'points_awarded',
+  ]
+
+  const payload: Record<string, any> = {}
+
+  for (const key of allowedFields) {
+    if (key in data && data[key] !== undefined) {
+      const val = data[key]
+      if (['delegated_to', 'project_id', 'created_by'].includes(key)) {
+        if (val && typeof val === 'object' && 'id' in val) {
+          payload[key] = val.id
+        } else {
+          payload[key] = val || ''
+        }
+      } else if (val === null) {
+        payload[key] = ''
+      } else {
+        payload[key] = val
+      }
+    }
+  }
+
+  delete payload.originalCopy
+  delete payload.expand
+  delete payload.collectionId
+  delete payload.collectionName
+  delete payload.created
+  delete payload.updated
+
+  return payload
+}
+
 export const createTask = async (data: Partial<TaskRecord>) => {
   if (!pb.authStore.isValid) {
     pb.authStore.clear()
@@ -120,9 +171,11 @@ export const updateTaskOrder = async (
         payload.project_id = u.project_id === '' ? null : String(u.project_id)
       }
 
+      const options: any = { expand: undefined }
+
       return pb
         .collection('tasks')
-        .update(u.id, payload)
+        .update(u.id, payload, options)
         .catch((err) => {
           if (err.status === 401) pb.authStore.clear()
           throw err
@@ -143,46 +196,9 @@ export const updateTask = async (
     throw new Error('Unauthorized: Session expired')
   }
 
-  const allowedFields: (keyof TaskRecord)[] = [
-    'status',
-    'priority',
-    'title',
-    'description',
-    'due_date',
-    'deadline_type',
-    'delegated_to',
-    'department',
-    'tags',
-    'is_archived',
-    'is_private',
-    'points_reward',
-    'project_id',
-    'board_group',
-    'order',
-    'is_blocked',
-    'block_reason',
-  ]
+  const payload = sanitizeTaskPayload(data)
 
-  const payload: Record<string, any> = {}
-
-  for (const key of allowedFields) {
-    if (key in data && data[key] !== undefined) {
-      if (key === 'delegated_to') {
-        const val = data[key]
-        if (val && typeof val === 'object' && 'id' in val) {
-          payload[key] = (val as any).id
-        } else {
-          payload[key] = val || ''
-        }
-      } else if (data[key] === null) {
-        payload[key] = ''
-      } else {
-        payload[key] = data[key]
-      }
-    }
-  }
-
-  const options: any = {}
+  const options: any = { expand: undefined }
 
   if (optimisticUpdated) {
     options.headers = { 'x-optimistic-updated': optimisticUpdated }

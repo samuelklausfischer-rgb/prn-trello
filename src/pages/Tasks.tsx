@@ -161,6 +161,11 @@ export default function Tasks() {
       await updateTaskOrder([payload])
     } catch (error) {
       setTasks(previousTasks)
+      toast({
+        title: 'Erro ao mover tarefa',
+        description: getErrorMessage(error),
+        variant: 'destructive',
+      })
     } finally {
       pendingUpdatesRef.current -= 1
       if (pendingUpdatesRef.current === 0) {

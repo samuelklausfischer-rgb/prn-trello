@@ -5,9 +5,12 @@ onRecordUpdateRequest((e) => {
   }
 
   const role = authRecord.get('role') || ''
-  const body = e.requestInfo().body
 
-  const headers = e.requestInfo().headers
+  // Backend Hook Optimization: safely check for existence
+  const reqInfo = e.requestInfo() || {}
+  const body = reqInfo.body || {}
+  const headers = reqInfo.headers || {}
+
   const clientUpdated = headers['x_optimistic_updated'] || headers['x-optimistic-updated']
 
   if (clientUpdated) {
