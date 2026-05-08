@@ -183,7 +183,14 @@ export default function Projects() {
   useEffect(() => {
     loadData()
   }, [])
-  useRealtime('projects', () => loadData())
+
+  useRealtime('projects', (e) => {
+    if (e.action === 'delete') {
+      setProjects((prev) => prev.filter((p) => p.id !== e.record.id))
+    } else {
+      loadData()
+    }
+  })
 
   const uniqueJobTitles = useMemo(() => {
     return Array.from(new Set(users.map((u) => u.job_title).filter(Boolean))).sort()
@@ -234,14 +241,15 @@ export default function Projects() {
       const payload = { ...values }
 
       if (editing) {
-        await updateProject(editing.id, payload)
+        const updated = await updateProject(editing.id, payload)
         toast({ title: 'Projeto atualizado com sucesso!' })
+        setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
       } else {
-        await createProject({ ...payload, created_by: userId })
+        const created = await createProject({ ...payload, created_by: userId })
         toast({ title: 'Projeto criado!' })
+        setProjects((prev) => [created, ...prev])
       }
       setIsModalOpen(false)
-      loadData()
     } catch (error: any) {
       console.error('Project save error detailed:', error)
       if (error?.status === 400) {

@@ -24,7 +24,7 @@ export const getProject = (id: string) =>
   pb.collection('projects').getOne<ProjectRecord>(id, { expand: 'created_by' })
 
 export const createProject = (data: Partial<ProjectRecord>) =>
-  pb.collection('projects').create<ProjectRecord>(data)
+  pb.collection('projects').create<ProjectRecord>(data, { expand: 'created_by' })
 
 export const updateProject = (id: string, data: Partial<ProjectRecord>) => {
   const payload = { ...data } as Record<string, any>
@@ -34,14 +34,15 @@ export const updateProject = (id: string, data: Partial<ProjectRecord>) => {
   delete payload.created_by
   delete payload.expand
 
-  if ('shared_with_users' in data) {
-    payload.shared_with_users = Array.isArray(data.shared_with_users) ? data.shared_with_users : []
-  }
-  if ('shared_with_roles' in data) {
-    payload.shared_with_roles = Array.isArray(data.shared_with_roles) ? data.shared_with_roles : []
+  // Strictly enforce arrays to satisfy PocketBase schema requirements for relations and JSON arrays
+  payload.shared_with_users = Array.isArray(data.shared_with_users) ? data.shared_with_users : []
+  payload.shared_with_roles = Array.isArray(data.shared_with_roles) ? data.shared_with_roles : []
+
+  if (data.progress !== undefined) {
+    payload.progress = Number(data.progress)
   }
 
-  return pb.collection('projects').update<ProjectRecord>(id, payload)
+  return pb.collection('projects').update<ProjectRecord>(id, payload, { expand: 'created_by' })
 }
 
 export const deleteProject = (id: string) => pb.collection('projects').delete(id)
