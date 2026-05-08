@@ -69,15 +69,15 @@ onRecordAfterUpdateSuccess((e) => {
 
             $app.saveNoValidate(record)
           } catch (err) {
-            console.error('Failed to log task history: ' + err)
+            $app.logger().error('Failed to log task history', 'error', String(err))
           }
         }
       })
     } catch (err) {
-      console.error('Failed to get task_history collection: ' + err)
+      $app.logger().error('Failed to get task_history collection', 'error', String(err))
     }
   } catch (err) {
-    console.error('Error in audit_tasks hook: ', err)
+    $app.logger().error('Error in audit_tasks hook', 'error', String(err))
   }
 
   return e.next()

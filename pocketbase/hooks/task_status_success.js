@@ -34,7 +34,7 @@ onRecordAfterUpdateSuccess((e) => {
 
         $app.saveNoValidate(history)
       } catch (err) {
-        console.error('Error saving task history: ' + err)
+        $app.logger().error('Error saving task history', 'error', String(err))
       }
 
       // 2. Gamification Rewards and Task Completion Logic
@@ -72,7 +72,7 @@ onRecordAfterUpdateSuccess((e) => {
 
                   $app.saveNoValidate(ph)
                 } catch (phErr) {
-                  console.error('Error saving points history: ' + phErr)
+                  $app.logger().error('Error saving points history', 'error', String(phErr))
                 }
               }
 
@@ -84,17 +84,17 @@ onRecordAfterUpdateSuccess((e) => {
                   .bind({ val: true, id: task.id })
                   .execute()
               } catch (taskErr) {
-                console.error('Error updating task points_awarded: ' + taskErr)
+                $app.logger().error('Error updating task points_awarded', 'error', String(taskErr))
               }
             }
           }
         } catch (err) {
-          console.error('Error updating gamification rewards: ' + err)
+          $app.logger().error('Error updating gamification rewards', 'error', String(err))
         }
       }
     }
   } catch (err) {
-    console.error('Fatal error in task_status_success hook: ', err)
+    $app.logger().error('Fatal error in task_status_success hook', 'error', String(err))
   }
 
   return e.next()

@@ -106,7 +106,6 @@ export const sanitizeTaskPayload = (data: Record<string, any>) => {
     }
   }
 
-  delete payload.originalCopy
   delete payload.expand
   delete payload.collectionId
   delete payload.collectionName

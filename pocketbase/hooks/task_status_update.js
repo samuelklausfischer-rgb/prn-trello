@@ -20,7 +20,7 @@ onRecordUpdate((e) => {
       }
     }
   } catch (err) {
-    console.error('Error in task_status_update hook: ', err)
+    $app.logger().error('Error in task_status_update hook', 'error', String(err))
   }
 
   return e.next()
