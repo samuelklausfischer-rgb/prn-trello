@@ -13,7 +13,7 @@ export interface ProjectRecord {
   created: string
   updated: string
   expand?: {
-    created_by?: { id: string; name: string; avatar: string }
+    created_by?: { id: string; name: string; avatar: string; email?: string }
   }
 }
 

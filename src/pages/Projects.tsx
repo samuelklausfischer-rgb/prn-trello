@@ -7,7 +7,7 @@ import {
   deleteProject,
 } from '@/services/projects'
 import { useRealtime } from '@/hooks/use-realtime'
-import { useAuth } from '@/hooks/useAuthHooks'
+import { useAuth } from '@/hooks/use-auth'
 import { useToast } from '@/hooks/use-toast'
 import { getErrorMessage, extractFieldErrors } from '@/lib/pocketbase/errors'
 import pb from '@/lib/pocketbase/client'
@@ -48,6 +48,8 @@ import {
   Users,
   ShieldAlert,
   Check,
+  HandMetal,
+  Info,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
@@ -65,7 +67,6 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Badge } from '@/components/ui/badge'
 import { GuideTour, useTour } from '@/components/GuideTour'
-import { Info } from 'lucide-react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -77,8 +78,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Checkbox } from '@/components/ui/checkbox'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Nome obrigatório'),
@@ -130,28 +130,27 @@ export default function Projects() {
       target: '[data-tour="projects-header"]',
       title: 'Central de Projetos',
       content:
-        'Acompanhe o andamento geral das iniciativas. O progresso aqui é calculado automaticamente com base nas tarefas vinculadas.',
+        'Acompanhe o andamento geral das iniciativas. Navegue pelas abas para ver seus projetos, colaborações e oportunidades abertas.',
       placement: 'bottom' as const,
     },
     {
       target: '[data-tour="projects-tabs"]',
-      title: 'Meus x Equipe',
+      title: 'Navegação de Projetos',
       content:
-        'Filtre e visualize rapidamente os projetos de toda a equipe para manter todos alinhados.',
+        'Filtre rapidamente entre seus projetos, compartilhados ou disponíveis para assumir.',
       placement: 'bottom' as const,
     },
     {
       target: '[data-tour="projects-new"]',
       title: 'Criando Projetos',
-      content:
-        'Crie novos projetos, adicione membros e comece a vincular tarefas. (Nota: Adicione membros para que recebam notificações).',
+      content: 'Crie novos projetos, adicione membros e defina o status inicial.',
       placement: 'left' as const,
     },
     {
       target: '[data-tour="project-cards-container"]',
-      title: 'Barra de Progresso',
+      title: 'Cartões Interativos',
       content:
-        'Veja em tempo real o status e percentual de conclusão. Tarefas concluídas alimentam esta barra!',
+        'Veja a autoria, cores personalizadas e, na aba Disponíveis, pegue novos projetos para trabalhar!',
       placement: 'top' as const,
     },
   ]
@@ -207,14 +206,7 @@ export default function Projects() {
             name: p.name,
             description: p.description || '',
             progress: p.progress || 0,
-            status: statusVal as
-              | 'active'
-              | 'completed'
-              | 'on_hold'
-              | 'todo'
-              | 'in_progress'
-              | 'review'
-              | 'done',
+            status: statusVal as any,
             color: p.color || '#3b82f6',
             shared_with_users: Array.isArray(p.shared_with_users)
               ? p.shared_with_users
@@ -246,7 +238,6 @@ export default function Projects() {
       const userId = user?.id || pb.authStore.record?.id
       if (!userId) throw new Error('Usuário não autenticado.')
 
-      // Only send fields defined in the schema to prevent 400 Bad Request
       const payload: any = {
         name: values.name,
         description: values.description || '',
@@ -257,7 +248,6 @@ export default function Projects() {
         shared_with_roles: Array.isArray(values.shared_with_roles) ? values.shared_with_roles : [],
       }
 
-      // Ensure relationship arrays only contain valid string IDs
       payload.shared_with_users = payload.shared_with_users
         .map((u: any) => (typeof u === 'object' && u !== null ? u.id : u))
         .filter((u: any) => typeof u === 'string' && u.trim() !== '')
@@ -266,8 +256,6 @@ export default function Projects() {
         (r: any) => typeof r === 'string' && r.trim() !== '',
       )
 
-      // Relational Consistency: Ensure current user is not lost from shared_with_users
-      // if they are supposed to maintain access.
       const ownerId = editing ? getOwnerId(editing.created_by) : null
       if (editing && ownerId !== userId && !isAdminRole(role)) {
         const wasSharedWithMe = editing.shared_with_users?.includes(userId)
@@ -290,48 +278,21 @@ export default function Projects() {
       setIsModalOpen(false)
     } catch (error: any) {
       console.error('Project save error detailed:', error)
-
       const serverMessage = error?.response?.message || error?.data?.message || ''
       const detailedMessage = serverMessage ? `Detalhes: ${serverMessage}` : getErrorMessage(error)
 
       if (error?.status === 400) {
-        const validationErrorData =
-          error?.response?.data || error?.data || error?.originalError?.data
-        console.error('400 Bad Request - Server response body:', error?.response || error)
-        console.error('Validation error object:', validationErrorData)
         toast({
           title: 'Erro ao salvar projeto',
           description: `Por favor, verifique os dados informados. ${detailedMessage}`,
           variant: 'destructive',
         })
         const fieldErrors = extractFieldErrors(error)
-        if (Object.keys(fieldErrors).length > 0) {
-          Object.entries(fieldErrors).forEach(([field, msg]) => {
-            console.error(`Field Error -> ${field}: ${msg}`)
-            form.setError(field as keyof ProjectFormValues, {
-              type: 'server',
-              message: msg as string,
-            })
-          })
-        } else if (validationErrorData) {
-          Object.entries(validationErrorData).forEach(([field, detail]) => {
-            const msg =
-              detail && typeof detail === 'object' && 'message' in detail
-                ? (detail as any).message
-                : String(detail)
-            console.error(`Field Error -> ${field}: ${msg}`)
-            form.setError(field as keyof ProjectFormValues, {
-              type: 'server',
-              message: msg,
-            })
-          })
-        }
-      } else {
-        toast({
-          title: 'Erro ao salvar',
-          description: detailedMessage,
-          variant: 'destructive',
+        Object.entries(fieldErrors).forEach(([field, msg]) => {
+          form.setError(field as keyof ProjectFormValues, { type: 'server', message: msg })
         })
+      } else {
+        toast({ title: 'Erro ao salvar', description: detailedMessage, variant: 'destructive' })
       }
     } finally {
       setIsSaving(false)
@@ -354,6 +315,30 @@ export default function Projects() {
     }
   }
 
+  const handleClaimProject = async (p: ProjectRecord, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!user?.id) return
+    try {
+      const newSharedUsers = Array.from(new Set([...(p.shared_with_users || []), user.id]))
+      const updated = await updateProject(p.id, {
+        status: 'active',
+        shared_with_users: newSharedUsers,
+      })
+      toast({ title: 'Projeto assumido com sucesso!' })
+      setProjects((prev) =>
+        prev.map((proj) =>
+          proj.id === updated.id ? { ...proj, ...updated, expand: p.expand } : proj,
+        ),
+      )
+    } catch (error: unknown) {
+      toast({
+        title: 'Erro ao assumir projeto',
+        description: getErrorMessage(error),
+        variant: 'destructive',
+      })
+    }
+  }
+
   const colors: Record<string, string> = {
     active: 'bg-blue-500/20 text-blue-500',
     completed: 'bg-green-500/20 text-green-500',
@@ -363,6 +348,7 @@ export default function Projects() {
     review: 'bg-purple-500/20 text-purple-500',
     done: 'bg-green-500/20 text-green-500',
   }
+
   const labels: Record<string, string> = {
     active: 'Ativo',
     completed: 'Concluído',
@@ -374,14 +360,28 @@ export default function Projects() {
   }
 
   const filteredProjects = projects.filter((p) => {
+    const ownerId = getOwnerId(p.created_by)
+    const isCreator = ownerId === user?.id
+    const isSharedWithUser = p.shared_with_users?.includes(user?.id || '')
+    const isSharedWithRole = !!user?.job_title && p.shared_with_roles?.includes(user.job_title)
+    const isShared = (isSharedWithUser || isSharedWithRole) && !isCreator
+
     if (activeTab === 'mine') {
-      const ownerId = getOwnerId(p.created_by)
-      return ownerId === user?.id
+      return isCreator
     }
     if (activeTab === 'team') {
+      if (!isAdminRole(role)) return false
       if (filterUser === 'all') return true
-      const ownerId = getOwnerId(p.created_by)
       return ownerId === filterUser
+    }
+    if (activeTab === 'shared') {
+      return isShared && p.status !== 'on_hold'
+    }
+    if (activeTab === 'available') {
+      const isPublic =
+        p.shared_with_roles?.includes('employee') || p.shared_with_roles?.includes('admin')
+      const canAccess = isShared || isCreator || isPublic || isAdminRole(role)
+      return p.status === 'on_hold' && canAccess
     }
     return true
   })
@@ -407,27 +407,36 @@ export default function Projects() {
     }
 
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6">
         {filteredProjects.map((p) => {
           const isAdmin = isAdminRole(role)
           const ownerId = getOwnerId(p.created_by)
+          const isCreator = ownerId === user?.id
           const isSharedWithUser = p.shared_with_users?.includes(user?.id || '')
           const isSharedWithRole =
             !!user?.job_title && p.shared_with_roles?.includes(user.job_title)
-          let canEdit = isAdmin || ownerId === user?.id || isSharedWithUser || isSharedWithRole
-          const isShared = ownerId !== user?.id && !isAdmin
+
+          let canEdit = isAdmin || isCreator || isSharedWithUser || isSharedWithRole
+          const isShared = (isSharedWithUser || isSharedWithRole) && !isCreator
+
+          const creator = p.expand?.created_by
+          const creatorName = creator?.name || creator?.email || 'Desconhecido'
+          const creatorAvatar = creator?.avatar ? pb.files.getUrl(creator, creator.avatar) : ''
 
           return (
             <Card
               key={p.id}
               onClick={() => {
-                if (canEdit) openModal(p)
+                if (canEdit && activeTab !== 'available') openModal(p)
               }}
-              className={`group relative glass-card rounded-3xl border-border/50 transition-all overflow-hidden ${
-                canEdit ? 'cursor-pointer hover:-translate-y-1 hover:shadow-md' : ''
-              }`}
+              className={cn(
+                'group relative glass-card rounded-3xl border-border/50 transition-all overflow-hidden',
+                canEdit && activeTab !== 'available'
+                  ? 'cursor-pointer hover:-translate-y-1 hover:shadow-md'
+                  : '',
+              )}
             >
-              {canEdit && (
+              {canEdit && activeTab !== 'available' && (
                 <Button
                   variant="secondary"
                   size="icon"
@@ -441,54 +450,85 @@ export default function Projects() {
                   <Pencil className="w-4 h-4" />
                 </Button>
               )}
+
               <div className="h-2 w-full" style={{ backgroundColor: p.color || '#3b82f6' }} />
+
               <CardHeader className="pb-3 pt-4 pr-14">
                 <div className="flex flex-col items-start gap-2">
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-lg font-bold line-clamp-2">{p.name}</CardTitle>
-                    {isShared && (
+                  </div>
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <Badge
+                      variant="outline"
+                      className={`text-[10px] uppercase border-none ${colors[p.status] || colors.active}`}
+                    >
+                      {labels[p.status] || p.status}
+                    </Badge>
+                    {isShared && activeTab !== 'available' && (
                       <Badge
                         variant="secondary"
                         className="h-5 px-1.5 text-[9px] gap-1 bg-primary/10 text-primary border-primary/20 uppercase tracking-wider"
                       >
                         <Users className="w-3 h-3" />
-                        Acesso Compartilhado
+                        Compartilhado
                       </Badge>
                     )}
                   </div>
-                  <Badge
-                    variant="outline"
-                    className={`text-[10px] uppercase border-none ${colors[p.status] || colors.active}`}
-                  >
-                    {labels[p.status] || p.status}
-                  </Badge>
                 </div>
                 <CardDescription className="line-clamp-2 text-xs mt-1 min-h-[32px]">
                   {p.description || 'Sem descrição'}
                 </CardDescription>
+
+                <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                  <Avatar className="h-5 w-5 border border-border">
+                    <AvatarImage src={creatorAvatar} />
+                    <AvatarFallback className="text-[9px]">
+                      {creatorName.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="truncate font-medium">
+                    {activeTab === 'shared'
+                      ? `Compartilhado por: ${creatorName}`
+                      : `Criador: ${creatorName}`}
+                  </span>
+                </div>
               </CardHeader>
-              <CardContent className="pb-4">
+
+              <CardContent className="pb-4 pt-1">
                 <div className="flex justify-between text-sm font-semibold mb-2">
                   <span className="text-muted-foreground">Progresso</span>
                   <span className="text-primary">{p.progress}%</span>
                 </div>
                 <Progress value={p.progress} className="h-2.5" />
               </CardContent>
-              <CardFooter className="pt-0 flex justify-between items-center border-t border-border/30 mt-2 px-6 pt-4">
+
+              <CardFooter className="pt-0 flex justify-between items-center border-t border-border/30 mt-2 px-6 pt-4 pb-4">
                 <div className="flex items-center text-[11px] text-muted-foreground gap-1.5">
                   <Calendar className="w-3.5 h-3.5" />{' '}
                   {format(new Date(p.created), "dd 'de' MMM", { locale: ptBR })}
                 </div>
-                <div className="flex gap-2">
-                  {canEdit && (
+                <div className="flex gap-2 items-center">
+                  {activeTab === 'available' ? (
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:bg-destructive/20 rounded-full"
-                      onClick={(e) => handleDelete(p.id, e)}
+                      variant="secondary"
+                      size="sm"
+                      className="h-8 gap-1"
+                      onClick={(e) => handleClaimProject(p, e)}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <HandMetal className="w-3.5 h-3.5" /> Pegar Projeto
                     </Button>
+                  ) : (
+                    canEdit && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:bg-destructive/20 rounded-full"
+                        onClick={(e) => handleDelete(p.id, e)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )
                   )}
                 </div>
               </CardFooter>
@@ -512,7 +552,9 @@ export default function Projects() {
             </div>
             <div>
               <h1 className="text-2xl md:text-3xl font-extrabold">Trabalhos & Projetos</h1>
-              <p className="text-sm text-muted-foreground mt-1">Acompanhe o progresso da equipe.</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Acompanhe o progresso geral e encontre oportunidades.
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -541,22 +583,38 @@ export default function Projects() {
           onValueChange={setActiveTab}
           className="w-full flex-1 flex flex-col"
         >
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6">
             <TabsList
               data-tour="projects-tabs"
-              className="grid w-full sm:w-[400px] grid-cols-2 rounded-xl"
+              className={cn(
+                'grid w-full gap-1 rounded-xl bg-muted/50 p-1',
+                isAdminRole(role)
+                  ? 'grid-cols-2 md:grid-cols-4 xl:w-[650px]'
+                  : 'grid-cols-3 xl:w-[450px]',
+              )}
             >
-              <TabsTrigger value="mine" className="rounded-lg">
+              <TabsTrigger value="mine" className="rounded-lg text-xs md:text-sm">
                 Meus Projetos
               </TabsTrigger>
-              <TabsTrigger value="team" className="rounded-lg">
-                Projetos da Equipe
+              {isAdminRole(role) && (
+                <TabsTrigger value="team" className="rounded-lg text-xs md:text-sm">
+                  Da Equipe (Admin)
+                </TabsTrigger>
+              )}
+              <TabsTrigger value="shared" className="rounded-lg text-xs md:text-sm">
+                Compartilhados
+              </TabsTrigger>
+              <TabsTrigger
+                value="available"
+                className="rounded-lg text-xs md:text-sm text-amber-500 data-[state=active]:text-amber-500"
+              >
+                Disponíveis
               </TabsTrigger>
             </TabsList>
 
-            {activeTab === 'team' && (
+            {activeTab === 'team' && isAdminRole(role) && (
               <Select value={filterUser} onValueChange={setFilterUser}>
-                <SelectTrigger className="w-full sm:w-[250px] rounded-xl glass-card">
+                <SelectTrigger className="w-full xl:w-[250px] rounded-xl glass-card">
                   <SelectValue placeholder="Filtrar por colaborador" />
                 </SelectTrigger>
                 <SelectContent>
@@ -583,6 +641,18 @@ export default function Projects() {
           >
             {renderProjectsGrid()}
           </TabsContent>
+          <TabsContent
+            value="shared"
+            className="m-0 flex-1 focus-visible:outline-none focus-visible:ring-0"
+          >
+            {renderProjectsGrid()}
+          </TabsContent>
+          <TabsContent
+            value="available"
+            className="m-0 flex-1 focus-visible:outline-none focus-visible:ring-0"
+          >
+            {renderProjectsGrid()}
+          </TabsContent>
         </Tabs>
 
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -596,7 +666,7 @@ export default function Projects() {
               <form onSubmit={form.handleSubmit(onSubmit)}>
                 <Tabs defaultValue="details" className="w-full">
                   <div className="px-6">
-                    <TabsList className="grid w-full grid-cols-2 rounded-xl">
+                    <TabsList className="grid w-full grid-cols-2 rounded-xl bg-muted/50">
                       <TabsTrigger value="details" className="rounded-lg">
                         Detalhes
                       </TabsTrigger>
@@ -662,7 +732,7 @@ export default function Projects() {
                               <SelectContent>
                                 <SelectItem value="active">Ativo</SelectItem>
                                 <SelectItem value="completed">Concluído</SelectItem>
-                                <SelectItem value="on_hold">Em Espera</SelectItem>
+                                <SelectItem value="on_hold">Em Espera (Disponível)</SelectItem>
                                 <SelectItem value="todo">A Fazer</SelectItem>
                                 <SelectItem value="in_progress">Em Andamento</SelectItem>
                                 <SelectItem value="review">Em Revisão</SelectItem>
@@ -728,8 +798,9 @@ export default function Projects() {
                       <div className="bg-primary/5 p-4 rounded-xl flex items-start gap-3 border border-primary/10">
                         <ShieldAlert className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                         <div className="text-sm text-primary/80">
-                          Projetos são privados por padrão. Os usuários e cargos selecionados abaixo
-                          terão acesso de visualização a este projeto.
+                          Projetos são privados por padrão. Adicione usuários ou cargos para
+                          colaborar. Se marcar status como "Em Espera", o projeto ficará disponível
+                          para os cargos selecionados o assumirem.
                         </div>
                       </div>
 
@@ -745,7 +816,7 @@ export default function Projects() {
                           )
                           return (
                             <FormItem className="flex flex-col">
-                              <FormLabel>Compartilhar com Colaboradores Específicos</FormLabel>
+                              <FormLabel>Colaboradores Específicos</FormLabel>
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <FormControl>
@@ -758,7 +829,7 @@ export default function Projects() {
                                       )}
                                     >
                                       {field.value?.length > 0
-                                        ? `${field.value.length} colaborador(es) selecionado(s)`
+                                        ? `${field.value.length} selecionado(s)`
                                         : 'Selecione colaboradores...'}
                                       <Plus className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
@@ -843,7 +914,7 @@ export default function Projects() {
                           )
                           return (
                             <FormItem className="flex flex-col">
-                              <FormLabel>Compartilhar com Cargos (Departamentos)</FormLabel>
+                              <FormLabel>Cargos (Departamentos)</FormLabel>
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <FormControl>
