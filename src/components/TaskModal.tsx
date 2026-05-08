@@ -31,7 +31,7 @@ import { TaskHistoryTimeline } from './TaskHistoryTimeline'
 import { TaskComments } from './TaskComments'
 import { format } from 'date-fns'
 import { getProjects, ProjectRecord } from '@/services/projects'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRealtime } from '@/hooks/use-realtime'
 
 const schema = z.object({
@@ -67,6 +67,7 @@ export default function TaskModal({
   const { toast } = useToast()
   const [projects, setProjects] = useState<ProjectRecord[]>([])
   const [task, setTask] = useState<TaskRecord | null>(initialTask)
+  const formInitializedRef = useRef(false)
 
   useEffect(() => {
     setTask(initialTask)
@@ -104,34 +105,41 @@ export default function TaskModal({
   })
 
   useEffect(() => {
-    if (task && open) {
+    if (!open) {
+      formInitializedRef.current = false
+      return
+    }
+
+    if (open && initialTask && !formInitializedRef.current) {
       let d = '',
         t = ''
-      if (task.due_date) {
-        const dateObj = new Date(task.due_date)
-        d = format(dateObj, 'yyyy-MM-dd')
-        t = format(dateObj, 'HH:mm')
+      if (initialTask.due_date) {
+        const dateObj = new Date(initialTask.due_date)
+        if (!isNaN(dateObj.getTime())) {
+          d = format(dateObj, 'yyyy-MM-dd')
+          t = format(dateObj, 'HH:mm')
+        }
       }
 
       form.reset({
-        title: task.title,
-        description: task.description || '',
-        status: task.status,
-        priority: task.priority,
-        delegated_to: task.delegated_to || '',
-        project_id: task.project_id || '',
-        points_reward: task.points_reward || 0,
-        is_archived: task.is_archived || false,
-        is_private: task.is_private || false,
-        is_blocked: task.is_blocked || false,
-        block_reason: task.block_reason || '',
+        title: initialTask.title,
+        description: initialTask.description || '',
+        status: initialTask.status,
+        priority: initialTask.priority,
+        delegated_to: initialTask.delegated_to || '',
+        project_id: initialTask.project_id || '',
+        points_reward: initialTask.points_reward || 0,
+        is_archived: initialTask.is_archived || false,
+        is_private: initialTask.is_private || false,
+        is_blocked: initialTask.is_blocked || false,
+        block_reason: initialTask.block_reason || '',
         due_date_input: d,
         due_time_input: t,
-        deadline_type: task.deadline_type || 'optional',
+        deadline_type: initialTask.deadline_type || 'optional',
       })
+      formInitializedRef.current = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialTask?.id, open, form])
+  }, [open, initialTask, form])
 
   const onSubmit = async (values: z.infer<typeof schema>) => {
     if (!task) return
@@ -195,7 +203,20 @@ export default function TaskModal({
     }
   }
 
-  if (!task) return null
+  if (!task) {
+    if (open) {
+      return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogContent className="sm:max-w-md p-6 flex flex-col justify-center items-center h-48 text-center gap-3">
+            <p className="text-destructive font-semibold text-lg">Erro ao carregar a tarefa</p>
+            <p className="text-sm text-muted-foreground">A tarefa não foi encontrada. Ela pode ter sido excluída ou você não tem permissão para visualizá-la.</p>
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="mt-2">Fechar</Button>
+          </DialogContent>
+        </Dialog>
+      )
+    }
+    return null
+  }
 
   const isPrivateWatch = form.watch('is_private')
   const employeeUsers = users.filter(
