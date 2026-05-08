@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
@@ -31,7 +31,6 @@ import { TaskHistoryTimeline } from './TaskHistoryTimeline'
 import { TaskComments } from './TaskComments'
 import { format } from 'date-fns'
 import { getProjects, ProjectRecord } from '@/services/projects'
-import { useState, useRef } from 'react'
 import { useRealtime } from '@/hooks/use-realtime'
 
 const schema = z.object({
@@ -209,8 +208,13 @@ export default function TaskModal({
         <Dialog open={open} onOpenChange={onOpenChange}>
           <DialogContent className="sm:max-w-md p-6 flex flex-col justify-center items-center h-48 text-center gap-3">
             <p className="text-destructive font-semibold text-lg">Erro ao carregar a tarefa</p>
-            <p className="text-sm text-muted-foreground">A tarefa não foi encontrada. Ela pode ter sido excluída ou você não tem permissão para visualizá-la.</p>
-            <Button variant="outline" onClick={() => onOpenChange(false)} className="mt-2">Fechar</Button>
+            <p className="text-sm text-muted-foreground">
+              A tarefa não foi encontrada. Ela pode ter sido excluída ou você não tem permissão para
+              visualizá-la.
+            </p>
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="mt-2">
+              Fechar
+            </Button>
           </DialogContent>
         </Dialog>
       )
