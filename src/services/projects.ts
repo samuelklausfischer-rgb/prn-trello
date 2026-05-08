@@ -23,45 +23,70 @@ export const getProjects = () =>
 export const getProject = (id: string) =>
   pb.collection('projects').getOne<ProjectRecord>(id, { expand: 'created_by' })
 
-export const createProject = (data: Partial<ProjectRecord>) =>
-  pb.collection('projects').create<ProjectRecord>(data, { expand: 'created_by' })
+export const createProject = (data: Partial<ProjectRecord>) => {
+  const payload = sanitizeProjectPayload(data, true)
+  return pb.collection('projects').create<ProjectRecord>(payload, { expand: 'created_by' })
+}
 
 export const updateProject = (id: string, data: Partial<ProjectRecord>) => {
-  const payload = { ...data } as Record<string, any>
+  const payload = sanitizeProjectPayload(data, false)
+  return pb.collection('projects').update<ProjectRecord>(id, payload, { expand: 'created_by' })
+}
 
-  // Strip system-generated and uneditable fields to prevent 400 Bad Request
-  delete payload.id
-  delete payload.created
-  delete payload.updated
-  delete payload.created_by
-  delete payload.expand
-  delete payload.collectionId
-  delete payload.collectionName
+function sanitizeProjectPayload(data: Partial<ProjectRecord>, isCreate: boolean) {
+  const allowedFields = [
+    'name',
+    'description',
+    'progress',
+    'status',
+    'color',
+    'shared_with_users',
+    'shared_with_roles',
+  ]
+  if (isCreate) allowedFields.push('created_by')
 
-  // Strictly enforce arrays to satisfy PocketBase schema requirements for relations and JSON arrays
-  if (data.shared_with_users !== undefined) {
-    const users = Array.isArray(data.shared_with_users) ? data.shared_with_users : []
-    // Ensure relation fields are sent as an array of IDs, strictly enforcing the array format
+  const payload: Record<string, any> = {}
+
+  for (const field of allowedFields) {
+    if (data[field as keyof ProjectRecord] !== undefined) {
+      payload[field] = data[field as keyof ProjectRecord]
+    }
+  }
+
+  // Ensure relationship arrays are strictly arrays of strings (IDs)
+  if ('shared_with_users' in payload) {
+    const users = Array.isArray(payload.shared_with_users) ? payload.shared_with_users : []
     payload.shared_with_users = users
       .map((u) => (typeof u === 'object' && u !== null ? (u as any).id : u))
       .filter((u) => typeof u === 'string' && u.trim() !== '')
-  } else {
-    payload.shared_with_users = []
   }
 
-  if (data.shared_with_roles !== undefined) {
-    const roles = Array.isArray(data.shared_with_roles) ? data.shared_with_roles : []
-    // Validate as a clean array of strings
+  if ('shared_with_roles' in payload) {
+    const roles = Array.isArray(payload.shared_with_roles) ? payload.shared_with_roles : []
     payload.shared_with_roles = roles.filter((r) => typeof r === 'string' && r.trim() !== '')
-  } else {
-    payload.shared_with_roles = []
   }
 
-  if (data.progress !== undefined) {
-    payload.progress = Number(data.progress)
+  if ('progress' in payload) {
+    payload.progress = Number(payload.progress)
   }
 
-  return pb.collection('projects').update<ProjectRecord>(id, payload, { expand: 'created_by' })
+  if ('status' in payload) {
+    const validStatuses = [
+      'active',
+      'completed',
+      'on_hold',
+      'todo',
+      'in_progress',
+      'review',
+      'done',
+    ]
+    const s = Array.isArray(payload.status) ? payload.status[0] : payload.status
+    if (validStatuses.includes(s)) {
+      payload.status = s
+    }
+  }
+
+  return payload
 }
 
 export const deleteProject = (id: string) => pb.collection('projects').delete(id)

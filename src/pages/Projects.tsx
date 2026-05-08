@@ -249,7 +249,7 @@ export default function Projects() {
       // Only send fields defined in the schema to prevent 400 Bad Request
       const payload: any = {
         name: values.name,
-        description: values.description,
+        description: values.description || '',
         progress: values.progress,
         status: values.status,
         color: values.color || '#3b82f6',
@@ -266,6 +266,16 @@ export default function Projects() {
         (r: any) => typeof r === 'string' && r.trim() !== '',
       )
 
+      // Relational Consistency: Ensure current user is not lost from shared_with_users
+      // if they are supposed to maintain access.
+      const ownerId = editing ? getOwnerId(editing.created_by) : null
+      if (editing && ownerId !== userId && !isAdminRole(role)) {
+        const wasSharedWithMe = editing.shared_with_users?.includes(userId)
+        if (wasSharedWithMe && !payload.shared_with_users.includes(userId)) {
+          payload.shared_with_users.push(userId)
+        }
+      }
+
       if (editing) {
         const updated = await updateProject(editing.id, payload)
         toast({ title: 'Projeto atualizado com sucesso!' })
@@ -281,6 +291,7 @@ export default function Projects() {
       if (error?.status === 400) {
         const validationErrorData =
           error?.response?.data || error?.data || error?.originalError?.data
+        console.error('400 Bad Request - Server response body:', error?.response || error)
         console.error('Validation error object:', validationErrorData)
         toast({
           title: 'Erro ao salvar: Verifique os dados informados.',
@@ -289,10 +300,22 @@ export default function Projects() {
         const fieldErrors = extractFieldErrors(error)
         if (Object.keys(fieldErrors).length > 0) {
           Object.entries(fieldErrors).forEach(([field, msg]) => {
-            console.error(`Validation Error - Field: ${field}, Message: ${msg}`)
+            console.error(`Field Error -> ${field}: ${msg}`)
             form.setError(field as keyof ProjectFormValues, {
               type: 'server',
               message: msg as string,
+            })
+          })
+        } else if (validationErrorData) {
+          Object.entries(validationErrorData).forEach(([field, detail]) => {
+            const msg =
+              detail && typeof detail === 'object' && 'message' in detail
+                ? (detail as any).message
+                : String(detail)
+            console.error(`Field Error -> ${field}: ${msg}`)
+            form.setError(field as keyof ProjectFormValues, {
+              type: 'server',
+              message: msg,
             })
           })
         }
