@@ -246,35 +246,25 @@ export default function Projects() {
       const userId = user?.id || pb.authStore.record?.id
       if (!userId) throw new Error('Usuário não autenticado.')
 
-      const payload: any = { ...editing, ...values }
-
-      // Strip system-generated and read-only fields
-      delete payload.id
-      delete payload.created
-      delete payload.updated
-      delete payload.collectionId
-      delete payload.collectionName
-      delete payload.expand
-      delete payload.created_by
-
-      // Format relationships
-      if (payload.shared_with_users) {
-        const usersArray = Array.isArray(payload.shared_with_users)
-          ? payload.shared_with_users
-          : [payload.shared_with_users]
-        payload.shared_with_users = usersArray
-          .map((u: any) => (typeof u === 'object' && u !== null ? u.id : u))
-          .filter((u: any) => typeof u === 'string' && u.trim() !== '')
+      // Only send fields defined in the schema to prevent 400 Bad Request
+      const payload: any = {
+        name: values.name,
+        description: values.description,
+        progress: values.progress,
+        status: values.status,
+        color: values.color || '#3b82f6',
+        shared_with_users: Array.isArray(values.shared_with_users) ? values.shared_with_users : [],
+        shared_with_roles: Array.isArray(values.shared_with_roles) ? values.shared_with_roles : [],
       }
 
-      if (payload.shared_with_roles) {
-        const rolesArray = Array.isArray(payload.shared_with_roles)
-          ? payload.shared_with_roles
-          : [payload.shared_with_roles]
-        payload.shared_with_roles = rolesArray.filter(
-          (r: any) => typeof r === 'string' && r.trim() !== '',
-        )
-      }
+      // Ensure relationship arrays only contain valid string IDs
+      payload.shared_with_users = payload.shared_with_users
+        .map((u: any) => (typeof u === 'object' && u !== null ? u.id : u))
+        .filter((u: any) => typeof u === 'string' && u.trim() !== '')
+
+      payload.shared_with_roles = payload.shared_with_roles.filter(
+        (r: any) => typeof r === 'string' && r.trim() !== '',
+      )
 
       if (editing) {
         const updated = await updateProject(editing.id, payload)
@@ -299,6 +289,7 @@ export default function Projects() {
         const fieldErrors = extractFieldErrors(error)
         if (Object.keys(fieldErrors).length > 0) {
           Object.entries(fieldErrors).forEach(([field, msg]) => {
+            console.error(`Validation Error - Field: ${field}, Message: ${msg}`)
             form.setError(field as keyof ProjectFormValues, {
               type: 'server',
               message: msg as string,
