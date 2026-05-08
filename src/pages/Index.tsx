@@ -48,11 +48,11 @@ export default function Index() {
               Portal Exclusivo para Colaboradores
             </div>
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-foreground max-w-4xl leading-tight">
-              Gestão inteligente e <span className="text-primary">gamificada</span> para a equipe.
+              Gestão inteligente para a <span className="text-primary">equipe</span>.
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl">
-              Organize seu checklist diário, monitore o que está em produção, execução ou concluído,
-              e ganhe pontos por sua produtividade.
+              Organize seu checklist diário e monitore o que está em produção, execução ou
+              concluído.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 pt-8">
               <Link to="/auth">
@@ -64,7 +64,7 @@ export default function Index() {
           </section>
 
           <section id="funcionalidades" className="w-full bg-muted/30 py-24 border-y">
-            <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12">
+            <div className="max-w-4xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-12">
               <div className="flex flex-col items-center text-center space-y-4">
                 <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center shadow-sm">
                   <LayoutDashboard className="w-8 h-8" />
@@ -83,16 +83,6 @@ export default function Index() {
                 <p className="text-muted-foreground leading-relaxed">
                   Quebre tarefas complexas em etapas menores. Garanta a qualidade e precisão dos
                   diagnósticos e processos internos.
-                </p>
-              </div>
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-2xl flex items-center justify-center shadow-sm">
-                  <Trophy className="w-8 h-8" />
-                </div>
-                <h3 className="text-xl font-bold">Gamificação</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Complete tarefas, bata prazos e suba no ranking da empresa. Transforme sua
-                  produtividade em conquistas reais.
                 </p>
               </div>
             </div>

@@ -7,12 +7,10 @@ import Layout from './components/Layout'
 import Auth from './pages/Auth'
 import ResetPassword from './pages/ResetPassword'
 import Tasks from './pages/Tasks'
-import Team from './pages/Team'
 import Admin from './pages/Admin'
 import Dashboard from './pages/Dashboard'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminEmployees from './pages/AdminEmployees'
-import Achievements from './pages/Achievements'
 import Profile from './pages/Profile'
 import Projects from './pages/Projects'
 import { AppProviders } from './stores/providers'
@@ -40,9 +38,9 @@ const App = () => (
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/tasks" element={<Tasks />} />
                   <Route path="/projects" element={<Projects />} />
-                  <Route path="/team" element={<Team />} />
-                  <Route path="/ranking" element={<Team />} />
-                  <Route path="/achievements" element={<Achievements />} />
+                  <Route path="/team" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/ranking" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/achievements" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/profile" element={<Profile />} />
 
                   {/* Admin Only Routes */}

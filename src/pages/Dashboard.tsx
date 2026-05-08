@@ -6,8 +6,6 @@ import { MetricCard } from '@/components/dashboard/MetricCard'
 import { ExportButtons } from '@/components/dashboard/ExportButtons'
 import { EmployeeCharts } from '@/components/dashboard/EmployeeCharts'
 import { EmployeeFeeds } from '@/components/dashboard/EmployeeFeeds'
-import { TeamRankingWidget, RankingItem } from '@/components/dashboard/TeamRankingWidget'
-import { AchievementsWidget, AchievementItem } from '@/components/dashboard/AchievementsWidget'
 import { NotificationsWidget } from '@/components/dashboard/NotificationsWidget'
 import { getUnreadNotifications } from '@/services/notifications'
 import DashboardSkeleton from '@/components/DashboardSkeleton'
@@ -15,8 +13,7 @@ import PageTransition from '@/components/PageTransition'
 import { GuideTour, useTour } from '@/components/GuideTour'
 import { Target, CheckCircle, Trophy, BarChart3 } from 'lucide-react'
 import { toast } from 'sonner'
-import { getRanking, getUserStats } from '@/services/views'
-import { getAchievements, getUserAchievements } from '@/services/achievements'
+import { getUserStats } from '@/services/views'
 import { getLevels } from '@/services/gamification'
 
 interface DashboardData {
@@ -32,9 +29,6 @@ interface DashboardData {
   teamComparison: any[]
   recentTasks: any[]
   upcomingDeadlines: any[]
-  ranking: RankingItem[]
-  achievements: AchievementItem[]
-  levelInfo: { level: number; minXp: number; maxXp: number } | null
   unreadNotifications: any[]
 }
 
@@ -74,12 +68,6 @@ export default function Dashboard() {
       placement: 'top' as const,
     },
     {
-      target: '[data-tour="dash-achievements"]',
-      title: 'Suas Conquistas',
-      content: 'Fique de olho no seu progresso para desbloquear novas medalhas e ganhar mais XP!',
-      placement: 'left' as const,
-    },
-    {
       target: '[data-tour="dash-notifications"]',
       title: 'Centro de Notificações',
       content:
@@ -93,24 +81,12 @@ export default function Dashboard() {
     if (!user?.id) return
 
     try {
-      const [
-        tasks,
-        allUsers,
-        rankingRaw,
-        achievementsList,
-        userAchievements,
-        levelsList,
-        userStats,
-        unreadNotifications,
-      ] = await Promise.all([
+      const [tasks, allUsers, levelsList, userStats, unreadNotifications] = await Promise.all([
         pb.collection('tasks').getFullList({
           filter: `created_by = '${user.id}' || delegated_to = '${user.id}'`,
           sort: '-updated',
         }),
         pb.collection('users').getFullList({ filter: 'is_active = true' }),
-        getRanking().catch(() => []),
-        getAchievements().catch(() => []),
-        getUserAchievements(user.id).catch(() => []),
         getLevels().catch(() => []),
         getUserStats(user.id).catch(() => null),
         getUnreadNotifications(user.id).catch(() => []),
@@ -188,32 +164,6 @@ export default function Dashboard() {
           dueDate: dateFormatter.format(new Date(t.due_date!)),
         }))
 
-      const formattedAchievements: AchievementItem[] = achievementsList
-        .map((ach) => {
-          const userAch = userAchievements.find((ua) => ua.achievement_id === ach.id)
-          return {
-            id: ach.id,
-            name: ach.name,
-            description: ach.description,
-            rarity: ach.rarity || 'common',
-            target: ach.requirement_value,
-            progress: userAch?.progress || 0,
-            unlocked: !!userAch?.unlocked_at,
-            pointsReward: ach.points_reward || 0,
-            xpReward: ach.xp_reward || 0,
-          }
-        })
-        .sort((a, b) => (b.unlocked ? 1 : 0) - (a.unlocked ? 1 : 0) || b.progress - a.progress)
-
-      const ranking: RankingItem[] = rankingRaw.map((r) => ({
-        id: r.id,
-        name: r.name,
-        avatar: r.avatar ? pb.files.getURL({ id: r.id, collectionId: 'users' }, r.avatar) : '',
-        points: r.points,
-        level: r.level,
-        position: r.position,
-      }))
-
       setData({
         stats: {
           totalTasks,
@@ -230,13 +180,6 @@ export default function Dashboard() {
         ],
         recentTasks,
         upcomingDeadlines,
-        ranking,
-        achievements: formattedAchievements,
-        levelInfo: {
-          level: currentLevelObj.level_number,
-          minXp: currentLevelObj.min_xp,
-          maxXp: currentLevelObj.max_xp,
-        },
         unreadNotifications,
       })
     } catch (error) {
@@ -261,9 +204,6 @@ export default function Dashboard() {
     loadData()
   })
   useRealtime('users', () => {
-    loadData()
-  })
-  useRealtime('user_achievements', () => {
     loadData()
   })
   useRealtime('notifications', (e) => {
@@ -353,20 +293,10 @@ export default function Dashboard() {
               recentTasks={data.recentTasks}
               upcomingDeadlines={data.upcomingDeadlines}
             />
-            <div data-tour="dash-achievements" className="flex-1">
-              <AchievementsWidget
-                currentXp={user.xp || 0}
-                levelInfo={data.levelInfo}
-                achievements={data.achievements}
-              />
-            </div>
           </div>
           <div className="space-y-6 lg:col-span-1 h-full flex flex-col">
             <div data-tour="dash-notifications">
               <NotificationsWidget notifications={data.unreadNotifications} onRefresh={loadData} />
-            </div>
-            <div className="flex-1 min-h-[400px]">
-              <TeamRankingWidget ranking={data.ranking} />
             </div>
           </div>
         </div>

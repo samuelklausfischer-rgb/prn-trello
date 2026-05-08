@@ -39,11 +39,6 @@ export default function AppSidebar() {
     { title: 'Trabalhos e Projetos', path: '/projects', icon: FolderKanban },
   ]
 
-  const communityItems: NavItem[] = [
-    { title: 'Equipe & Ranking', path: '/ranking', icon: Trophy },
-    { title: 'Conquistas', path: '/achievements', icon: Medal },
-  ]
-
   const adminItems: NavItem[] = [
     { title: 'Colaboradores', path: '/admin/employees', icon: Users },
     { title: 'Painel Admin', path: '/admin', icon: ShieldCheck, exact: true },
@@ -107,22 +102,13 @@ export default function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel className="px-4 text-xs font-semibold tracking-wider text-muted-foreground uppercase group-data-[collapsible=icon]:hidden">
-            Comunidade e Evolução
-          </SidebarGroupLabel>
-          <SidebarGroupContent className="mt-2">
-            {renderMenu(communityItems, principalItems.length + 1)}
-          </SidebarGroupContent>
-        </SidebarGroup>
-
         {isAdmin && (
           <SidebarGroup>
             <SidebarGroupLabel className="px-4 text-xs font-semibold tracking-wider text-muted-foreground uppercase group-data-[collapsible=icon]:hidden">
               Administração
             </SidebarGroupLabel>
             <SidebarGroupContent className="mt-2">
-              {renderMenu(adminItems, principalItems.length + communityItems.length + 1)}
+              {renderMenu(adminItems, principalItems.length + 1)}
             </SidebarGroupContent>
           </SidebarGroup>
         )}

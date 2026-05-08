@@ -120,10 +120,6 @@ export default function Header() {
         return 'Dashboard'
       case '/tasks':
         return 'Quadro de Tarefas'
-      case '/team':
-        return 'Equipe & Ranking'
-      case '/achievements':
-        return 'Conquistas'
       case '/profile':
         return 'Meu Perfil'
       case '/admin':
@@ -178,8 +174,6 @@ export default function Header() {
     { id: 'dashboard', label: 'Dashboard Geral', path: '/dashboard' },
     { id: 'tasks', label: 'Gestão de Tarefas', path: '/tasks' },
     { id: 'projects', label: 'Projetos e Trabalhos', path: '/projects' },
-    { id: 'team', label: 'Equipe e Ranking', path: '/team' },
-    { id: 'achievements', label: 'Galeria de Conquistas', path: '/achievements' },
     ...(isAdmin ? [{ id: 'admin', label: 'Painel Admin', path: '/admin' }] : []),
   ]
 

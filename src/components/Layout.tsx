@@ -101,19 +101,6 @@ export default function Layout() {
             <CheckSquare className="w-5 h-5" />
             <span className="text-[10px] font-medium">Tarefas</span>
           </Link>
-          <Link
-            to="/achievements"
-            aria-label="Ir para Conquistas"
-            className={cn(
-              'flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors',
-              location.pathname === '/achievements'
-                ? 'text-accent drop-shadow-md'
-                : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            <Medal className="w-5 h-5" />
-            <span className="text-[10px] font-medium">Conquistas</span>
-          </Link>
           {role === 'ADMIN' && (
             <Link
               to="/admin"
