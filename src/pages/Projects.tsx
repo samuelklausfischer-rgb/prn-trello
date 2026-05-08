@@ -279,22 +279,27 @@ export default function Projects() {
       if (editing) {
         const updated = await updateProject(editing.id, payload)
         toast({ title: 'Projeto atualizado com sucesso!' })
-        setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
+        setProjects((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)))
       } else {
         const created = await createProject({ ...payload, created_by: userId })
-        toast({ title: 'Projeto criado!' })
+        toast({ title: 'Projeto criado com sucesso!' })
         setProjects((prev) => [created, ...prev])
       }
       setIsModalOpen(false)
     } catch (error: any) {
       console.error('Project save error detailed:', error)
+
+      const serverMessage = error?.response?.message || error?.data?.message || ''
+      const detailedMessage = serverMessage ? `Detalhes: ${serverMessage}` : getErrorMessage(error)
+
       if (error?.status === 400) {
         const validationErrorData =
           error?.response?.data || error?.data || error?.originalError?.data
         console.error('400 Bad Request - Server response body:', error?.response || error)
         console.error('Validation error object:', validationErrorData)
         toast({
-          title: 'Erro ao salvar: Verifique os dados informados.',
+          title: 'Erro ao salvar projeto',
+          description: `Por favor, verifique os dados informados. ${detailedMessage}`,
           variant: 'destructive',
         })
         const fieldErrors = extractFieldErrors(error)
@@ -322,7 +327,7 @@ export default function Projects() {
       } else {
         toast({
           title: 'Erro ao salvar',
-          description: getErrorMessage(error),
+          description: detailedMessage,
           variant: 'destructive',
         })
       }

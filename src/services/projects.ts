@@ -25,12 +25,20 @@ export const getProject = (id: string) =>
 
 export const createProject = (data: Partial<ProjectRecord>) => {
   const payload = sanitizeProjectPayload(data, true)
-  return pb.collection('projects').create<ProjectRecord>(payload, { expand: 'created_by' })
+  return pb.collection('projects').create<ProjectRecord>(payload)
 }
 
 export const updateProject = (id: string, data: Partial<ProjectRecord>) => {
   const payload = sanitizeProjectPayload(data, false)
-  return pb.collection('projects').update<ProjectRecord>(id, payload, { expand: 'created_by' })
+  // Explicitly strip read-only and system fields to meet requirements
+  delete payload.id
+  delete payload.created
+  delete payload.updated
+  delete payload.collectionId
+  delete payload.collectionName
+  delete payload.expand
+
+  return pb.collection('projects').update<ProjectRecord>(id, payload)
 }
 
 function sanitizeProjectPayload(data: Partial<ProjectRecord>, isCreate: boolean) {
@@ -53,17 +61,21 @@ function sanitizeProjectPayload(data: Partial<ProjectRecord>, isCreate: boolean)
     }
   }
 
-  // Ensure relationship arrays are strictly arrays of strings (IDs)
-  if ('shared_with_users' in payload) {
-    const users = Array.isArray(payload.shared_with_users) ? payload.shared_with_users : []
-    payload.shared_with_users = users
-      .map((u) => (typeof u === 'object' && u !== null ? (u as any).id : u))
+  // Ensure relationship arrays are strictly arrays of strings (IDs), never null or undefined
+  if ('shared_with_users' in data) {
+    const rawUsers = data.shared_with_users
+    const usersArray = Array.isArray(rawUsers) ? rawUsers : rawUsers != null ? [rawUsers] : []
+    payload.shared_with_users = usersArray
+      .map((u) => (typeof u === 'object' && u !== null ? (u as any).id : String(u)))
       .filter((u) => typeof u === 'string' && u.trim() !== '')
   }
 
-  if ('shared_with_roles' in payload) {
-    const roles = Array.isArray(payload.shared_with_roles) ? payload.shared_with_roles : []
-    payload.shared_with_roles = roles.filter((r) => typeof r === 'string' && r.trim() !== '')
+  if ('shared_with_roles' in data) {
+    const rawRoles = data.shared_with_roles
+    const rolesArray = Array.isArray(rawRoles) ? rawRoles : rawRoles != null ? [rawRoles] : []
+    payload.shared_with_roles = rolesArray
+      .map((r) => String(r))
+      .filter((r) => typeof r === 'string' && r.trim() !== '')
   }
 
   if ('progress' in payload) {
