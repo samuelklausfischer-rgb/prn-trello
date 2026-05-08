@@ -216,8 +216,16 @@ export default function Projects() {
               | 'review'
               | 'done',
             color: p.color || '#3b82f6',
-            shared_with_users: p.shared_with_users || [],
-            shared_with_roles: p.shared_with_roles || [],
+            shared_with_users: Array.isArray(p.shared_with_users)
+              ? p.shared_with_users
+              : p.shared_with_users
+                ? [p.shared_with_users as string]
+                : [],
+            shared_with_roles: Array.isArray(p.shared_with_roles)
+              ? p.shared_with_roles
+              : p.shared_with_roles
+                ? [p.shared_with_roles as string]
+                : [],
           }
         : {
             name: '',
@@ -238,7 +246,35 @@ export default function Projects() {
       const userId = user?.id || pb.authStore.record?.id
       if (!userId) throw new Error('Usuário não autenticado.')
 
-      const payload = { ...values }
+      const payload: any = { ...editing, ...values }
+
+      // Strip system-generated and read-only fields
+      delete payload.id
+      delete payload.created
+      delete payload.updated
+      delete payload.collectionId
+      delete payload.collectionName
+      delete payload.expand
+      delete payload.created_by
+
+      // Format relationships
+      if (payload.shared_with_users) {
+        const usersArray = Array.isArray(payload.shared_with_users)
+          ? payload.shared_with_users
+          : [payload.shared_with_users]
+        payload.shared_with_users = usersArray
+          .map((u: any) => (typeof u === 'object' && u !== null ? u.id : u))
+          .filter((u: any) => typeof u === 'string' && u.trim() !== '')
+      }
+
+      if (payload.shared_with_roles) {
+        const rolesArray = Array.isArray(payload.shared_with_roles)
+          ? payload.shared_with_roles
+          : [payload.shared_with_roles]
+        payload.shared_with_roles = rolesArray.filter(
+          (r: any) => typeof r === 'string' && r.trim() !== '',
+        )
+      }
 
       if (editing) {
         const updated = await updateProject(editing.id, payload)
@@ -253,7 +289,9 @@ export default function Projects() {
     } catch (error: any) {
       console.error('Project save error detailed:', error)
       if (error?.status === 400) {
-        console.error('Validation error object:', error?.response?.data || error?.data || error)
+        const validationErrorData =
+          error?.response?.data || error?.data || error?.originalError?.data
+        console.error('Validation error object:', validationErrorData)
         toast({
           title: 'Erro ao salvar: Verifique os dados informados.',
           variant: 'destructive',
