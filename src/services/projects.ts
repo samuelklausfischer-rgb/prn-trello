@@ -7,6 +7,7 @@ export interface ProjectRecord {
   progress: number
   status: 'active' | 'completed' | 'on_hold' | 'todo' | 'in_progress' | 'review' | 'done'
   color?: string
+  is_available?: boolean
   created_by: string
   shared_with_users?: string[]
   shared_with_roles?: string[]
@@ -48,6 +49,7 @@ function sanitizeProjectPayload(data: Partial<ProjectRecord>, isCreate: boolean)
     'progress',
     'status',
     'color',
+    'is_available',
     'shared_with_users',
     'shared_with_roles',
   ]
@@ -80,6 +82,10 @@ function sanitizeProjectPayload(data: Partial<ProjectRecord>, isCreate: boolean)
 
   if ('progress' in payload) {
     payload.progress = Number(payload.progress)
+  }
+
+  if ('is_available' in payload) {
+    payload.is_available = Boolean(payload.is_available)
   }
 
   if ('status' in payload) {

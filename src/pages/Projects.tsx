@@ -39,6 +39,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
+import { Switch } from '@/components/ui/switch'
 import {
   Plus,
   FolderKanban,
@@ -86,6 +87,7 @@ const projectSchema = z.object({
   progress: z.coerce.number().min(0).max(100),
   status: z.enum(['active', 'completed', 'on_hold', 'todo', 'in_progress', 'review', 'done']),
   color: z.string().optional(),
+  is_available: z.boolean().optional().default(false),
   shared_with_users: z.array(z.string()).optional().default([]),
   shared_with_roles: z.array(z.string()).optional().default([]),
 })
@@ -162,6 +164,7 @@ export default function Projects() {
       description: '',
       progress: 0,
       status: 'active',
+      is_available: false,
       shared_with_users: [],
       shared_with_roles: [],
     },
@@ -208,6 +211,7 @@ export default function Projects() {
             progress: p.progress || 0,
             status: statusVal as any,
             color: p.color || '#3b82f6',
+            is_available: p.is_available || false,
             shared_with_users: Array.isArray(p.shared_with_users)
               ? p.shared_with_users
               : p.shared_with_users
@@ -225,6 +229,7 @@ export default function Projects() {
             progress: 0,
             status: 'active',
             color: '#3b82f6',
+            is_available: false,
             shared_with_users: [],
             shared_with_roles: [],
           },
@@ -244,6 +249,7 @@ export default function Projects() {
         progress: values.progress,
         status: values.status,
         color: values.color || '#3b82f6',
+        is_available: values.is_available || false,
         shared_with_users: Array.isArray(values.shared_with_users) ? values.shared_with_users : [],
         shared_with_roles: Array.isArray(values.shared_with_roles) ? values.shared_with_roles : [],
       }
@@ -321,7 +327,7 @@ export default function Projects() {
     try {
       const newSharedUsers = Array.from(new Set([...(p.shared_with_users || []), user.id]))
       const updated = await updateProject(p.id, {
-        status: 'active',
+        is_available: false,
         shared_with_users: newSharedUsers,
       })
       toast({ title: 'Projeto assumido com sucesso!' })
@@ -375,13 +381,10 @@ export default function Projects() {
       return ownerId === filterUser
     }
     if (activeTab === 'shared') {
-      return isShared && p.status !== 'on_hold'
+      return isShared
     }
     if (activeTab === 'available') {
-      const isPublic =
-        p.shared_with_roles?.includes('employee') || p.shared_with_roles?.includes('admin')
-      const canAccess = isShared || isCreator || isPublic || isAdminRole(role)
-      return p.status === 'on_hold' && canAccess
+      return p.is_available === true
     }
     return true
   })
@@ -398,10 +401,16 @@ export default function Projects() {
     }
 
     if (filteredProjects.length === 0) {
+      let emptyMsg = 'Nenhum projeto encontrado'
+      if (activeTab === 'mine') emptyMsg = 'Você não possui projetos criados no momento'
+      if (activeTab === 'team') emptyMsg = 'Nenhum projeto encontrado para a equipe'
+      if (activeTab === 'shared') emptyMsg = 'Você não possui projetos compartilhados no momento'
+      if (activeTab === 'available') emptyMsg = 'Não há projetos disponíveis no momento'
+
       return (
-        <div className="flex-1 flex flex-col items-center justify-center glass-card rounded-3xl border-dashed border-2 py-12">
+        <div className="flex-1 flex flex-col items-center justify-center glass-card rounded-3xl border-dashed border-2 py-12 min-h-[300px]">
           <FolderKanban className="w-12 h-12 text-muted-foreground opacity-50 mb-4" />
-          <h3 className="text-lg font-semibold">Nenhum projeto encontrado</h3>
+          <h3 className="text-lg font-semibold">{emptyMsg}</h3>
         </div>
       )
     }
@@ -490,7 +499,9 @@ export default function Projects() {
                   <span className="truncate font-medium">
                     {activeTab === 'shared'
                       ? `Compartilhado por: ${creatorName}`
-                      : `Criador: ${creatorName}`}
+                      : activeTab === 'available'
+                        ? `Disponibilizado por: ${creatorName}`
+                        : `Criador: ${creatorName}`}
                   </span>
                 </div>
               </CardHeader>
@@ -598,17 +609,17 @@ export default function Projects() {
               </TabsTrigger>
               {isAdminRole(role) && (
                 <TabsTrigger value="team" className="rounded-lg text-xs md:text-sm">
-                  Da Equipe (Admin)
+                  Projetos da Equipe
                 </TabsTrigger>
               )}
               <TabsTrigger value="shared" className="rounded-lg text-xs md:text-sm">
-                Compartilhados
+                Projetos Compartilhados
               </TabsTrigger>
               <TabsTrigger
                 value="available"
                 className="rounded-lg text-xs md:text-sm text-amber-500 data-[state=active]:text-amber-500"
               >
-                Disponíveis
+                Projetos Disponíveis
               </TabsTrigger>
             </TabsList>
 
@@ -799,10 +810,28 @@ export default function Projects() {
                         <ShieldAlert className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                         <div className="text-sm text-primary/80">
                           Projetos são privados por padrão. Adicione usuários ou cargos para
-                          colaborar. Se marcar status como "Em Espera", o projeto ficará disponível
-                          para os cargos selecionados o assumirem.
+                          colaborar. Se marcar como "Disponível", o projeto aparecerá na aba de
+                          projetos disponíveis para qualquer um assumir.
                         </div>
                       </div>
+
+                      <FormField
+                        control={form.control}
+                        name="is_available"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-xl border p-4 shadow-sm">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">Projeto Disponível</FormLabel>
+                              <p className="text-xs text-muted-foreground">
+                                Marca este projeto como disponível para a equipe assumir.
+                              </p>
+                            </div>
+                            <FormControl>
+                              <Switch checked={field.value} onCheckedChange={field.onChange} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
 
                       <FormField
                         control={form.control}

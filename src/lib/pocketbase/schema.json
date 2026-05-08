@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-08T18:14:37.799Z",
+  "generatedAt": "2026-05-08T18:21:25.861Z",
   "collections": [
     {
       "name": "users",
@@ -1077,9 +1077,18 @@
           "type": "json",
           "required": false,
           "system": false
+        },
+        {
+          "name": "is_available",
+          "type": "bool",
+          "required": false,
+          "system": false
         }
       ],
-      "indexes": ["CREATE INDEX `idx_projects_shared_users` ON `projects` (shared_with_users)"]
+      "indexes": [
+        "CREATE INDEX `idx_projects_shared_users` ON `projects` (shared_with_users)",
+        "CREATE INDEX `idx_projects_is_available` ON `projects` (is_available)"
+      ]
     }
   ]
 }

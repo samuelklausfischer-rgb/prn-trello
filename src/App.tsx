@@ -17,46 +17,49 @@ import Profile from './pages/Profile'
 import Projects from './pages/Projects'
 import { AppProviders } from './stores/providers'
 import { TourProvider } from './stores/useTourStore'
+import { AuthProvider } from '@/hooks/use-auth'
 import ProtectedRoute from './components/ProtectedRoute'
 
 const App = () => (
   <AppProviders>
-    <TourProvider>
-      <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
+    <AuthProvider>
+      <TourProvider>
+        <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
 
-            {/* Protected Routes Wrapper */}
-            <Route element={<ProtectedRoute />}>
-              <Route element={<Layout />}>
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/tasks" element={<Tasks />} />
-                <Route path="/projects" element={<Projects />} />
-                <Route path="/team" element={<Team />} />
-                <Route path="/ranking" element={<Team />} />
-                <Route path="/achievements" element={<Achievements />} />
-                <Route path="/profile" element={<Profile />} />
+              {/* Protected Routes Wrapper */}
+              <Route element={<ProtectedRoute />}>
+                <Route element={<Layout />}>
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/tasks" element={<Tasks />} />
+                  <Route path="/projects" element={<Projects />} />
+                  <Route path="/team" element={<Team />} />
+                  <Route path="/ranking" element={<Team />} />
+                  <Route path="/achievements" element={<Achievements />} />
+                  <Route path="/profile" element={<Profile />} />
 
-                {/* Admin Only Routes */}
-                <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
-                  <Route path="/admin" element={<Admin />} />
-                  <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                  <Route path="/admin/employees" element={<AdminEmployees />} />
+                  {/* Admin Only Routes */}
+                  <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+                    <Route path="/admin" element={<Admin />} />
+                    <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                    <Route path="/admin/employees" element={<AdminEmployees />} />
+                  </Route>
                 </Route>
               </Route>
-            </Route>
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </TooltipProvider>
-      </BrowserRouter>
-    </TourProvider>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </TooltipProvider>
+        </BrowserRouter>
+      </TourProvider>
+    </AuthProvider>
   </AppProviders>
 )
 
