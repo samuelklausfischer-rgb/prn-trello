@@ -184,7 +184,11 @@ export default function TaskModal({
       }
 
       const updatedRecord = await updateTask(task.id, payload, task.updated)
-      const merged = { ...task, ...(updatedRecord as any), expand: task.expand }
+      const merged = {
+        ...task,
+        ...(updatedRecord as any),
+        expand: { ...task.expand, ...(updatedRecord as any).expand },
+      }
       setTask(merged)
       if (onTaskUpdate) onTaskUpdate(merged)
       toast({

@@ -1,10 +1,13 @@
 onRecordUpdateRequest((e) => {
   try {
-    e.set('oldStatus', e.record.get('status'))
+    e.set(
+      'oldStatus',
+      e.record.original() ? e.record.original().get('status') : e.record.get('status'),
+    )
   } catch (err) {
     console.error('Error setting oldStatus in on_task_complete: ', err)
   }
-  e.next()
+  return e.next()
 }, 'tasks')
 
 onRecordAfterUpdateRequest((e) => {
@@ -73,5 +76,5 @@ onRecordAfterUpdateRequest((e) => {
   } catch (err) {
     console.error('Fatal error in on_task_complete hook: ', err)
   }
-  e.next()
+  return e.next()
 }, 'tasks')
