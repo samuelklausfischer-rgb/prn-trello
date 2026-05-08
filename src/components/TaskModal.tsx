@@ -32,6 +32,7 @@ import { TaskComments } from './TaskComments'
 import { format } from 'date-fns'
 import { getProjects, ProjectRecord } from '@/services/projects'
 import { useState } from 'react'
+import { useRealtime } from '@/hooks/use-realtime'
 
 const schema = z.object({
   title: z.string().min(1, 'Obrigatório'),
@@ -51,7 +52,7 @@ const schema = z.object({
 })
 
 export default function TaskModal({
-  task,
+  task: initialTask,
   open,
   onOpenChange,
   users,
@@ -65,6 +66,20 @@ export default function TaskModal({
 }) {
   const { toast } = useToast()
   const [projects, setProjects] = useState<ProjectRecord[]>([])
+  const [task, setTask] = useState<TaskRecord | null>(initialTask)
+
+  useEffect(() => {
+    setTask(initialTask)
+  }, [initialTask])
+
+  useRealtime('tasks', (e) => {
+    if (task && e.record.id === task.id && e.action === 'update') {
+      setTask((prev) => {
+        if (!prev) return prev
+        return { ...prev, ...(e.record as any), expand: prev.expand }
+      })
+    }
+  })
 
   useEffect(() => {
     if (open) {
@@ -115,7 +130,8 @@ export default function TaskModal({
         deadline_type: task.deadline_type || 'optional',
       })
     }
-  }, [task, open, form])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialTask?.id, open, form])
 
   const onSubmit = async (values: z.infer<typeof schema>) => {
     if (!task) return
@@ -158,7 +174,12 @@ export default function TaskModal({
         return
       }
 
-      await updateTask(task.id, payload, task.updated)
+      const updatedRecord = await updateTask(task.id, payload, task.updated)
+      setTask((prev) => ({ ...prev, ...(updatedRecord as any), expand: prev?.expand }))
+      toast({
+        title: 'Sucesso',
+        description: 'Tarefa atualizada com sucesso.',
+      })
       onOpenChange(false)
     } catch (e: any) {
       const errs = extractFieldErrors(e)

@@ -39,7 +39,7 @@ import { useRealtime } from '@/hooks/use-realtime'
 import { useToast } from '@/hooks/use-toast'
 
 export default function TaskCard({
-  task,
+  task: initialTask,
   checklists = [],
   onClick,
   onPointerDown,
@@ -59,10 +59,23 @@ export default function TaskCard({
 }) {
   const { toast } = useToast()
   const [localChecklists, setLocalChecklists] = useState<ChecklistRecord[]>(checklists)
+  const [task, setTask] = useState<TaskRecord>(initialTask)
 
   useEffect(() => {
     setLocalChecklists(checklists)
   }, [checklists])
+
+  useEffect(() => {
+    setTask(initialTask)
+  }, [initialTask])
+
+  useRealtime('tasks', (e) => {
+    if (e.record.id === task.id) {
+      if (e.action === 'update') {
+        setTask((prev) => ({ ...prev, ...(e.record as any), expand: prev.expand }))
+      }
+    }
+  })
 
   useRealtime('checklists', (e) => {
     if (e.record.task_id === task.id) {
@@ -164,9 +177,14 @@ export default function TaskCard({
     e.stopPropagation()
     try {
       const newStatus = !task.is_archived
-      await updateTask(task.id, {
-        is_archived: newStatus,
-      })
+      const updated = await updateTask(
+        task.id,
+        {
+          is_archived: newStatus,
+        },
+        task.updated,
+      )
+      setTask((prev) => ({ ...prev, ...(updated as any), expand: prev.expand }))
       toast({
         title: newStatus ? 'Tarefa arquivada' : 'Tarefa restaurada',
         description: newStatus
@@ -185,21 +203,45 @@ export default function TaskCard({
   const handleToggleBlocked = async (e: React.MouseEvent | Event) => {
     e.stopPropagation()
     try {
-      await updateTask(task.id, {
-        is_blocked: !task.is_blocked,
-        block_reason: !task.is_blocked ? 'Bloqueado via ação rápida' : '',
+      const updated = await updateTask(
+        task.id,
+        {
+          is_blocked: !task.is_blocked,
+          block_reason: !task.is_blocked ? 'Bloqueado via ação rápida' : '',
+        },
+        task.updated,
+      )
+      setTask((prev) => ({ ...prev, ...(updated as any), expand: prev.expand }))
+      toast({
+        title: 'Sucesso',
+        description: !task.is_blocked ? 'Tarefa bloqueada' : 'Tarefa desbloqueada',
       })
     } catch (err) {
       console.error('Error toggling blocked status', err)
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível alterar o status de bloqueio.',
+        variant: 'destructive',
+      })
     }
   }
 
   const handleSetPriority = async (e: React.MouseEvent | Event, newPriority: string) => {
     e.stopPropagation()
     try {
-      await updateTask(task.id, { priority: newPriority as any })
+      const updated = await updateTask(task.id, { priority: newPriority as any }, task.updated)
+      setTask((prev) => ({ ...prev, ...(updated as any), expand: prev.expand }))
+      toast({
+        title: 'Sucesso',
+        description: 'Prioridade atualizada.',
+      })
     } catch (err) {
       console.error('Error updating priority', err)
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível alterar a prioridade.',
+        variant: 'destructive',
+      })
     }
   }
 
