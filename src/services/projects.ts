@@ -27,14 +27,19 @@ export const createProject = (data: Partial<ProjectRecord>) =>
   pb.collection('projects').create<ProjectRecord>(data)
 
 export const updateProject = (id: string, data: Partial<ProjectRecord>) => {
-  const payload: Partial<ProjectRecord> = {}
-  if (data.name !== undefined) payload.name = data.name
-  if (data.description !== undefined) payload.description = data.description
-  if (data.progress !== undefined) payload.progress = data.progress
-  if (data.status !== undefined) payload.status = data.status
-  if (data.color !== undefined) payload.color = data.color
-  if (data.shared_with_users !== undefined) payload.shared_with_users = data.shared_with_users
-  if (data.shared_with_roles !== undefined) payload.shared_with_roles = data.shared_with_roles
+  const payload = { ...data } as Record<string, any>
+  delete payload.id
+  delete payload.created
+  delete payload.updated
+  delete payload.created_by
+  delete payload.expand
+
+  if ('shared_with_users' in data) {
+    payload.shared_with_users = Array.isArray(data.shared_with_users) ? data.shared_with_users : []
+  }
+  if ('shared_with_roles' in data) {
+    payload.shared_with_roles = Array.isArray(data.shared_with_roles) ? data.shared_with_roles : []
+  }
 
   return pb.collection('projects').update<ProjectRecord>(id, payload)
 }

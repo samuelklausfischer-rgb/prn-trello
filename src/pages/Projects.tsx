@@ -235,26 +235,29 @@ export default function Projects() {
 
       if (editing) {
         await updateProject(editing.id, payload)
+        toast({ title: 'Projeto atualizado com sucesso!' })
       } else {
         await createProject({ ...payload, created_by: userId })
+        toast({ title: 'Projeto criado!' })
       }
-      toast({ title: editing ? 'Projeto atualizado!' : 'Projeto criado!' })
       setIsModalOpen(false)
       loadData()
     } catch (error: any) {
       console.error('Project save error detailed:', error)
-      const fieldErrors = extractFieldErrors(error)
-      if (Object.keys(fieldErrors).length > 0) {
-        Object.entries(fieldErrors).forEach(([field, msg]) => {
-          form.setError(field as keyof ProjectFormValues, {
-            type: 'server',
-            message: msg as string,
-          })
-        })
+      if (error?.status === 400) {
         toast({
-          title: 'Corrija os erros no formulário',
+          title: 'Erro ao salvar: Verifique os dados informados.',
           variant: 'destructive',
         })
+        const fieldErrors = extractFieldErrors(error)
+        if (Object.keys(fieldErrors).length > 0) {
+          Object.entries(fieldErrors).forEach(([field, msg]) => {
+            form.setError(field as keyof ProjectFormValues, {
+              type: 'server',
+              message: msg as string,
+            })
+          })
+        }
       } else {
         toast({
           title: 'Erro ao salvar',
