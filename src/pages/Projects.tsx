@@ -349,6 +349,7 @@ export default function Projects() {
           proj.id === updated.id ? { ...proj, ...updated, expand: p.expand } : proj,
         ),
       )
+      setActiveTab('shared')
     } catch (error: unknown) {
       toast({
         title: 'Erro ao assumir projeto',
@@ -537,7 +538,7 @@ export default function Projects() {
                   </Avatar>
                   <span className="truncate font-medium">
                     {activeTab === 'shared'
-                      ? `Compartilhado por: ${creatorName}`
+                      ? `Criado por: ${creatorName}`
                       : activeTab === 'available'
                         ? `Disponibilizado por: ${creatorName}`
                         : `Criador: ${creatorName}`}
@@ -566,7 +567,7 @@ export default function Projects() {
                       className="h-8 gap-1"
                       onClick={(e) => handleClaimProject(p, e)}
                     >
-                      <HandMetal className="w-3.5 h-3.5" /> Pegar Projeto
+                      <HandMetal className="w-3.5 h-3.5" /> Pegar projeto
                     </Button>
                   ) : (
                     canEdit && (
