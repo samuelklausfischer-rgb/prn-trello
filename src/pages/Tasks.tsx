@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -51,6 +52,7 @@ import {
   LayoutGrid,
   ListFilter,
   Info,
+  ChevronDown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -241,6 +243,26 @@ export default function Tasks() {
 
   const areas = Array.from(new Set(tasks.map((t) => t.department).filter(Boolean)))
 
+  const activeProjects = useMemo(() => {
+    if (!user) return []
+    return projects.filter((p) => {
+      if (p.created_by === user.id) return true
+      if (p.shared_with_users?.includes(user.id)) return true
+      if (user.job_title && p.shared_with_roles?.includes(user.job_title)) return true
+
+      const hasTasks = tasks.some(
+        (t) => t.project_id === p.id && (t.created_by === user.id || t.delegated_to === user.id),
+      )
+      if (hasTasks) return true
+
+      return false
+    })
+  }, [projects, user, tasks])
+
+  const otherProjects = useMemo(() => {
+    return projects.filter((p) => p.is_available && !activeProjects.find((ap) => ap.id === p.id))
+  }, [projects, activeProjects])
+
   const filteredTasks = useMemo(() => {
     return tasks
       .filter((t) => {
@@ -362,7 +384,7 @@ export default function Tasks() {
           colorClass: 'bg-muted shadow-sm',
           filterFn: (t: TaskRecord) => !t.project_id,
         },
-        ...projects.map((p) => ({
+        ...activeProjects.map((p) => ({
           id: p.id,
           label: p.name,
           colorClass: 'shadow-sm border border-border/50',
@@ -371,7 +393,7 @@ export default function Tasks() {
         })),
       ]
     }
-  }, [groupBy, projects])
+  }, [groupBy, activeProjects])
 
   const { open: tourOpen, closeTour, startTour } = useTour('tasks')
 
@@ -739,11 +761,30 @@ export default function Tasks() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos os Projetos</SelectItem>
-                      {projects.map((p) => (
+                      {activeProjects.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
                           {p.name}
                         </SelectItem>
                       ))}
+
+                      {otherProjects.length > 0 && (
+                        <Collapsible>
+                          <CollapsibleTrigger className="flex w-full items-center justify-between py-1.5 px-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground rounded-sm mt-1 transition-colors cursor-pointer [&[data-state=open]>svg]:rotate-180">
+                            Outros Projetos
+                            <ChevronDown className="h-3 w-3 transition-transform duration-200" />
+                          </CollapsibleTrigger>
+                          <CollapsibleContent className="pl-1 border-l border-border/50 ml-2 mt-1 space-y-0.5">
+                            {otherProjects.map((p) => (
+                              <SelectItem key={p.id} value={p.id} className="text-xs">
+                                <div className="flex items-center gap-2">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                                  {p.name}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </CollapsibleContent>
+                        </Collapsible>
+                      )}
                     </SelectContent>
                   </Select>
                 )}
