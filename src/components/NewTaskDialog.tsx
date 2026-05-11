@@ -25,6 +25,7 @@ import pb from '@/lib/pocketbase/client'
 import { Textarea } from '@/components/ui/textarea'
 import { getProjects, ProjectRecord } from '@/services/projects'
 import { useState, useEffect } from 'react'
+import { useRealtime } from '@/hooks/use-realtime'
 
 const schema = z.object({
   title: z.string().min(1, 'Obrigatório'),
@@ -57,6 +58,21 @@ export default function NewTaskDialog({
       getProjects().then(setProjects).catch(console.error)
     }
   }, [open])
+
+  useRealtime(
+    'projects',
+    () => {
+      getProjects().then(setProjects).catch(console.error)
+    },
+    open,
+  )
+
+  const currentUser = pb.authStore.record?.id
+  const activeProjects = projects.filter((p) => {
+    const isCreatorNotAvailable = p.created_by === currentUser && !p.is_available
+    const isSharedWithUser = p.shared_with_users?.includes(currentUser || '')
+    return isCreatorNotAvailable || isSharedWithUser
+  })
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -160,7 +176,7 @@ export default function NewTaskDialog({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Nenhum projeto</SelectItem>
-                      {projects.map((p) => (
+                      {activeProjects.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
                           <div className="flex items-center gap-2">
                             <div
