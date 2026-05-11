@@ -26,6 +26,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { getProjects, ProjectRecord } from '@/services/projects'
 import { useState, useEffect } from 'react'
 import { useRealtime } from '@/hooks/use-realtime'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { ChevronDown } from 'lucide-react'
 
 const schema = z.object({
   title: z.string().min(1, 'Obrigatório'),
@@ -67,11 +69,22 @@ export default function NewTaskDialog({
     open,
   )
 
-  const currentUser = pb.authStore.record?.id
+  const currentUser = pb.authStore.record
   const activeProjects = projects.filter((p) => {
-    const isCreatorNotAvailable = p.created_by === currentUser && !p.is_available
-    const isSharedWithUser = p.shared_with_users?.includes(currentUser || '')
-    return isCreatorNotAvailable || isSharedWithUser
+    if (p.created_by === currentUser?.id) return true
+    if (Array.isArray(p.shared_with_users) && p.shared_with_users.includes(currentUser?.id || ''))
+      return true
+    if (
+      currentUser?.job_title &&
+      Array.isArray(p.shared_with_roles) &&
+      p.shared_with_roles.includes(currentUser.job_title)
+    )
+      return true
+    return false
+  })
+
+  const otherProjects = projects.filter((p) => {
+    return p.is_available && !activeProjects.some((ap) => ap.id === p.id)
   })
 
   const form = useForm<z.infer<typeof schema>>({
@@ -180,13 +193,31 @@ export default function NewTaskDialog({
                         <SelectItem key={p.id} value={p.id}>
                           <div className="flex items-center gap-2">
                             <div
-                              className="w-2 h-2 rounded-full"
+                              className="w-2 h-2 rounded-full shrink-0"
                               style={{ backgroundColor: p.color || '#ccc' }}
                             />
-                            {p.name}
+                            <span className="truncate">{p.name}</span>
                           </div>
                         </SelectItem>
                       ))}
+                      {otherProjects.length > 0 && (
+                        <Collapsible>
+                          <CollapsibleTrigger className="flex w-full items-center justify-between py-1.5 px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground rounded-sm mt-1 transition-colors cursor-pointer [&[data-state=open]>svg]:rotate-180">
+                            Outros Projetos
+                            <ChevronDown className="h-4 w-4 transition-transform duration-200" />
+                          </CollapsibleTrigger>
+                          <CollapsibleContent className="pl-1 border-l border-border/50 ml-2 mt-1 space-y-0.5">
+                            {otherProjects.map((p) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                <div className="flex items-center gap-2">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                                  <span className="truncate">{p.name}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </CollapsibleContent>
+                        </Collapsible>
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
