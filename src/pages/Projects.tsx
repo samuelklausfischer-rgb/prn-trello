@@ -264,7 +264,13 @@ export default function Projects() {
 
       const ownerId = editing ? getOwnerId(editing.created_by) : null
       if (editing && ownerId !== userId && !isAdminRole(role)) {
-        const wasSharedWithMe = editing.shared_with_users?.includes(userId)
+        const currentShared = Array.isArray(editing.shared_with_users)
+          ? editing.shared_with_users
+          : editing.shared_with_users
+            ? [editing.shared_with_users as string]
+            : []
+
+        const wasSharedWithMe = currentShared.includes(userId)
         if (wasSharedWithMe && !payload.shared_with_users.includes(userId)) {
           payload.shared_with_users.push(userId)
         }
@@ -325,7 +331,14 @@ export default function Projects() {
     e.stopPropagation()
     if (!user?.id) return
     try {
-      const newSharedUsers = Array.from(new Set([...(p.shared_with_users || []), user.id]))
+      const currentShared = Array.isArray(p.shared_with_users)
+        ? p.shared_with_users
+        : p.shared_with_users
+          ? [p.shared_with_users as string]
+          : []
+
+      const newSharedUsers = Array.from(new Set([...currentShared, user.id]))
+
       const updated = await updateProject(p.id, {
         is_available: false,
         shared_with_users: newSharedUsers,
@@ -368,8 +381,22 @@ export default function Projects() {
   const filteredProjects = projects.filter((p) => {
     const ownerId = getOwnerId(p.created_by)
     const isCreator = ownerId === user?.id
-    const isSharedWithUser = p.shared_with_users?.includes(user?.id || '')
-    const isSharedWithRole = !!user?.job_title && p.shared_with_roles?.includes(user.job_title)
+
+    const sharedUsersArray = Array.isArray(p.shared_with_users)
+      ? p.shared_with_users
+      : p.shared_with_users
+        ? [p.shared_with_users as string]
+        : []
+
+    const sharedRolesArray = Array.isArray(p.shared_with_roles)
+      ? p.shared_with_roles
+      : p.shared_with_roles
+        ? [p.shared_with_roles as string]
+        : []
+
+    const isSharedWithUser = sharedUsersArray.includes(user?.id || '')
+    const isSharedWithRole = !!user?.job_title && sharedRolesArray.includes(user.job_title)
+
     const isShared = (isSharedWithUser || isSharedWithRole) && !isCreator
 
     if (activeTab === 'mine') {
@@ -421,9 +448,21 @@ export default function Projects() {
           const isAdmin = isAdminRole(role)
           const ownerId = getOwnerId(p.created_by)
           const isCreator = ownerId === user?.id
-          const isSharedWithUser = p.shared_with_users?.includes(user?.id || '')
-          const isSharedWithRole =
-            !!user?.job_title && p.shared_with_roles?.includes(user.job_title)
+
+          const sharedUsersArray = Array.isArray(p.shared_with_users)
+            ? p.shared_with_users
+            : p.shared_with_users
+              ? [p.shared_with_users as string]
+              : []
+
+          const sharedRolesArray = Array.isArray(p.shared_with_roles)
+            ? p.shared_with_roles
+            : p.shared_with_roles
+              ? [p.shared_with_roles as string]
+              : []
+
+          const isSharedWithUser = sharedUsersArray.includes(user?.id || '')
+          const isSharedWithRole = !!user?.job_title && sharedRolesArray.includes(user.job_title)
 
           let canEdit = isAdmin || isCreator || isSharedWithUser || isSharedWithRole
           const isShared = (isSharedWithUser || isSharedWithRole) && !isCreator
@@ -597,27 +636,31 @@ export default function Projects() {
           <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6">
             <TabsList
               data-tour="projects-tabs"
-              className={cn(
-                'grid w-full gap-1 rounded-xl bg-muted/50 p-1',
-                isAdminRole(role)
-                  ? 'grid-cols-2 md:grid-cols-4 xl:w-[650px]'
-                  : 'grid-cols-3 xl:w-[450px]',
-              )}
+              className="flex flex-wrap items-center gap-2 bg-transparent p-0 h-auto w-full xl:w-auto"
             >
-              <TabsTrigger value="mine" className="rounded-lg text-xs md:text-sm">
+              <TabsTrigger
+                value="mine"
+                className="rounded-xl px-4 py-2 text-xs md:text-sm font-medium border border-border/50 bg-background hover:bg-muted data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary shadow-sm transition-all"
+              >
                 Meus Projetos
               </TabsTrigger>
               {isAdminRole(role) && (
-                <TabsTrigger value="team" className="rounded-lg text-xs md:text-sm">
+                <TabsTrigger
+                  value="team"
+                  className="rounded-xl px-4 py-2 text-xs md:text-sm font-medium border border-border/50 bg-background hover:bg-muted data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary shadow-sm transition-all"
+                >
                   Projetos da Equipe
                 </TabsTrigger>
               )}
-              <TabsTrigger value="shared" className="rounded-lg text-xs md:text-sm">
+              <TabsTrigger
+                value="shared"
+                className="rounded-xl px-4 py-2 text-xs md:text-sm font-medium border border-border/50 bg-background hover:bg-muted data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary shadow-sm transition-all"
+              >
                 Projetos Compartilhados
               </TabsTrigger>
               <TabsTrigger
                 value="available"
-                className="rounded-lg text-xs md:text-sm text-amber-500 data-[state=active]:text-amber-500"
+                className="rounded-xl px-4 py-2 text-xs md:text-sm font-medium border border-amber-200/50 bg-background text-amber-600 hover:bg-amber-50 data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:border-amber-500 shadow-sm transition-all dark:hover:bg-amber-950/30"
               >
                 Projetos Disponíveis
               </TabsTrigger>
