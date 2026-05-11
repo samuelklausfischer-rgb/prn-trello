@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-11T13:20:55.929Z",
+  "generatedAt": "2026-05-11T13:49:00.795Z",
   "collections": [
     {
       "name": "users",
@@ -998,10 +998,10 @@
       "name": "projects",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.role = 'admin' || created_by = @request.auth.id || shared_with_users ?= @request.auth.id || (@request.auth.job_title != '' && shared_with_roles ?= @request.auth.job_title)",
-        "view": "@request.auth.role = 'admin' || created_by = @request.auth.id || shared_with_users ?= @request.auth.id || (@request.auth.job_title != '' && shared_with_roles ?= @request.auth.job_title)",
+        "list": "@request.auth.role = 'admin' || created_by = @request.auth.id || shared_with_users ?= @request.auth.id || (@request.auth.job_title != '' && shared_with_roles ?= @request.auth.job_title) || is_available = true",
+        "view": "@request.auth.role = 'admin' || created_by = @request.auth.id || shared_with_users ?= @request.auth.id || (@request.auth.job_title != '' && shared_with_roles ?= @request.auth.job_title) || is_available = true",
         "create": "@request.auth.id != ''",
-        "update": "@request.auth.role = 'admin' || created_by = @request.auth.id || shared_with_users ?= @request.auth.id || (@request.auth.job_title != '' && shared_with_roles ?= @request.auth.job_title)",
+        "update": "@request.auth.role = 'admin' || created_by = @request.auth.id || shared_with_users ?= @request.auth.id || (@request.auth.job_title != '' && shared_with_roles ?= @request.auth.job_title) || is_available = true",
         "delete": "@request.auth.role = 'admin' || created_by = @request.auth.id"
       },
       "fields": [

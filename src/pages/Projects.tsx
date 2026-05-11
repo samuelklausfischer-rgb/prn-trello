@@ -636,31 +636,31 @@ export default function Projects() {
           <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6">
             <TabsList
               data-tour="projects-tabs"
-              className="flex flex-wrap items-center gap-2 bg-transparent p-0 h-auto w-full xl:w-auto"
+              className="flex flex-wrap items-center gap-3 bg-transparent p-0 h-auto w-full xl:w-auto"
             >
               <TabsTrigger
                 value="mine"
-                className="rounded-xl px-4 py-2 text-xs md:text-sm font-medium border border-border/50 bg-background hover:bg-muted data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary shadow-sm transition-all"
+                className="rounded-md px-4 py-2 text-sm font-semibold border border-border bg-card hover:bg-accent hover:text-accent-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 Meus Projetos
               </TabsTrigger>
               {isAdminRole(role) && (
                 <TabsTrigger
                   value="team"
-                  className="rounded-xl px-4 py-2 text-xs md:text-sm font-medium border border-border/50 bg-background hover:bg-muted data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary shadow-sm transition-all"
+                  className="rounded-md px-4 py-2 text-sm font-semibold border border-border bg-card hover:bg-accent hover:text-accent-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   Projetos da Equipe
                 </TabsTrigger>
               )}
               <TabsTrigger
                 value="shared"
-                className="rounded-xl px-4 py-2 text-xs md:text-sm font-medium border border-border/50 bg-background hover:bg-muted data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary shadow-sm transition-all"
+                className="rounded-md px-4 py-2 text-sm font-semibold border border-border bg-card hover:bg-accent hover:text-accent-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 Projetos Compartilhados
               </TabsTrigger>
               <TabsTrigger
                 value="available"
-                className="rounded-xl px-4 py-2 text-xs md:text-sm font-medium border border-amber-200/50 bg-background text-amber-600 hover:bg-amber-50 data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:border-amber-500 shadow-sm transition-all dark:hover:bg-amber-950/30"
+                className="rounded-md px-4 py-2 text-sm font-semibold border border-amber-200/50 bg-amber-50 text-amber-600 hover:bg-amber-100 data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:border-amber-500 shadow-sm transition-all dark:bg-amber-950/20 dark:hover:bg-amber-950/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
               >
                 Projetos Disponíveis
               </TabsTrigger>
